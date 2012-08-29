@@ -21,6 +21,8 @@
 # Author: tao.xu
 ###############################################################################
 
+
+
 # Estimation of clinical model:
 data = data.frame (disease = S4[,diseases[4]], S4[,feature.cont], as.factor(S4[,feature.disc]))
 data <- na.omit(data)
