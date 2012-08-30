@@ -118,4 +118,13 @@ for(i in 4:4){
 }	
 
 
+#################
+tmp = (S4[,diseases[2:4]])
+D = apply(tmp, 1, function(x) sum(x==1))
+table(D)
+S4$CVD =  apply(tmp, 1, function(x) sum(x==1))!=0
+
+tmp = (F4[,diseases[2:4]])
+table(apply(tmp, 1, function(x) sum(x==1)))
+
 
