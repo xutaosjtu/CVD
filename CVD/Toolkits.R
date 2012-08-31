@@ -3,15 +3,15 @@
 # Author: tao.xu
 ###############################################################################
 
-function(data, subset = NULL, feature, disease, files){
-	if(is.null(subset)){
-		subset = dim(S4)[1]
-	}
-	for(i in 1:length(diseases)){
-		chars = apply(S4[subset,feature], 2, function(x) tapply(x, INDEX = as.factor(S4[subset, diseases[i]]), mean, na.rm= T))
-		write.csv(t(chars), file = paste(names(diseases)[i],".csv", sep = ""))
-	}
-}
+#function(data, subset = NULL, feature, disease, files){
+#	if(is.null(subset)){
+#		subset = dim(S4)[1]
+#	}
+#	for(i in 1:length(diseases)){
+#		chars = apply(S4[subset,feature], 2, function(x) tapply(x, INDEX = as.factor(S4[subset, diseases[i]]), mean, na.rm= T))
+#		write.csv(t(chars), file = paste(names(diseases)[i],".csv", sep = ""))
+#	}
+#}
 
 # partial correlation calculation
 cor.partial<-function(data, variables, ...){
@@ -49,5 +49,25 @@ diffcorr <- function(cor1, cor2, N1, N2){
 	return(p)
 }
 
+## coversion of parameters between S4 and F4
+#function(parameters , optional = "l"){
+#	substr(parameters, 1, 2) <- optional
+#}
 
+# regression analysis
+logisticRegression = function(meta , disease, valid_measures , feature.cont, feature.disc, ...){
+	rst = NULL 
+	fdisc = NULL
+	for (f in feature.disc){
+		fdisc = cbind(fdisc, as.factor(meta[,f]))
+	}
+	for(m in valid_measures){
+		data = data.frame (disease, metabolite = log(meta[,m]), log(meta[,feature.cont]), fdisc)
+		model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit"), ...)
+		rst = rbind ( rst , summary(model)$coefficients[2,])
+	}
+	rst = data.frame(rst, p.adjust(rst[,4], method = "BH"))
+	rownames(rst) = valid_measures
+	return(rst)
+}
 
