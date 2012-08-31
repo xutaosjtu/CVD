@@ -18,6 +18,13 @@
 #	Heart failure
 #	feature.cont = c("ltalteru"	, "ll_choln" , "ll_hdln" , "ll_trin" , "lthumf" , "lttumf" , "ltalkkon" , "ll_hgb")
 #	feature.disc = c("lcsex")
+#	model 4: CVD scoring system
+#	Framingham Heart Study:
+#	feature.cont = c("ltalteru", "ll_hdln" , "ll_choln" , "ltsysmm")
+#	feature.disc = c("lcsex" , "lp_diab_who06")
+#	The SCORE project:
+#	feature.cont = c("ltalteru", "ltsysmm" , "ltotal2HDL")
+#	feature.disc = c("lcsex")
 # Author: tao.xu
 ###############################################################################
 
@@ -118,13 +125,27 @@ for(i in 4:4){
 }	
 
 
-#################
+################# Combining three cardiovascular diseases () together
 tmp = (S4[,diseases[2:4]])
 D = apply(tmp, 1, function(x) sum(x==1))
 table(D)
-S4$CVD =  apply(tmp, 1, function(x) sum(x==1))!=0
+S4$CVD =  apply(tmp, 1, function(x) sum(x==1, na.rm = T))!=0
 
 tmp = (F4[,diseases[2:4]])
 table(apply(tmp, 1, function(x) sum(x==1)))
+F4$CVD = apply(tmp, 1, function(x) sum(x ==1, na.rm = T)!=0)
 
+tmp = (S4[,diseases[2:4]])
+table(apply(tmp, 1, function(x) sum(x==1)))
 
+#	regression analysis of S4]
+substr(feature.cont, 1, 2) <- "l"
+substr(feature.disc, 1, 2) <- "l"
+rst = logisticRegression(S4, S4$CVD, S4_valid_measures, feature.cont, feature.disc)
+write.csv(rst, file = "CVD combined_Model Framingham_S4.csv")
+
+# regression analysis of F4
+substr(feature.cont, 1, 2) <- "u"
+substr(feature.disc, 1, 2) <- "u"
+rst = logisticRegression(F4, F4$CVD, F4_valid_measures, feature.cont, feature.disc)
+write.csv(rst, file = "CVD combined_Model SCORE_F4.csv")
