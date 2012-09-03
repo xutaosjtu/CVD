@@ -47,10 +47,20 @@ table(S4[as.character(Cohort$zz_nr_s4)[-c(index, index2)],"CVD"])
 index = which(!(S4[as.character(Cohort$zz_nr_s4),"CVD"]))
 substr(feature.cont, 1, 2) <- "l"
 substr(feature.disc, 1, 2) <- "l"
+rst = NULL;
 for (m in S4_valid_measures){
-	data = data.frame(surviv = S4[as.character(Cohort$zz_nr_s4), "CVD"], S4[as.character(Cohort$zz_nr_s4), m], S4[as.character(Cohort$zz_nr_s4),feature.cont], as.factor(S4[as.character(Cohort$zz_nr_s4),feature.disc]), t_time = apply(F4[as.character(Cohort$zz_nr_f4), c("utmialt","utschalt", "utalteru")], 1, min, na.rm = T)-S4[as.character(Cohort$zz_nr_s4),"ltalteru"])
-	
-	CAD.cox = coxph(Surv(t_time, surviv) ~  ., subset = index , data)
-	
-	
+	data = data.frame(
+			CVD = F4[as.character(Cohort$zz_nr_f4), "CVD"], 
+			CVDS4 = S4[as.character(Cohort$zz_nr_s4), "CVD"], 
+			S4[as.character(Cohort$zz_nr_s4), m],
+			S4[as.character(Cohort$zz_nr_s4),feature.cont],
+			as.factor(S4[as.character(Cohort$zz_nr_s4),feature.disc]), 
+			t_time = apply(F4[as.character(Cohort$zz_nr_f4), c("utmialt","utschalt", "utalteru")], 1, min, na.rm = T)-S4[as.character(Cohort$zz_nr_s4),"ltalteru"]
+	)
+	data = na.omit(data)
+	index = which(!data$CVDS4 & data$t_time>0)
+	colnames(data) = c("CVD" , "CVDS4" , "metabolite", "ltalteru" , "ltsysmm" , "ltotal2HDL" , "lcsex" , "t_time")
+	CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ltotal2HDL) +lcsex , subset = index , data)
+	rst = rbind(rst , summary(CVD.cox)$coefficients[1,])
 }
+rownames(rst) = S4_valid_measures
