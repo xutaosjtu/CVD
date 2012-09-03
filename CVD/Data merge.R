@@ -18,3 +18,9 @@ for(j in 1:3){
 		write.csv(rst, file3, row.names = F)
 	}
 }
+
+
+rst.s4 = read.csv("F:/Cardiovascular disease/Cross sectional/Model 4/CVD combined_Model SCORE_S4.csv")
+rst.f4 = read.csv("F:/Cardiovascular disease/Cross sectional/Model 4/CVD combined_Model SCORE_F4.csv")
+rst = rst = merge(rst.s4, rst.f4, by.x = "X", by.y = "X", all = TRUE)
+write.csv(rst, file = "Cross sectional/CVD combined_Model SCORE.csv")
