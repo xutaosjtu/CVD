@@ -14,27 +14,27 @@
 #}
 
 # partial correlation calculation
-cor.partial<-function(data, variables, ...){
-	P=cor(data[,variables], ...)
-	P.invers=solve(P)
-	P.diag = diag(P.invers)
-	Z = -P.invers/sqrt(P.diag%*%t(P.diag))
+cor.partial <- function(data, variables, ...){
+	P = cor( data[,variables], ... )
+	P.invers = solve( P )
+	P.diag = diag( P.invers )
+	Z = - P.invers / sqrt(P.diag %*% t(P.diag))
 	return(Z)
 }
 
 #correlation matrix to linkage pairs
 cor2link = function(Zeta, threshold){
-	ggm=NULL;
+	links = NULL;
 	for(i in 1:(dim(Zeta)[1]-1)){
 		for(j in (i+1):dim(Zeta)[1]){
-			if(abs(Zeta[i,j])>= threshold){
-				tmp=c(colnames(Zeta)[i], colnames(Zeta)[j], 
+			if(abs( Zeta[i,j] ) >= threshold){
+				tmp = c( colnames( Zeta )[i], colnames( Zeta )[j], 
 						Zeta[i,j])
-				ggm=rbind(ggm,tmp)
+				links = rbind(links, tmp)
 			}
 		}
 	}
-	return(ggm)
+	return(links)
 }
 
 #	Differential correxpression
@@ -43,9 +43,9 @@ cor2link = function(Zeta, threshold){
 #	cor1, cor2: two pearson correlation values
 #	N1, N2: the number of samples used for the calculation of cor1 and cor2
 diffcorr <- function(cor1, cor2, N1, N2){
-	Z1=0.5*log((1+cor1)/(1-cor1))
-	Z2=0.5*log((1+cor2)/(1-cor2))
-	p=1-pnorm(abs((Z1-Z2)/sqrt(1/(N1-3)+1/(N2-3))))
+	Z1 = 0.5*log((1+cor1)/(1-cor1))
+	Z2 = 0.5*log((1+cor2)/(1-cor2))
+	p = 1 - pnorm(abs((Z1-Z2) / sqrt(1/(N1-3) + 1/(N2-3))))
 	return(p)
 }
 
@@ -64,7 +64,7 @@ logisticRegression = function(meta , disease, valid_measures , feature.cont, fea
 	for(m in valid_measures){
 		data = data.frame (disease, metabolite = log(meta[,m]), log(meta[,feature.cont]), fdisc)
 		model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit"), ...)
-		rst = rbind ( rst , summary(model)$coefficients[2,])
+		rst = rbind(rst , summary(model)$coefficients[2,])
 	}
 	rst = data.frame(rst, p.adjust(rst[,4], method = "BH"))
 	rownames(rst) = valid_measures
