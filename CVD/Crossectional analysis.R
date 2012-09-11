@@ -1,30 +1,30 @@
 # regression analysis
 #	model 1: basic model
-#	feature.cont = c("ltalteru", "ltalkkon" , "ltbmi")
-# 	feature.disc = c("lcsex")
+	feature.cont = c("ltalteru", "ltalkkon" , "ltbmi")
+ 	feature.disc = c("lcsex")
 #	model 2: full model
-#	feature.cont = 
-#	feature.disc = c("lcsex")
+	feature.cont = 
+	feature.disc = c("lcsex")
 #	model 3: Estimated clinical model
 #	Hypertension:
-#	feature.cont = c("ltalteru","ll_hgb", "ll_trin", "ltbmi" , "lcsex" , "lh_crp", "ll_hdln") 
-#	feature.disc = c("lcsex")
+	feature.cont = c("ltalteru","ll_hgb", "ll_trin", "ltbmi" , "lcsex" , "lh_crp", "ll_hdln") 
+	feature.disc = c("lcsex")
 #	Stroke: 
-#	feature.cont = c("ltalteru" , "lh_crp" , "ll_choln" )
-#	feature.disc = c("lcsex")
+	feature.cont = c("ltalteru" , "lh_crp" , "ll_choln" )
+	feature.disc = c("lcsex")
 #	Myocardial infarction: 
-#	feature.cont = c("ll_choln" , "ll_ldln" , "lthumf" )
-#	feature.disc = c("lcsex")
+	feature.cont = c("ll_choln" , "ll_ldln" , "lthumf" )
+	feature.disc = c("lcsex")
 #	Heart failure
-#	feature.cont = c("ltalteru"	, "ll_choln" , "ll_hdln" , "ll_trin" , "lthumf" , "lttumf" , "ltalkkon" , "ll_hgb")
-#	feature.disc = c("lcsex")
+	feature.cont = c("ltalteru"	, "ll_choln" , "ll_hdln" , "ll_trin" , "lthumf" , "lttumf" , "ltalkkon" , "ll_hgb")
+	feature.disc = c("lcsex")
 #	model 4: CVD scoring system
 #	Framingham Heart Study:
-#	feature.cont = c("ltalteru", "ll_hdln" , "ll_choln" , "ltsysmm")
-#	feature.disc = c("lcsex" , "lp_diab_who06")
+	feature.cont = c("ltalteru", "ll_hdln" , "ll_choln" , "ltsysmm")
+	feature.disc = c("lcsex" , "lp_diab_who06")
 #	The SCORE project:
-#	feature.cont = c("ltalteru", "ltsysmm" , "ltotal2HDL")
-#	feature.disc = c("lcsex")
+	feature.cont = c("ltalteru", "ltsysmm" , "ltotal2HDL")
+	feature.disc = c("lcsex")
 # Author: tao.xu
 ###############################################################################
 
@@ -149,3 +149,46 @@ substr(feature.cont, 1, 2) <- "u"
 substr(feature.disc, 1, 2) <- "u"
 rst = logisticRegression(F4, F4$CVD, F4_valid_measures, feature.cont, feature.disc)
 write.csv(rst, file = "CVD combined_Model SCORE_F4.csv")
+
+
+#################	Ratio analysis
+concen2ratio = function(data){
+	
+	rst = NULL
+	
+	for(i in 1:dim(data)[2]){
+		tmp =  t(apply(data, 1, function(x) x[i]/x[-i]))
+		colnames(tmp) = paste(colnames(data)[i], colnames(data)[-i], sep = ".")
+		rst = cbind(rst, tmp)
+	
+	}
+	
+	return(rst)
+
+}
+
+substr(feature.cont, 1, 2) <- "l"
+substr(feature.disc, 1, 2) <- "l"
+S4_ratio = concen2ratio(S4[, S4_valid_measures[c(1:21)]])
+rst = logisticRegression(data.frame(S4 , S4_ratio), S4$lc044f_1, colnames(S4_ratio), feature.cont, feature.disc, metalog = FALSE)
+colnames(S4_ratio)[which(rst[,5]<0.05)]
+
+
+substr(feature.cont, 1, 2) <- "u"
+substr(feature.disc, 1, 2) <- "u"
+F4_ratio = concen2ratio(F4[, F4_valid_measures[c(1:23)]])
+rst = logisticRegression(data.frame(F4 , F4_ratio) , F4$us_c04a, colnames(F4_ratio), feature.cont, feature.disc, metalog = FALSE)
+colnames(F4_ratio)[which(rst[,5]<0.05)]
+
+
+
+
+
+
+
+
+
+
+
+
+

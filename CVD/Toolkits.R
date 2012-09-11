@@ -55,15 +55,24 @@ diffcorr <- function(cor1, cor2, N1, N2){
 #}
 
 # regression analysis
-logisticRegression = function(meta , disease, valid_measures , feature.cont, feature.disc, ...){
+logisticRegression = function(meta , disease, valid_measures , feature.cont, feature.disc, metalog = TRUE, ...){
 	rst = NULL 
-	fdisc = NULL
+	fdisc = NULL; fcont = NULL
 	for (f in feature.disc){
 		fdisc = cbind(fdisc, as.factor(meta[,f]))
 	}
 	for(m in valid_measures){
-		data = data.frame (disease, metabolite = log(meta[,m]), log(meta[,feature.cont]), fdisc)
-		model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit"), ...)
+		if(metalog) { 
+			metabolite = log(meta[,m])
+			fcont = log(meta[ , feature.cont])
+		}
+		else { 
+			metabolite = meta[,m]
+			fcont = meta[ , feature.cont]
+		}
+		data = data.frame (disease, metabolite , fcont, fdisc)
+		data = na.omit(data)
+		model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit"), na.action = na.omit , ...)
 		rst = rbind(rst , summary(model)$coefficients[2,])
 	}
 	rst = data.frame(rst, p.adjust(rst[,4], method = "BH"))
