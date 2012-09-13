@@ -104,22 +104,23 @@ table(tmps4 = S4[Cohort$zz_nr_s4, "ltschl"], tmpf4 = F4[Cohort$zz_nr_f4, "utschl
 table(tmps4 = S4[Cohort$zz_nr_s4, "ltmi"], tmpf4 = F4[Cohort$zz_nr_f4, "utmi"])
 table(tmps4 = S4[Cohort$zz_nr_s4, "lc044f_1"], tmpf4 = F4[Cohort$zz_nr_f4, "us_c04a"])
 
-Comparison.prosective<- function(baseline, feature, metabo, adj, subset){
+Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
 #	baseline	---		data frame of variables at baseline 
 #	feature		---		list or matrix indicating the disease state in at different time points
 #	metabo		---		names of metabolites
 #
+	rst = NULL
+	
 	for(i in 1:length(metabo)){
 		
-		data = data.frame(log(baseline[, metabo[i]]),
-				basline[,adj], feature)
+		data = data.frame(log(baseline[, metabo[i]]), baseline[,adj])
 		
-		model = glm(interaction(feature[,1], feature[,2]) ~ . , subset, data, family = binomial(link = "logit"))
+		model = glm(interaction(feature[,1], feature[,2]) ~ . , data = data, subset = subset,  family = binomial(link = "logit"))
 		
 		rst = rbind(rst, summary(model)$coefficients[2, ])
 	
 	}
-	
+	print(dim(rst)); print(i)
 	rownames(rst) = metabo
 	
 	return (rst)
@@ -128,14 +129,15 @@ Comparison.prosective<- function(baseline, feature, metabo, adj, subset){
 
 
 
-for(i in 1:4){
+for(i in 2:4){
 	
 	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
 	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
 	feature = data.frame(tmps4, tmpf4)
 	subset = intersect (which(feature[,1] == 2), which(feature[,2] !=3 ))
-	rst = Comparison.prospective(S4[], feature, metabo = S4_valid_measures, subset = subset, adj = model_1)
-	
+	rst = Comparison.prospective(S4[ Cohort$zz_nr_s4, ], feature, metabo = S4_valid_measures, subset = subset, adj = model3[[i]])
+	write.csv(rst, file = paste(names(diseases.f4)[i], "prospective at S4 baseline_model3.csv"))
+}	
 #	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
 #	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
 ##	pheno = interaction(tmps4, tmpf4)
@@ -157,7 +159,7 @@ for(i in 1:4){
 #			2,
 #			function(x) tapply(x, INDEX = interaction(tmps4, tmpf4), mean)
 #	)
-}
+
 
 
 
