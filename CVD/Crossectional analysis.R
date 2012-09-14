@@ -25,6 +25,9 @@
 #	The SCORE project:
 	feature.cont = c("ltalteru", "ltsysmm" , "ltotal2HDL")
 	feature.disc = c("lcsex")
+# 	Hypertension:
+	feature.cont = c("ltbmi", "ltalteru", "ltalkkon", "lttumf", "waist2hip")
+	feature.disc = c("ltrauchp", "lcsex")
 # Author: tao.xu
 ###############################################################################
 
@@ -46,24 +49,23 @@ smodel = step(model, trace = 0)
 
 rst = NULL
 for (m in S4_valid_measures){
-	data = data.frame (disease = as.factor(S4[,diseases[1]]), metabolite = log(S4[,m]), S4[,feature.cont], as.factor(S4[,feature.disc]))
+	data = data.frame (disease = as.factor(S4[,diseases.s4[1]]), metabolite = S4[,m], S4[,feature.cont], apply(S4[,feature.disc], 2, function(x) as.factor(x)))
 	model = lm( metabolite ~ ., data = data)
 	rst = rbind ( rst , summary(model)$coefficients[2:4,4] )
 }
 rst = data.frame(rst, dis1_FDR = p.adjust(rst[,1], method = "BH"), dis2_FDR = p.adjust(rst[,2], method = "BH"), dis3_FDR = p.adjust(rst[,3], method = "BH"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = paste( names(diseases)[1], "categorical model_3 S4.csv", sep = " "))
+write.csv(rst, file = paste( names(diseases.s4)[1], "categorical model_4 S4.csv", sep = " "))
 
 rst = NULL
 for (m in S4_valid_measures){
-	data = data.frame (disease = S4[,diseases[1]], metabolite = log(S4[,m]), S4[,feature.cont], as.factor(S4[,feature.disc]))
+	data = data.frame (disease = S4[,diseases.s4[1]], metabolite = log(S4[,m]), S4[,feature.cont], apply(S4[,feature.disc], 2, function(x) as.factor(x)))
 	model = lm( metabolite ~ ., data = data)
 	rst = rbind ( rst , summary(model)$coefficients[2,] )
 }
 rst = data.frame(rst, p.adjust(rst[,4], method = "BH"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = paste( names(diseases)[1], "model_3 S4.csv", sep = " "))
-
+write.csv(rst, file = paste( names(diseases.s4)[1], "model_3 S4.csv", sep = " "))
 
 for(i in 4:4){
 	rst = NULL
@@ -78,12 +80,12 @@ for(i in 4:4){
 	write.csv(rst, file = paste( names(diseases)[i], "model_3 S4.csv", sep = " " ))
 }	
 
-
 rst = NULL
 for(m in S4_valid_measures){
 	data = data.frame (disease = S4[,diseases[3]], S4[,m], S4[,feature.cont], apply(S4[,feature.disc], 2, function(x) as.factor(x)))
 	
 	model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit"), subset = which(data$disease!=3), na.action = na.exclude)
+	
 	rst = rbind ( rst , summary(model)$coefficients[2,] )
 }
 
@@ -92,50 +94,49 @@ for(m in S4_valid_measures){
 # Hypertension
 rst = NULL
 for (m in F4_valid_measures){
-	data = data.frame (disease = as.factor(F4[,diseases[1]]), metabolite = log(F4[,m]), F4[,feature.cont], as.factor(F4[,feature.disc]))
+	data = data.frame (disease = as.factor(F4[,diseases.f4[1]]), metabolite = F4[,m], F4[,feature.cont], apply(F4[,feature.disc], 2, function(x) as.factor(x)))
 	model = lm( metabolite ~ ., data = data)
 	rst = rbind ( rst , summary(model)$coefficients[2:4,4] )
 }
 rst = data.frame(rst, dis1_FDR = p.adjust(rst[,1], method = "BH"), dis2_FDR = p.adjust(rst[,2], method = "BH"), dis3_FDR = p.adjust(rst[,3], method = "BH"))
 rownames(rst) = F4_valid_measures
-write.csv(rst, file = paste( names(diseases)[1], "categorical model_3 F4.csv", sep = " "))
+write.csv(rst, file = paste( names(diseases.f4)[1], "categorical model_4 F4.csv", sep = " "))
 
 rst = NULL
 for (m in F4_valid_measures){
-	data = data.frame (disease = F4[,diseases[1]], metabolite = log(F4[,m]), F4[,feature.cont], as.factor(F4[,feature.disc]))
+	data = data.frame (disease = F4[,diseases.f4[1]], metabolite = log(F4[,m]), F4[,feature.cont], apply(F4[,feature.disc], 2, function(x) as.factor(x)))
 	model = lm( metabolite ~ ., data = data)
 	rst = rbind ( rst , summary(model)$coefficients[2,] )
 }
 rst = data.frame(rst, p.adjust(rst[,4], method = "BH"))
 rownames(rst) = F4_valid_measures
-write.csv(rst, file = paste( names(diseases)[1], "model_3 F4.csv", sep = " "))
+write.csv(rst, file = paste( names(diseases.f4)[1], "model_4 F4.csv", sep = " "))
 
 # stroke, myocardio infarction, heart failure
 for(i in 4:4){
 	rst = NULL
 	for(m in F4_valid_measures){
-		data = data.frame (disease = F4[,diseases[i]], metabolite = log(F4[,m]), F4[,feature.cont], as.factor(F4[,feature.disc]))
+		data = data.frame (disease = F4[,diseases.f4[i]], metabolite = log(F4[,m]), F4[,feature.cont], as.factor(F4[,feature.disc]))
 		
 		model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit"), subset = which(data$disease!=3))
 		rst = rbind ( rst , summary(model)$coefficients[2,] )
 	}
 	rst = data.frame(rst, p.adjust(rst[,4], method = "BH"))
 	rownames(rst) = F4_valid_measures
-	write.csv(rst, file = paste( names(diseases)[i], "model_3 F4.csv", sep = " " ))
+	write.csv(rst, file = paste( names(diseases.f4)[i], "model_3 F4.csv", sep = " " ))
 }	
 
-
 ################# Combining three cardiovascular diseases () together
-tmp = (S4[,diseases[2:4]])
+tmp = (S4[,diseases.s4[2:4]])
 D = apply(tmp, 1, function(x) sum(x==1))
 table(D)
 S4$CVD =  apply(tmp, 1, function(x) sum(x==1, na.rm = T))!=0
 
-tmp = (F4[,diseases[2:4]])
+tmp = (F4[,diseases.s4[2:4]])
 table(apply(tmp, 1, function(x) sum(x==1)))
 F4$CVD = apply(tmp, 1, function(x) sum(x ==1, na.rm = T)!=0)
 
-tmp = (S4[,diseases[2:4]])
+tmp = (S4[,diseases.s4[2:4]])
 table(apply(tmp, 1, function(x) sum(x==1)))
 
 #	regression analysis of S4]

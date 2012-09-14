@@ -55,7 +55,8 @@ diffcorr <- function(cor1, cor2, N1, N2){
 #}
 
 # regression analysis
-logisticRegression = function(meta , disease, valid_measures , feature.cont, feature.disc, metalog = TRUE, ...){
+logisticRegression = function(meta , disease, valid_measures , feature.cont, feature.disc, metalog = TRUE, ...)
+{
 	rst = NULL 
 	fdisc = NULL; fcont = NULL
 	for (f in feature.disc){

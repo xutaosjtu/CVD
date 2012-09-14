@@ -137,7 +137,8 @@ for(i in 2:4){
 	subset = intersect (which(feature[,1] == 2), which(feature[,2] !=3 ))
 	rst = Comparison.prospective(S4[ Cohort$zz_nr_s4, ], feature, metabo = S4_valid_measures, subset = subset, adj = model3[[i]])
 	write.csv(rst, file = paste(names(diseases.f4)[i], "prospective at S4 baseline_model3.csv"))
-}	
+}
+
 #	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
 #	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
 ##	pheno = interaction(tmps4, tmpf4)
@@ -162,6 +163,32 @@ for(i in 2:4){
 
 
 
+require(nlme)
+
+valid_measures = intersect(S4_valid_measures, F4_valid_measures)
+participants=rep(1:1009,2)
+
+rst=NULL
+for(i in valid_measures){
+
+	data=data.frame(m = c(S4[ Cohort$zz_nr_s4, i], F4[ Cohort$zz_nr_f4, i]),
+			participants, 
+			disease =  as.factor(c(S4[ Cohort$zz_nr_s4, "ltjnc7"], F4[ Cohort$zz_nr_f4, "utjnc7"])),
+			
+			rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.cont.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.cont.f4])),
+			
+			apply(rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.disc.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.disc.f4])), 2, function(x) as.factor(x))
+			
+	)
+	mixed.dum <- lme( m ~ participants + disease + ltbmi + ltalteru + ltalkkon + lttumf + waist2hip + ltrauchp + lcsex , random = ~  1 | participants, na.action=na.exclude,
+			data=data)
+	rst = rbind(rst, summary(mixed.dum)$tTable[5,])
+}
+rst=data.frame(rst,
+		fdr=p.adjust(rst[, 5], method="fdr"),
+		bonf=p.adjust(rst[, 5], method="bonferroni")
+)
+rownames( rst )=valid_measures
 
 
 
