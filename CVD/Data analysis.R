@@ -136,17 +136,28 @@ H = data.frame( s4.hf = S4[as.character(Cohort[,1]), "lc044f_1"], f4.hf = F4[as.
 S = data.frame ( S4 = S4 [as.character(Cohort[,1]),"ltjnc7"], F4 = F4[as.character(Cohort[,2]),"utjnc7"])
 remove(H); remove(S)
 
+
+tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
+tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
+feature = data.frame(tmps4, tmpf4)
+subset = intersect (which(feature[,1] == 2), which(feature[,2] !=3 ))
 #S4
-for(i in 1:length(diseases)){
-	chars = apply(S4[as.character(Cohort[,1]),feature.cont], 2, function(x) tapply(x, INDEX = as.factor(S4[as.character(Cohort[,1]), diseases[i]]), mean, na.rm= T))
-	write.csv(t(chars), file = paste(names(diseases)[i],"S4 prospective.csv", sep = " "))
+for(i in 2:length(diseases.s4)){
+	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
+	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
+	feature = data.frame(tmps4, tmpf4)
+	subset = intersect (which(feature[,1] == 2), which(feature[,2] !=3 ))
+	chars = apply(S4[Cohort$zz_nr_s4[subset],feature.cont], 2, function(x) tapply(x, INDEX = as.factor(F4[Cohort$zz_nr_f4[subset], diseases.f4[i]]), mean, na.rm= T))
+	write.csv(t(chars), file = paste(names(diseases.s4)[i],"S4 prospective.csv", sep = " "))
 }
 for(i in 1:4){
 	print(diseases[i])
 	print(tapply(S4[as.character(Cohort[,1]),"ltrauchp"], INDEX = as.factor( S4 [as.character(Cohort[,1]), diseases[i]]), function(x) length(which(x == 0)) ))
 }
 
+
 #F4
+
 for(i in 1:length(diseases)){
 	chars = apply(F4[as.character(Cohort[,2]),feature.cont], 2, function(x) tapply(x, INDEX = as.factor(F4[as.character(Cohort[,2]), diseases[i]]), mean, na.rm= T))
 	write.csv(t(chars), file = paste(names(diseases)[i],"F4 prospective.csv", sep = " "))

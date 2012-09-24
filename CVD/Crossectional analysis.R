@@ -151,7 +151,6 @@ substr(feature.disc, 1, 2) <- "u"
 rst = logisticRegression(F4, F4$CVD, F4_valid_measures, feature.cont, feature.disc)
 write.csv(rst, file = "CVD combined_Model SCORE_F4.csv")
 
-
 #################	Ratio analysis
 concen2ratio = function(data){
 	
