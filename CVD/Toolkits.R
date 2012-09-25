@@ -12,9 +12,24 @@
 #		write.csv(t(chars), file = paste(names(diseases)[i],".csv", sep = ""))
 #	}
 #}
+#testfun = function(x, index, FUN){
+# 	tapply(x, INDEX = index, FUN)
+#}
+
+
+characteristics = function(data , factor, FUN, ...)
+{
+	chars = apply(
+			data, 2, 
+			function(x) 
+				tapply(x, INDEX = factor, FUN, ...)
+	)
+}
+
 
 # partial correlation calculation
-cor.partial <- function(data, variables, ...){
+cor.partial <- function(data, variables, ...)
+{
 	P = cor( data[,variables], ... )
 	P.invers = solve( P )
 	P.diag = diag( P.invers )
@@ -23,7 +38,8 @@ cor.partial <- function(data, variables, ...){
 }
 
 #correlation matrix to linkage pairs
-cor2link = function(Zeta, threshold){
+cor2link = function(Zeta, threshold)
+{
 	links = NULL;
 	for(i in 1:(dim(Zeta)[1]-1)){
 		for(j in (i+1):dim(Zeta)[1]){
@@ -42,7 +58,8 @@ cor2link = function(Zeta, threshold){
 #	Description of parameters:
 #	cor1, cor2: two pearson correlation values
 #	N1, N2: the number of samples used for the calculation of cor1 and cor2
-diffcorr <- function(cor1, cor2, N1, N2){
+diffcorr <- function(cor1, cor2, N1, N2)
+{
 	Z1 = 0.5*log((1+cor1)/(1-cor1))
 	Z2 = 0.5*log((1+cor2)/(1-cor2))
 	p = 1 - pnorm(abs((Z1-Z2) / sqrt(1/(N1-3) + 1/(N2-3))))
@@ -80,4 +97,6 @@ logisticRegression = function(meta , disease, valid_measures , feature.cont, fea
 	rownames(rst) = valid_measures
 	return(rst)
 }
+
+
 
