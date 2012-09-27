@@ -36,7 +36,7 @@ tmps4 = as.factor(S4[Cohort$zz_nr_s4, diseases.s4[i]])
 tmpf4 = as.factor(F4[Cohort$zz_nr_f4, diseases.f4[i]])
 f = interaction(tmpf4, tmps4)
 
-CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = f %in% c("2.1", "2.2"), data)
+CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = which(f %in% c("2.1", "2.2")), data)
 
 
 #index = which(F4[as.character(Cohort$zz_nr_f4),"CVD"])
