@@ -17,13 +17,19 @@
 #}
 
 
-characteristics = function(data , factor, FUN, ...)
+characteristics = function(data , factor, d, ...)
 {
 	chars = apply(
 			data, 2, 
-			function(x) 
-				tapply(x, INDEX = factor, FUN, ...)
+			function(x) {
+				m = tapply(x, INDEX = factor, mean, ...)
+				s = tapply(x, INDEX = factor, sd, ...)
+				m = round(m , digits = d)
+				s = round(s, digits = d)
+				return(paste(m, " (", s, ")", sep = ""))
+			}
 	)
+	return(chars)
 }
 
 

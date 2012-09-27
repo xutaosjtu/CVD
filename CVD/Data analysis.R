@@ -136,21 +136,29 @@ H = data.frame( s4.hf = S4[as.character(Cohort[,1]), "lc044f_1"], f4.hf = F4[as.
 S = data.frame ( S4 = S4 [as.character(Cohort[,1]),"ltjnc7"], F4 = F4[as.character(Cohort[,2]),"utjnc7"])
 remove(H); remove(S)
 
-
+######################	population characteristics of prospective data	#####################
 #S4
+source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
 for(i in 1:length(diseases.s4)){
 	
 	tmps4 = as.factor(S4[Cohort$zz_nr_s4, diseases.s4[i]])
 	tmpf4 = as.factor(F4[Cohort$zz_nr_f4, diseases.f4[i]])
 	
-	chars = apply(
-			S4[Cohort$zz_nr_s4,feature.cont], 2, 
-			function(x) 
-				tapply(x, INDEX = interaction(tmpf4, tmps4), mean, na.rm= T)
-	)
-	
-	write.csv(t(chars), file = paste(names(diseases.s4)[i],"S4 prospective.csv", sep = " "))
+	characteristics(S4[Cohort$zz_nr_s4, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+#	chars = apply(
+#			S4[Cohort$zz_nr_s4,feature.cont], 2, 
+#			function(x) {
+#				m = tapply(x, INDEX = interaction(tmpf4, tmps4), mean, na.rm = T)
+#				s = tapply(x, INDEX = interaction(tmpf4, tmps4), sd, na.rm = T)
+#				m = round(m, digits = 1)
+#				s = round(s, digits = 1)
+#				return(paste(m, "(", s, ")", sep = ""))
+#			} 
+#	)
+	write.csv(t(chars), file = paste(names(diseases.s4)[i],"SD S4 prospective.csv", sep = " "))
 }
+
+
 
 for(i in 1:3){
 	print(diseases[i])
