@@ -31,39 +31,46 @@ medication<-function(index){
 index = which(S4[as.character(Cohort$zz_nr_s4),"ltjnc7"]<2&F4[as.character(Cohort$zz_nr_f4),"utjnc7"]>2)
 
 
-###	new developped CVDs
-index = which(F4[as.character(Cohort$zz_nr_f4),"CVD"])
-data.newCVD = data.frame(S4[as.character(Cohort$zz_nr_s4)[index], c("CVD", "ltalteru") ] , F4[as.character(Cohort$zz_nr_f4)[index],c("CVD","utmialt","utschalt","utalter")])
-write.csv(data.newCVD, file = "newly developped CVDs.csv")
+###	new developped Myocardial Infarction
+tmps4 = as.factor(S4[Cohort$zz_nr_s4, diseases.s4[i]])
+tmpf4 = as.factor(F4[Cohort$zz_nr_f4, diseases.f4[i]])
+f = interaction(tmpf4, tmps4)
 
-index2 = which(S4[as.character(Cohort$zz_nr_s4),"CVD"])
-data.newCVD = data.frame(S4[as.character(Cohort$zz_nr_s4)[index2], c("CVD", "ltalteru") ] , F4[as.character(Cohort$zz_nr_f4)[index2],c("CVD","utmialt","utschalt","utalter")])
-write.csv(data.newCVD, file = "CVDs in S4.csv")
+CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = f %in% c("2.1", "2.2"), data)
 
-table(F4[as.character(Cohort$zz_nr_f4)[-c(index, index2)],"CVD"])
-table(S4[as.character(Cohort$zz_nr_s4)[-c(index, index2)],"CVD"])
 
-# assessing the biomarkers for prediction of CVD (on 26 cases!!!) 
-index = which(!(S4[as.character(Cohort$zz_nr_s4),"CVD"]))
-substr(feature.cont, 1, 2) <- "l"
-substr(feature.disc, 1, 2) <- "l"
-rst = NULL;
-for (m in S4_valid_measures){
-	data = data.frame(
-			CVD = F4[as.character(Cohort$zz_nr_f4), "CVD"],
-			
-			CVDS4 = S4[as.character(Cohort$zz_nr_s4), "CVD"], 
-			
-			S4[as.character(Cohort$zz_nr_s4), m],
-			
-			S4[as.character(Cohort$zz_nr_s4),feature.cont],
-			
-			S4[as.character(Cohort$zz_nr_s4),feature.disc], 
-			
-			t_time = apply(F4[as.character(Cohort$zz_nr_f4), c("utmialt","utschalt", "utalteru")], 1, min, na.rm = T)-S4[as.character(Cohort$zz_nr_s4),"ltalteru"]
-	)
-	
-	data = na.omit(data)
+#index = which(F4[as.character(Cohort$zz_nr_f4),"CVD"])
+#data.newCVD = data.frame(S4[as.character(Cohort$zz_nr_s4)[index], c("CVD", "ltalteru") ] , F4[as.character(Cohort$zz_nr_f4)[index],c("CVD","utmialt","utschalt","utalter")])
+#write.csv(data.newCVD, file = "newly developped CVDs.csv")
+#
+#index2 = which(S4[as.character(Cohort$zz_nr_s4),"CVD"])
+#data.newCVD = data.frame(S4[as.character(Cohort$zz_nr_s4)[index2], c("CVD", "ltalteru") ] , F4[as.character(Cohort$zz_nr_f4)[index2],c("CVD","utmialt","utschalt","utalter")])
+#write.csv(data.newCVD, file = "CVDs in S4.csv")
+#
+#table(F4[as.character(Cohort$zz_nr_f4)[-c(index, index2)],"CVD"])
+#table(S4[as.character(Cohort$zz_nr_s4)[-c(index, index2)],"CVD"])
+#
+## assessing the biomarkers for prediction of CVD (on 26 cases!!!) 
+#index = which(!(S4[as.character(Cohort$zz_nr_s4),"CVD"]))
+#substr(feature.cont, 1, 2) <- "l"
+#substr(feature.disc, 1, 2) <- "l"
+#rst = NULL;
+#for (m in S4_valid_measures){
+#	data = data.frame(
+#			CVD = F4[as.character(Cohort$zz_nr_f4), "CVD"],
+#			
+#			CVDS4 = S4[as.character(Cohort$zz_nr_s4), "CVD"], 
+#			
+#			S4[as.character(Cohort$zz_nr_s4), m],
+#			
+#			S4[as.character(Cohort$zz_nr_s4),feature.cont],
+#			
+#			S4[as.character(Cohort$zz_nr_s4),feature.disc], 
+#			
+#			t_time = apply(F4[as.character(Cohort$zz_nr_f4), c("utmialt","utschalt", "utalteru")], 1, min, na.rm = T)-S4[as.character(Cohort$zz_nr_s4),"ltalteru"]
+#	)
+#	
+#	data = na.omit(data)
 	
 	index = which(!data$CVDS4 & data$t_time>0)
 	
