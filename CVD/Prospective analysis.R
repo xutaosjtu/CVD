@@ -168,20 +168,20 @@ require(nlme)
 valid_measures = intersect(S4_valid_measures, F4_valid_measures)
 participants=rep(1:1009,2)
 
+data=data.frame(
+		participants, 
+		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "ltjnc7"], F4[Cohort$zz_nr_f4, "utjnc7"])),
+		rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.cont.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.cont.f4])),
+		apply(rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.disc.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.disc.f4])), 2, function(x) as.factor(x))
+)
+
 rst=NULL
 for(i in valid_measures){
 
-	data=data.frame(m = c(S4[ Cohort$zz_nr_s4, i], F4[ Cohort$zz_nr_f4, i]),
-			participants, 
-			disease =  as.factor(c(S4[ Cohort$zz_nr_s4, "ltjnc7"], F4[ Cohort$zz_nr_f4, "utjnc7"])),
-			
-			rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.cont.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.cont.f4])),
-			
-			apply(rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.disc.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.disc.f4])), 2, function(x) as.factor(x))
-			
-	)
-	mixed.dum <- lme( m ~ participants + disease + ltbmi + ltalteru + ltalkkon + lttumf + waist2hip + ltrauchp + lcsex , random = ~  1 | participants, na.action=na.exclude,
-			data=data)
+	m = c(S4[Cohort$zz_nr_s4, i], F4[Cohort$zz_nr_f4, i])
+	
+	mixed.dum <- lme( m ~  ltsysmm + ltbmi + ltalteru + ltalkkon + lttumf + waist2hip + ltrauchp + lcsex , random = ~  1 | participants, na.action=na.exclude, data=data)
+	
 	rst = rbind(rst, summary(mixed.dum)$tTable[5,])
 }
 rst=data.frame(rst,
