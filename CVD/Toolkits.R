@@ -104,5 +104,27 @@ logisticRegression = function(meta , disease, valid_measures , feature.cont, fea
 	return(rst)
 }
 
-
+#########	longitudinal analysis using logistic regression	################
+Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
+#	baseline	---		data frame of variables at baseline 
+#	feature		---		list or matrix indicating the disease state in at different time points
+#	metabo		---		names of metabolites
+#
+	rst = NULL
+	
+	for(i in 1:length(metabo)){
+		
+		data = data.frame(log(baseline[, metabo[i]]), baseline[,adj])
+		
+		model = glm(interaction(feature[,1], feature[,2]) ~ . , data = data, subset = subset,  family = binomial(link = "logit"))
+		
+		rst = rbind(rst, summary(model)$coefficients[2, ])
+		
+	}
+	print(dim(rst)); print(i)
+	rownames(rst) = metabo
+	
+	return (rst)
+	
+}
 
