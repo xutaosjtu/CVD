@@ -72,15 +72,15 @@ CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) +
 #	
 #	data = na.omit(data)
 	
-	index = which(!data$CVDS4 & data$t_time>0)
-	
-	colnames(data) = c("CVD" , "CVDS4" , "metabolite", "ltalteru" , "ltsysmm" , "ll_hdln" , "ll_choln" , "lp_diab_who06" , "lcsex" , "t_time")
-	
-	CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = index , data)
-	
-	rst = rbind(rst , summary(CVD.cox)$coefficients[1,])
-}
-rownames(rst) = S4_valid_measures
+#	index = which(!data$CVDS4 & data$t_time>0)
+#	
+#	colnames(data) = c("CVD" , "CVDS4" , "metabolite", "ltalteru" , "ltsysmm" , "ll_hdln" , "ll_choln" , "lp_diab_who06" , "lcsex" , "t_time")
+#	
+#	CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = index , data)
+#	
+#	rst = rbind(rst , summary(CVD.cox)$coefficients[1,])
+#}
+#rownames(rst) = S4_valid_measures
 
 
 ###############################separate CVDs#######################################
@@ -110,29 +110,6 @@ table(tmps4 = S4[Cohort$zz_nr_s4, "ltjnc7"], tmpf4 = F4[Cohort$zz_nr_f4, "utjnc7
 table(tmps4 = S4[Cohort$zz_nr_s4, "ltschl"], tmpf4 = F4[Cohort$zz_nr_f4, "utschl"], useNA = "always")
 table(tmps4 = S4[Cohort$zz_nr_s4, "ltmi"], tmpf4 = F4[Cohort$zz_nr_f4, "utmi"])
 table(tmps4 = S4[Cohort$zz_nr_s4, "lc044f_1"], tmpf4 = F4[Cohort$zz_nr_f4, "us_c04a"])
-
-Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
-#	baseline	---		data frame of variables at baseline 
-#	feature		---		list or matrix indicating the disease state in at different time points
-#	metabo		---		names of metabolites
-#
-	rst = NULL
-	
-	for(i in 1:length(metabo)){
-		
-		data = data.frame(log(baseline[, metabo[i]]), baseline[,adj])
-		
-		model = glm(interaction(feature[,1], feature[,2]) ~ . , data = data, subset = subset,  family = binomial(link = "logit"))
-		
-		rst = rbind(rst, summary(model)$coefficients[2, ])
-	
-	}
-	print(dim(rst)); print(i)
-	rownames(rst) = metabo
-	
-	return (rst)
-
-}
 
 
 
@@ -169,7 +146,7 @@ for(i in 2:4){
 #	)
 
 
-
+###########################	Stroke	########################################
 require(nlme)
 
 valid_measures = intersect(S4_valid_measures, F4_valid_measures)
@@ -197,11 +174,21 @@ rst=data.frame(rst,
 )
 rownames( rst )=valid_measures
 
+###################	Myocardial vascualr disease ##############################
+require(survival)
+rst = NULL;
+for (m in S4_valid_measures){
+	metabolite = S4[, m]
+	MI.cox = coxph(Surv(mi_time, S4$inz_mi) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = which(S4$prev_mi == 0) , S4)
+	rst = rbind(rst, summary(MI.cox)$coefficients[1,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rownames(rst) = S4_valid_measures
+write.csv(rst, file = "MI survival analysis.csv")
 
+plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
-
-
-
+tapply()
 
 
 
