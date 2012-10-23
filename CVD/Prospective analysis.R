@@ -313,8 +313,8 @@ train = subset
 
 Models <- list(
 		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:2, 12:20)]),
-		"Cox.clinical" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:11)]),
-		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[train, ])
+		"Cox.clinical" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:10)]),
+		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[train, -11])
 )
 
 f = as.formula(paste("Surv(time, event)", paste(colnames(tmp)[-c(1:2)], collapse = "+"), sep = "~"))
@@ -338,23 +338,30 @@ survival.all = survivalROC.C(
 		span = 0.25*nobs^(-0.20)
 		)
 
+		
+		
 Surv.rsp <- Surv(tmp$time[train], tmp$event[train])
 Surv.rsp.new <- Surv(tmp$time[test], tmp$event[test])
 
 lpnew = predict(Models$Cox.all, newdata = tmp[test,-c(1:2)])
 lp = predict(Models$Cox.all)
-times = seq(2000,3700, 100)
+times = seq(0,3700, 100)
 AUC_sh.all = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
-plot(AUC_sh.all,ylim = c(0.6, 0.8))
-
+plot(AUC_sh.all, ylim = c(0.5, 1.0))
+#,ylim = c(0.6, 0.8)
 lpnew = predict(Models$Cox.clinical, newdata = tmp[test,-c(1:2)])
 lp = predict(Models$Cox.clinical)
-times = seq(2000,3700, 100)
+times = seq(0,3700, 100)
 AUC_sh.clinical = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
 plot(AUC_sh.clinical, add = T, col = "green")
 
 lpnew = predict(Models$Cox.metabolites, newdata = tmp[test,-c(1:2)])
 lp = predict(Models$Cox.metabolites)
-times = seq(2000,3700, 100)
+times = seq(0,3700, 100)
 AUC_sh.metabolites = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
 plot(AUC_sh.clinical, add = T, col = "black")
+
+#model comparison by likelihood ratio test
+pchisq(-2*(Models$Cox.all$loglik[2] - Models$Cox.clinical$loglik[2]), df=1) 
+#model comparison by likelihood ratio test (using anova)
+anova(Models$Cox.all, Models$Cox.clinical, Models$Cox.metabolites)
