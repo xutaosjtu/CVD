@@ -227,11 +227,11 @@ tmp = data.frame(
 		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model1
 		(S4$lp_diab_who06==4|S4$lp_diab_who06==5), ##model 2
 		log(S4$ltsysmm),log(S4$ll_hdln), log(S4$ll_choln), as.factor(S4$ltcigreg),##model 3
-		log(S4$total2HDL), ##model 4
+		##log(S4$total2HDL), ##model 4
 		##log(S4$ltdiamm), ##model 5
 		log(as.matrix(S4[, metabo.selected]))
 )
-colnames(tmp)[3:11] = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg", "total2HDL")
+colnames(tmp)[3:10] = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg")#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
 # find optimal penalty
@@ -266,7 +266,6 @@ PC_ae_C36_2
 PC_ae_C38_0
 PC_ae_C40_1
 
-
 #by boost in gbm which uses gradient descent method
 require(gbm) 
 MI.gbmboost = gbm(formula = y ~ .,
@@ -275,8 +274,51 @@ MI.gbmboost = gbm(formula = y ~ .,
 		)
 data = data.frame( S4$mi_time, S4$inz_mi, tmp)
 
-#### random survival forest
 
+##regularization based selection
+model.penal = penalized(
+		Surv(time, event)~., data = tmp[subset,c(1:2, 11:19)], 
+		standardize = T, ##centralize the covariates 
+		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
+		#positive = T, ## positive restriction to all regression coefficients
+		lambda1 = 2, lambda2= 0, #penalization parameter 
+		)
+plotpath(model.penal, log = "x")
+#plot(coefficients(model.penal,"all"),main = "lasso", col="red",xlab = "probes",ylab = "coefficients",type="l")##plot the coefficients
+
+require(globaltest)##pretesting by global test
+gt(Surv(tmp$time[subset], tmp$event[subset]), tmp[subset, c(11:19)])
+
+model.penal = cvl(
+		Surv(time, event)~., data = tmp[subset,c(1:2, 11:19)], 
+		standardize = T, ##centralize the covariates 
+		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
+		#positive = T, ## positive restriction to all regression coefficients
+		fold = model.penal$fold, ## k-fold cross-validation
+		lambda1 = 1, lambda2= 0#penalization parameter
+)
+
+model.penal = profL1(
+		Surv(time, event)~., data = tmp[subset, c(1:2, 11:19)],
+		fold = 10,
+		plot = T,
+		minl = 0.01, maxl = 20
+		)
+plot(model.penal$lambda, model.penal$cvl, type = "l", log = "x")
+plotpath(model.penal$fullfit, log = "x")
+
+model.penal.opt =optL1(
+		Surv(time, event)~., data = tmp[subset, c(1:2, 11:19)],
+		fold = model.penal$fold,
+		standardize = T
+		) 
+#ROC evaluation at each time point
+pred = prediction((1-survival(model.penal$predictions,3683)), tmp$event[subset])
+plot(performance(pred, "tpr", "fpr"))
+abline(0,1)
+
+
+coxph(Surv(time, event)~., data = tmp[subset, c(1:2, 11:18)])
 
 #### stepwise selection of cox regression
 selectCox <- function(formula, data, rule = "aic") {
@@ -312,9 +354,9 @@ train = setdiff(subset,test)
 train = subset
 
 Models <- list(
-		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:2, 12:20)]),
+		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:2, 11:19)]),
 		"Cox.clinical" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:10)]),
-		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[train, -11])
+		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[train, -c(17:19)])
 )
 
 f = as.formula(paste("Surv(time, event)", paste(colnames(tmp)[-c(1:2)], collapse = "+"), sep = "~"))
@@ -347,7 +389,7 @@ lpnew = predict(Models$Cox.all, newdata = tmp[test,-c(1:2)])
 lp = predict(Models$Cox.all)
 times = seq(0,3700, 100)
 AUC_sh.all = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
-plot(AUC_sh.all, ylim = c(0.5, 1.0))
+plot(AUC_sh.all, ylim = c(0.5, 1.0), add = T)
 #,ylim = c(0.6, 0.8)
 lpnew = predict(Models$Cox.clinical, newdata = tmp[test,-c(1:2)])
 lp = predict(Models$Cox.clinical)
