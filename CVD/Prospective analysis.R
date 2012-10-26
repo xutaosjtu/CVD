@@ -195,7 +195,7 @@ write.csv(rst, file = "MI survival analysis_model5.csv")
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
 ###variable selection by boosting method
-metabolites.asso = scan(what = character())
+metabo.asso = scan(what = character())
 C14_1
 C16_1
 Arg
@@ -221,104 +221,7 @@ PC_ae_C40_1
 SM_C24_1
 
 
-require(CoxBoost)
-tmp = data.frame(
-		time = S4$mi_time, event = S4$inz_mi,  # time and events
-		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model1
-		(S4$lp_diab_who06==4|S4$lp_diab_who06==5), ##model 2
-		log(S4$ltsysmm),log(S4$ll_hdln), log(S4$ll_choln), as.factor(S4$ltcigreg),##model 3
-		##log(S4$total2HDL), ##model 4
-		##log(S4$ltdiamm), ##model 5
-		log(as.matrix(S4[, metabo.selected]))
-)
-colnames(tmp)[3:10] = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg")#, "total2HDL"
-na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
-subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
-# find optimal penalty
-penalty.optimal = optimCoxBoostPenalty(
-		time = S4$mi_time[subset], 
-		status = S4$inz_mi[subset],
-		x = as.matrix(tmp[subset, 12:31]),
-		minstepno = 1, 
-		maxstepno = 100)
-# find optimal boosting steps
-booststeps.optimal = cv.CoxBoost(
-		time = S4$mi_time[subset],
-		status = S4$inz_mi[subset], 
-		x = log(as.matrix(S4[subset, c(metabolites.asso)])),  
-		type="verweij")
-#variable selection
-MI.metabocox = CoxBoost(
-		time = S4$mi_time[subset ], 
-		status = S4$inz_mi[subset ], 
-		x =  as.matrix(tmp[subset, 12:31]),
-		stepno = 89, 
-		penalty = 603)
-
-metabo.selected = scan(what = character())
-Arg
-Trp
-lysoPC_a_C17_0
-lysoPC_a_C18_2
-PC_aa_C28_1
-PC_aa_C32_2
-PC_ae_C36_2
-PC_ae_C38_0
-PC_ae_C40_1
-
-#by boost in gbm which uses gradient descent method
-require(gbm) 
-MI.gbmboost = gbm(formula = y ~ .,
-		distribution = "coxph",
-		data = as.data.frame(tmp[subset,])
-		)
-data = data.frame( S4$mi_time, S4$inz_mi, tmp)
-
-
-##regularization based selection
-model.penal = penalized(
-		Surv(time, event)~., data = tmp[subset,c(1:2, 11:19)], 
-		standardize = T, ##centralize the covariates 
-		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
-		#positive = T, ## positive restriction to all regression coefficients
-		lambda1 = 2, lambda2= 0, #penalization parameter 
-		)
-plotpath(model.penal, log = "x")
-#plot(coefficients(model.penal,"all"),main = "lasso", col="red",xlab = "probes",ylab = "coefficients",type="l")##plot the coefficients
-
-require(globaltest)##pretesting by global test
-gt(Surv(tmp$time[subset], tmp$event[subset]), tmp[subset, c(11:19)])
-
-model.penal = cvl(
-		Surv(time, event)~., data = tmp[subset,c(1:2, 11:19)], 
-		standardize = T, ##centralize the covariates 
-		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
-		#positive = T, ## positive restriction to all regression coefficients
-		fold = model.penal$fold, ## k-fold cross-validation
-		lambda1 = 1, lambda2= 0#penalization parameter
-)
-
-model.penal = profL1(
-		Surv(time, event)~., data = tmp[subset, c(1:2, 11:19)],
-		fold = 10,
-		plot = T,
-		minl = 0.01, maxl = 20
-		)
-plot(model.penal$lambda, model.penal$cvl, type = "l", log = "x")
-plotpath(model.penal$fullfit, log = "x")
-
-model.penal.opt =optL1(
-		Surv(time, event)~., data = tmp[subset, c(1:2, 11:19)],
-		fold = model.penal$fold,
-		standardize = T
-		) 
-#ROC evaluation at each time point
-pred = prediction((1-survival(model.penal$predictions,3683)), tmp$event[subset])
-plot(performance(pred, "tpr", "fpr"))
-abline(0,1)
-
-
-coxph(Surv(time, event)~., data = tmp[subset, c(1:2, 11:18)])
+clinical = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg")
 
 #### stepwise selection of cox regression
 selectCox <- function(formula, data, rule = "aic") {
