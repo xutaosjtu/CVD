@@ -40,6 +40,7 @@ cor.partial <- function(data, variables, ...)
 	P.invers = solve( P )
 	P.diag = diag( P.invers )
 	Z = - P.invers / sqrt(P.diag %*% t(P.diag))
+	diag(Z) = 1
 	return(Z)
 }
 
@@ -128,11 +129,24 @@ Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
 	
 }
 
+theta.fit <- function(x, y, ...) {
+	d = data.frame(y, x)
+	#print(colnames(d))
+	coxph(y ~  ., data=d)
+}
+theta.predict <- function(fit, x){
+	#if(is.null(dim(x))) x=t(x)
+	#dim(x)
+	#print(colnames(x))
+	value=predict(fit,newdata= as.data.frame(x) , type="risk")
+	return(value)
+}
+
 crossval.cox = function (x, y, theta.fit, theta.predict, ..., ngroup = n) 
 {
 	call <- match.call()
-	x <- as.matrix(x)
-	n <- length(y)/2
+	#x <- as.matrix(x)
+	n = dim(x)[1]
 	ngroup <- trunc(ngroup)
 	if (ngroup < 2) {
 		stop("ngroup should be greater than or equal to 2")
