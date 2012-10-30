@@ -147,10 +147,10 @@ remove(H); remove(S)
 source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
 for(i in 1:length(diseases.s4)){
 	
-	tmps4 = as.factor(S4[Cohort$zz_nr_s4, diseases.s4[i]])
-	tmpf4 = as.factor(F4[Cohort$zz_nr_f4, diseases.f4[i]])
+	tmps4 = as.factor(S4$prev_apo)
+	tmpf4 = as.factor(S4$inz_apo)
 	
-	characteristics(S4[Cohort$zz_nr_s4, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+	chars = characteristics(S4[, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
 #	chars = apply(
 #			S4[Cohort$zz_nr_s4,feature.cont], 2, 
 #			function(x) {
@@ -161,7 +161,7 @@ for(i in 1:length(diseases.s4)){
 #				return(paste(m, "(", s, ")", sep = ""))
 #			} 
 #	)
-	write.csv(t(chars), file = paste(names(diseases.s4)[i],"SD S4 prospective.csv", sep = " "))
+	write.csv(t(chars), file = "Stroke S4 prospective.csv")
 }
 
 
@@ -169,18 +169,19 @@ for(i in 1:length(diseases.s4)){
 for(i in 1:3){
 	print(diseases[i])
 
-	tmps4 = as.factor(S4[Cohort$zz_nr_s4, diseases.s4[i]])
-	tmpf4 = as.factor(F4[Cohort$zz_nr_f4, diseases.f4[i]])
-	
+	tmps4 = as.factor(S4$prev_mi)
+	tmpf4 = as.factor(S4$inz_mi)
+	#which(S4$lthyact==2)
 	print(
-			tapply(S4[Cohort$zz_nr_s4, "lcsex"], 
+			tapply(S4[, "lcsex"], 
 					INDEX = interaction(tmpf4, tmps4), 
-					function(x) length(which(x == 2))/length(x)
+					function(x) length(which(x == 1))#/length(x)
 			)
 	)
 
 }
 
+apply(S4[which(S4$lthyact==1), feature.cont], 2, function(x) wilcox.test(x~S4$inz_apo[which(S4$lthyact==1)]))
 
 #F4
 
