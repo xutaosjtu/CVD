@@ -54,9 +54,17 @@ pred = prediction((1-survival(model.penal.opt$predictions,2833)), tmp$event[subs
 plot(performance(pred, "tpr", "fpr"), add= T, col = "red");abline(0,1)
 performance(pred, "auc")
 
-model.penal.opt =optL1(
-		Surv(time, event)~., data = tmp[subset, c("event", "time", metabo.asso)],
-		fold = model.penal$fold,
+
+cat("~",paste(metabo.asso, collapse = "+"))
+
+tmp2=tmp[subset,]
+
+model.penal.opt =penalized(
+		Surv(time, event), 
+		penalized = tmp2[,11:33],
+		unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg), 
+		data = tmp2,
+		#fold = 10,	
 		standardize = T
 )
 coxph(Surv(time, event)~., data = tmp[subset, c(1:2, 11:18)])
@@ -76,60 +84,71 @@ Models <- list(
 		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected2, clinical)])
 )
 
-theta.fit <- function(x, y, ...) {
-	d = data.frame(y, x)
-	#print(colnames(d))
-	coxph(y ~  ., data=d)
-}
-theta.predict <- function(fit, x){
-	#if(is.null(dim(x))) x=t(x)
-	#dim(x)
-	#print(colnames(x))
-	value=predict(fit,newdata= as.data.frame(x) , type="risk")
-	return(value)
-}
-
-Cox.metabolites = crossval.cox(x = tmp[subset, metabo.selected2], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 10)
-
-x = tmp[subset, c(clinical, metabo.asso)]
-y= Surv(tmp$time[subset], tmp$event[subset])
-n = dim(x)[1]
-ngroup = 10
-leave.out <- trunc(n/ngroup)
-o <- sample(1:n)
-groups <- vector("list", ngroup)
-for (j in 1:(ngroup - 1)) {
-	jj <- (1 + (j - 1) * leave.out)
-	groups[[j]] <- (o[jj:(jj + leave.out - 1)])
-}
-groups[[ngroup]] <- o[(1 + (ngroup - 1) * leave.out):n]
-u = NULL
-cv.fit = rep(NA, n)
-for (j in 1:ngroup) {
-	u <- theta.fit(x[-groups[[j]], ], y[-groups[[j]]])
-	cv.fit[groups[[j]]] <- theta.predict(u, x[groups[[j]],])
-}
-Cox.all2 = list(cv.fit = cv.fit, ngroup = ngroup, leave.out = leave.out, groups = groups)
-
-
-#Cox.all = crossval.cox(x = tmp[subset, c(clinical, metabo.selected2)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 10)
-
+set.seed(10)
+Predicts <-list(
+		"metabolites" = crossval.cox(x = tmp[subset, metabo.selected], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
+		"clinical" = crossval.cox(x = tmp[subset, clinical], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
+		"all" = crossval.cox(x = tmp[subset, c(clinical,metabo.selected)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330)		
+		)
+		
 auc = vector("numeric", 3)
-pred = prediction(Cox.all$cv.fit, tmp$event[subset])#combined model blue
-plot(performance(pred, "tpr", "fpr"), col = "blue");abline(0,1)
-auc[1] = performance(pred, "auc")@y.values
-pred = prediction(Cox.clinical$cv.fit, tmp$event[subset])#clinical model green
-plot(performance(pred, "tpr", "fpr"), col = "green", add = T)
-auc[2] = performance(pred, "auc")@y.values
-pred = prediction(Cox.metabolites$cv.fit, tmp$event[subset])#metabolites model red
-plot(performance(pred, "tpr", "fpr"), col = "red", add = T)
-auc[3] = performance(pred, "auc")@y.values
-legend(0.6, 0.2, 
-		legend = c(
-				substitute(all (AUC: k), list(k = round(auc[[1]],2))),
-				substitute(metabolites (AUC: k), list(k = round(auc[[2]],2))),
-				substitute(clinical (AUC: k), list(k = round(auc[[3]],2)))
-				), 
-		col = c("blue","red", "green"), lty = 1)
-dev.off()
-auc
+for (i in 1:length(Predicts)){
+	pred = prediction(Predicts[[i]]$cv.fit, tmp$event[subset])
+	if(i ==1) add = F 
+	else add = T
+	plot(performance(pred, "sens", "fpr"), col = i, add = add)
+	auc[i] = performance(pred, "auc")@y.values
+}
+names(auc) = names(Predicts)
+abline(0,1)
+legend(0.5, 0.2, 
+		legend = paste(names(Predicts), sapply(auc,round,2), sep = " AUC:"), 
+		col = c(1:length(Predicts)), lty = 1
+)
+
+pred = prediction(1-survival(model.penal.opt$predictions, 3671), tmp$event[subset])
+plot(performance(pred, "tpr", "fpr"), col = 5, add = T)
+
+#sapply(names(Predicts), function(x)  substitute(x))
+#(AUC: k), list(k = round(auc[[x]],3))))
+#
+#c(
+#		substitute("all" (AUC: k), list(k = round(auc[[1]],2))),
+#		substitute(metabolites (AUC: k), list(k = round(auc[[2]],2))),
+#		substitute(clinical (AUC: k), list(k = round(auc[[3]],2)))
+#)
+#
+#pred = prediction(Cox.all$cv.fit, tmp$event[subset])#combined model blue
+#plot(performance(pred, "tpr", "fpr"), col = "blue");abline(0,1)
+#auc[1] = performance(pred, "auc")@y.values
+#pred = prediction(Cox.clinical$cv.fit, tmp$event[subset])#clinical model green
+#plot(performance(pred, "tpr", "fpr"), col = "green", add = T)
+#auc[2] = performance(pred, "auc")@y.values
+#pred = prediction(Cox.metabolites$cv.fit, tmp$event[subset])#metabolites model red
+#plot(performance(pred, "tpr", "fpr"), col = "red", add = T)
+#auc[3] = performance(pred, "auc")@y.values
+#legend(0.6, 0.2, 
+#		legend = c(
+#				substitute(all (AUC: k), list(k = round(auc[[1]],2))),
+#				substitute(metabolites (AUC: k), list(k = round(auc[[2]],2))),
+#				substitute(clinical (AUC: k), list(k = round(auc[[3]],2)))
+#				), 
+#		col = c("blue","red", "green"), lty = 1)
+#dev.off()
+#auc
+
+
+test = function (response, penalized, unpenalized, minlambda1, maxlambda1, 
+		base1, lambda2 = 0, fusedl = FALSE, positive = FALSE, data, 
+		model = c("cox", "logistic", "linear", "poisson"), startbeta, 
+		startgamma, fold, epsilon = 1e-10, maxiter = Inf, standardize = FALSE, 
+		tol = .Machine$double.eps^0.25, trace = TRUE) 
+{
+	prep<-.checkinput(match.call(), parent.frame())
+	#fit <- .modelswitch(prep$model, prep)
+}
+
+test(Surv(time, event)~., unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + ltcigreg, data = tmp[subset, c("event", "time", metabo.asso, clinical)],
+		fold = 10,	
+		standardize = T
+)
