@@ -84,30 +84,6 @@ Models <- list(
 		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected2, clinical)])
 )
 
-set.seed(10)
-Predicts <-list(
-		"metabolites" = crossval.cox(x = tmp[subset, metabo.selected], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
-		"clinical" = crossval.cox(x = tmp[subset, clinical], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
-		"all" = crossval.cox(x = tmp[subset, c(clinical,metabo.selected)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330)		
-		)
-		
-auc = vector("numeric", 3)
-for (i in 1:length(Predicts)){
-	pred = prediction(Predicts[[i]]$cv.fit, tmp$event[subset])
-	if(i ==1) add = F 
-	else add = T
-	plot(performance(pred, "sens", "fpr"), col = i, add = add)
-	auc[i] = performance(pred, "auc")@y.values
-}
-names(auc) = names(Predicts)
-abline(0,1)
-legend(0.5, 0.2, 
-		legend = paste(names(Predicts), sapply(auc,round,2), sep = " AUC:"), 
-		col = c(1:length(Predicts)), lty = 1
-)
-
-pred = prediction(1-survival(model.penal.opt$predictions, 3671), tmp$event[subset])
-plot(performance(pred, "tpr", "fpr"), col = 5, add = T)
 
 #sapply(names(Predicts), function(x)  substitute(x))
 #(AUC: k), list(k = round(auc[[x]],3))))
@@ -138,17 +114,17 @@ plot(performance(pred, "tpr", "fpr"), col = 5, add = T)
 #auc
 
 
-test = function (response, penalized, unpenalized, minlambda1, maxlambda1, 
-		base1, lambda2 = 0, fusedl = FALSE, positive = FALSE, data, 
-		model = c("cox", "logistic", "linear", "poisson"), startbeta, 
-		startgamma, fold, epsilon = 1e-10, maxiter = Inf, standardize = FALSE, 
-		tol = .Machine$double.eps^0.25, trace = TRUE) 
-{
-	prep<-.checkinput(match.call(), parent.frame())
-	#fit <- .modelswitch(prep$model, prep)
-}
-
-test(Surv(time, event)~., unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + ltcigreg, data = tmp[subset, c("event", "time", metabo.asso, clinical)],
-		fold = 10,	
-		standardize = T
-)
+#test = function (response, penalized, unpenalized, minlambda1, maxlambda1, 
+#		base1, lambda2 = 0, fusedl = FALSE, positive = FALSE, data, 
+#		model = c("cox", "logistic", "linear", "poisson"), startbeta, 
+#		startgamma, fold, epsilon = 1e-10, maxiter = Inf, standardize = FALSE, 
+#		tol = .Machine$double.eps^0.25, trace = TRUE) 
+#{
+#	prep<-.checkinput(match.call(), parent.frame())
+#	#fit <- .modelswitch(prep$model, prep)
+#}
+#
+#test(Surv(time, event)~., unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + ltcigreg, data = tmp[subset, c("event", "time", metabo.asso, clinical)],
+#		fold = 10,	
+#		standardize = T
+#)
