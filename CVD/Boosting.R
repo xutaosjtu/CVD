@@ -35,11 +35,14 @@ booststeps.optimal = cv.CoxBoost(
 MI.metabocox = CoxBoost(
 		time = S4$mi_time[subset ], 
 		status = S4$inz_mi[subset ], 
-		x =  as.matrix(tmp[subset, 12:31]),
+		#unpen.index = c(3:9),
+		x =  as.matrix(tmp[subset, c(metabo.asso, clinical)]),
 		stepno = 89, 
 		penalty = 603)
 
 metabo.selected = scan(what = character())
+C14_1
+C16_1
 Arg
 Trp
 lysoPC_a_C17_0
@@ -50,6 +53,12 @@ PC_ae_C36_2
 PC_ae_C38_0
 PC_ae_C40_1
 
+###evaluation by ROC
+require(ROCR)
+pred = prediction( 1-predict(MI.metabocox, type = "risk", times = 3683), tmp$event[subset])
+plot(performance(pred, "tpr", "fpr"), col = 5)
+performance(pred, "auc")
+ 
 #by boost in gbm which uses gradient descent method
 require(gbm) 
 MI.gbmboost = gbm(formula = y ~ .,
