@@ -147,50 +147,110 @@ for(i in 2:4){
 
 
 ###########################	Stroke	########################################
-require(nlme)
+#require(nlme)
+#
+#valid_measures = intersect(S4_valid_measures, F4_valid_measures)
+#participants=rep(1:1009,2)
+#
+#data=data.frame(
+#		participants, 
+#		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "ltjnc7"], F4[Cohort$zz_nr_f4, "utjnc7"])),
+#		rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.cont.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.cont.f4])),
+#		apply(rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.disc.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.disc.f4])), 2, function(x) as.factor(x))
+#)
+#
+#rst=NULL
+#for(i in valid_measures){
+#
+#	m = c(S4[Cohort$zz_nr_s4, i], F4[Cohort$zz_nr_f4, i])
+#	
+#	mixed.dum <- lme( m ~  ltsysmm + ltbmi + ltalteru + ltalkkon + lttumf + waist2hip + ltrauchp + lcsex , random = ~  1 | participants, na.action=na.exclude, data=data)
+#	
+#	rst = rbind(rst, summary(mixed.dum)$tTable[5,])
+#}
+#rst=data.frame(rst,
+#		fdr=p.adjust(rst[, 5], method="fdr"),
+#		bonf=p.adjust(rst[, 5], method="bonferroni")
+#)
+#rownames( rst )=valid_measures
 
-valid_measures = intersect(S4_valid_measures, F4_valid_measures)
-participants=rep(1:1009,2)
-
-data=data.frame(
-		participants, 
-		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "ltjnc7"], F4[Cohort$zz_nr_f4, "utjnc7"])),
-		rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.cont.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.cont.f4])),
-		apply(rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.disc.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.disc.f4])), 2, function(x) as.factor(x))
-)
-
-rst=NULL
-for(i in valid_measures){
-
-	m = c(S4[Cohort$zz_nr_s4, i], F4[Cohort$zz_nr_f4, i])
-	
-	mixed.dum <- lme( m ~  ltsysmm + ltbmi + ltalteru + ltalkkon + lttumf + waist2hip + ltrauchp + lcsex , random = ~  1 | participants, na.action=na.exclude, data=data)
-	
-	rst = rbind(rst, summary(mixed.dum)$tTable[5,])
+require(survival)
+rst = NULL;
+for (m in S4_valid_measures){
+	metabolite = S4[, m]
+	model = coxph(Surv(apo_time, inz_apo) ~  log(metabolite) +
+					ltalteru + as.factor(lcsex) + ltbmi## model 1
+			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+			#+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
+			#+total2HDL ##model 4
+			#+ltdiamm ## model 5
+			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(1,2,3,4,9))),
+			S4)
+	rst = rbind(rst, summary(model)$coefficients[1,])
 }
-rst=data.frame(rst,
-		fdr=p.adjust(rst[, 5], method="fdr"),
-		bonf=p.adjust(rst[, 5], method="bonferroni")
+rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rownames(rst) = S4_valid_measures
+write.csv(rst, file = "Stroke survival analysis_model1.csv")
+
+table(S4$inz_apo==1, S4$apo_typ)
+S4$my.apo_typ = S4$apo_typ
+S4$my.apo_typ[which(S4$apo_typ == 0)] = 0
+S4$my.apo_typ[which(S4$apo_typ == 2)] = 1
+S4$my.apo_typ[which(S4$apo_typ == 3)] = 2
+S4$my.apo_typ[which(S4$apo_typ == 4)] = 2
+S4$my.apo_typ[which(S4$apo_typ == 5)] = 3
+S4$my.apo_typ[which(S4$apo_typ == 9)] = 4
+
+require(caret)
+require(pls)
+require(gplots)
+index = which((S4$my.apo_typ == 1|S4$my.apo_typ == 2)&S4$prev_apo==0)#
+S4pls<-plsr(S4$my.apo_typ[index] ~ . , data=log2(S4[index, c(S4_valid_measures)]),  validation = "CV")
+S4pls<-plsda(x=log2(S4[index, c(S4_valid_measures)]), y = as.factor(S4$my.apo_typ[index]))
+#S4pls<-plsda(x=data.normalized, COPD.data$COPD, ncomp = 10)
+
+color = greenred(24)[c(c(4:1)*2,c(18,20, 22, 24)) ]
+plot(S4pls$scores[,c(1,2)],col = color[c(1,8)][S4$my.apo_typ[index]], pch=c(17, 19)[S4$my.apo_typ[index]])
+legend(1, -3, 
+		legend = c("Ischemic","Hemorrhagic"), 
+		col = c(1:8), pch = c(17,19)
 )
-rownames( rst )=valid_measures
+
+S4pca = prcomp(log(S4[index, S4_valid_measures]) )
+S4pca = pcr(S4$my.apo_typ[index] ~ ., data = log2(S4[index, c(S4_valid_measures)]))
+plot(S4pca$scores,col = color[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]], pch=c(17, 19)[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]])
+
+difference = scan(what = character())
+PC_aa_C28_1
+PC_ae_C38_1
+SM__OH__C22_1
+SM_C16_0
+SM_C24_0
+C0
+C10_2
+Pro
+Taurine
+PC_ae_C40_4
+
 
 ###################	Myocardial vascualr disease ##############################
 require(survival)
 rst = NULL;
 for (m in S4_valid_measures){
 	metabolite = S4[, m]
-	MI.cox = coxph(Surv(mi_time, inz_mi) ~  log(metabolite) +
+	model = coxph(Surv(apo_time, inz_mi) ~  log(metabolite) +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-					+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
-	 				+total2HDL ##model 4
-					+ltdiamm ## model 5
-					,subset = which(S4$prev_mi == 0) , S4)
-	rst = rbind(rst, summary(MI.cox)$coefficients[1,])
+					#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+					#+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
+	 				#+total2HDL ##model 4
+					#+ltdiamm ## model 5
+					,subset = which(S4$prev_mi == 0),
+					S4)
+	rst = rbind(rst, summary(model)$coefficients[1,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "MI survival analysis_model5.csv")
+write.csv(rst, file = "MI survival analysis_model1.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
@@ -250,63 +310,3 @@ selectCox(
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
 
 
-###################	evaluation by prediction error curve #############
-test = sample(subset, 300)
-train = setdiff(subset,test)
-
-train = subset
-
-Models <- list(
-		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:2, 11:19)]),
-		"Cox.clinical" = coxph(Surv(time, event) ~ ., data = tmp[train, c(1:10)]),
-		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[train, -c(17:19)])
-)
-
-f = as.formula(paste("Surv(time, event)", paste(colnames(tmp)[-c(1:2)], collapse = "+"), sep = "~"))
-
-PredError <- pec::pec(object = Models, 
-		formula = f,
-		data = tmp[test,],
-		cens.model="marginal",
-		splitMethod = "none",
-		)
-plot(PredError, xlim = c(3000, 4000), smooth = T)		
-
-##survival ROC
-cutoff = max(tmp$time, na.rm = T)
-nobs = NROW(tmp)
-survival.all = survivalROC.C(
-		Stime = tmp$time[subset],
-		status = tmp$event[subset],
-		marker = tmp[subset, 12],
-		predict.time = cutoff,
-		span = 0.25*nobs^(-0.20)
-		)
-
-		
-		
-Surv.rsp <- Surv(tmp$time[train], tmp$event[train])
-Surv.rsp.new <- Surv(tmp$time[test], tmp$event[test])
-
-lpnew = predict(Models$Cox.all, newdata = tmp[test,-c(1:2)])
-lp = predict(Models$Cox.all)
-times = seq(0,3700, 100)
-AUC_sh.all = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
-plot(AUC_sh.all, ylim = c(0.5, 1.0), add = T)
-#,ylim = c(0.6, 0.8)
-lpnew = predict(Models$Cox.clinical, newdata = tmp[test,-c(1:2)])
-lp = predict(Models$Cox.clinical)
-times = seq(0,3700, 100)
-AUC_sh.clinical = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
-plot(AUC_sh.clinical, add = T, col = "green")
-
-lpnew = predict(Models$Cox.metabolites, newdata = tmp[test,-c(1:2)])
-lp = predict(Models$Cox.metabolites)
-times = seq(0,3700, 100)
-AUC_sh.metabolites = AUC.sh(Surv.rsp,Surv.rsp.new,lp,lpnew,times)
-plot(AUC_sh.clinical, add = T, col = "black")
-
-#model comparison by likelihood ratio test
-pchisq(-2*(Models$Cox.all$loglik[2] - Models$Cox.clinical$loglik[2]), df=1) 
-#model comparison by likelihood ratio test (using anova)
-anova(Models$Cox.all, Models$Cox.clinical, Models$Cox.metabolites)
