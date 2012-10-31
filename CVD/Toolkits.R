@@ -129,12 +129,14 @@ Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
 	
 }
 
-theta.fit <- function(x, y, ...) {
+theta.fit <- function(x, y, ...) 
+{
 	d = data.frame(y, x)
 	#print(colnames(d))
 	coxph(y ~  ., data=d)
 }
-theta.predict <- function(fit, x){
+theta.predict <- function(fit, x)
+{
 	#if(is.null(dim(x))) x=t(x)
 	#dim(x)
 	#print(colnames(x))
