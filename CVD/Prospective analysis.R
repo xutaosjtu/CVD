@@ -145,6 +145,28 @@ for(i in 2:4){
 #			function(x) tapply(x, INDEX = interaction(tmps4, tmpf4), mean)
 #	)
 
+#########################	hypertension	################################
+#Prediction of future hypertension
+table(S4$lthyact, S4$uthyact)
+rst = NULL;
+for (m in S4_valid_measures){
+	metabolite = S4[, m]
+	model = glm(as.factor(uthyact) ~  log(metabolite) +
+					ltalteru + as.factor(lcsex) + ltbmi## model 1
+			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+			#+log(ll_choln)+log(ll_hdln)+ total2HDL##model 3
+			#+ as.factor(ltcigreg) + S4$ltalkkon ##model 4
+			#+ log(ltsysmm) + log(ltdiamm) ##model 5
+			#+ltmbbl + ltmace + ltmata #model 6 medication
+			,subset = which(S4$lthyact == 2),
+			S4, family = binomial(link = "logit"))
+	rst = rbind(rst, summary(model)$coefficients[2,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = S4_valid_measures
+write.csv(rst, file = "Hypertension survival analysis_model1.csv")
+
+#Association with current hypertension
 
 ###########################	Stroke	########################################
 #require(nlme)
@@ -233,24 +255,27 @@ Taurine
 PC_ae_C40_4
 
 
-###################	Myocardial vascualr disease ##############################
+###################	Myocardial infarction ##############################
 require(survival)
+S4$total2HDL = S4$ll_choln/S4$ll_hdln
 rst = NULL;
 for (m in S4_valid_measures){
 	metabolite = S4[, m]
 	model = coxph(Surv(apo_time, inz_mi) ~  log(metabolite) +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-					#+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
-	 				#+total2HDL ##model 4
-					#+ltdiamm ## model 5
+					+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+					+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
+	 				+total2HDL ##model 4
+					+ltdiamm ## model 5
+					+lh_crp #model 6
+					+waist2hip#model 7
 					,subset = which(S4$prev_mi == 0),
 					S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "MI survival analysis_model1.csv")
+write.csv(rst, file = "MI survival analysis_model7.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
