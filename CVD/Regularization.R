@@ -11,9 +11,10 @@ tmp = data.frame(
 		log(S4$ltsysmm),log(S4$ll_hdln), log(S4$ll_choln), as.factor(S4$ltcigreg),##model 3
 		##log(S4$total2HDL), ##model 4
 		##log(S4$ltdiamm), ##model 5
+		S4$ltalkkon, S4$lh_crp, S4$total2HDL,
 		log(as.matrix(S4[, metabo.asso]))
 )
-colnames(tmp)[3:10] = clinical#, "total2HDL"
+colnames(tmp)[3:13] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
 
@@ -41,7 +42,7 @@ model.penal = cvl(
 		lambda1 = 2, lambda2= 0#penalization parameter
 )
 
-model.penal = profL1(
+model.penal = optL1(
 		Surv(time, event)~., data = tmp[subset,c("event", "time", metabo.asso)],
 		fold = 10,
 		plot = T,
@@ -61,8 +62,8 @@ tmp2=tmp[subset,]
 
 model.penal.opt =penalized(
 		Surv(time, event), 
-		penalized = tmp2[,11:33],
-		unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg), 
+		penalized = tmp2[,14:29],
+		unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL, 
 		data = tmp2,
 		#fold = 10,	
 		standardize = T

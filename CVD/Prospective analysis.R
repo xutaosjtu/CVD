@@ -202,17 +202,17 @@ for (m in S4_valid_measures){
 	metabolite = S4[, m]
 	model = coxph(Surv(apo_time, inz_apo) ~  log(metabolite) +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
-			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			#+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
-			#+total2HDL ##model 4
+			+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+			#+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon##model 3
+	 		#+ log(lh_crp)# +total2HDL ##model 4
 			#+ltdiamm ## model 5
-			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(1,2,3,4,9))),
+			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(5,1,2,9))),#
 			S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Stroke survival analysis_model1.csv")
+write.csv(rst, file = "Stroke survival analysis_model2.csv")
 
 table(S4$inz_apo==1, S4$apo_typ)
 S4$my.apo_typ = S4$apo_typ
@@ -261,52 +261,46 @@ S4$total2HDL = S4$ll_choln/S4$ll_hdln
 rst = NULL;
 for (m in S4_valid_measures){
 	metabolite = S4[, m]
-	model = coxph(Surv(apo_time, inz_mi) ~  log(metabolite) +
+	model = coxph(Surv(mi_time, inz_mi) ~  log(metabolite) +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-					+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg)##model 3
-	 				+total2HDL ##model 4
-					+ltdiamm ## model 5
-					+lh_crp #model 6
-					+waist2hip#model 7
+					+as.factor(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+					+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon##model 3
+	 				+ lh_crp +total2HDL ##model 4
+					#+ltdiamm ## model 5
+					#+lh_crp #model 6
+					#+waist2hip#model 7
 					,subset = which(S4$prev_mi == 0),
 					S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "MI survival analysis_model7.csv")
+write.csv(rst, file = "MI survival analysis_model4.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
 ###variable selection by boosting method
 metabo.asso = scan(what = character())
-C14_1
-C16_1
 Arg
 Trp
 lysoPC_a_C16_0
-lysoPC_a_C16_1
 lysoPC_a_C17_0
-lysoPC_a_C18_0
-lysoPC_a_C18_1
 lysoPC_a_C18_2
 PC_aa_C28_1
 PC_aa_C32_2
+PC_aa_C32_3
 PC_aa_C34_2
 PC_aa_C34_3
-PC_aa_C34_4
 PC_aa_C36_2
 PC_aa_C36_3
-PC_aa_C36_6
+PC_ae_C36_1
 PC_ae_C36_2
-PC_ae_C38_0
 PC_ae_C38_2
 PC_ae_C40_1
-SM_C24_1
 
 
-clinical = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg")
+
+clinical = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg", "ltalkkon", "lh_crp","total2HDL")
 
 #### stepwise selection of cox regression
 selectCox <- function(formula, data, rule = "aic") {
