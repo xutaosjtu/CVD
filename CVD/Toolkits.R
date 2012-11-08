@@ -16,6 +16,24 @@
 # 	tapply(x, INDEX = index, FUN)
 #}
 
+preprocess=function(data,Metabolites){
+	####log transform
+	tmp=as.matrix(data[,Metabolites])
+	tmp[which(tmp==0)]=NA
+	data[,Metabolites]=tmp
+	#data[,Metabolites]=log2(data[,Metabolites])
+	####interpolation process
+	tmp=data[,Metabolites];index1=NULL;index2=NULL;index=NULL
+	for(i in 1:dim(tmp)[2]){
+		tmp[which(is.na(tmp[,i])),i]=mean(tmp[,i],na.rm=T)
+		index1=which(tmp[,i]>mean(tmp[,i])+3*sd(tmp[,i]))
+		index2=which(tmp[,i]<mean(tmp[,i])-3*sd(tmp[,i]))
+		index=unique(c(index,index1,index2))
+	}
+	data[,Metabolites]=tmp
+	return(data)
+}
+
 
 characteristics = function(data , factor, d, ...)
 {
@@ -131,9 +149,10 @@ Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
 
 theta.fit <- function(x, y, ...) 
 {
-	d = data.frame(y, x)
+	#d = data.frame(y, x)
+	#print(dim(d))
 	#print(colnames(d))
-	coxph(y ~  ., data=d)
+	coxph(y ~  ., data=x)
 }
 theta.predict <- function(fit, x)
 {
@@ -173,7 +192,7 @@ crossval.cox = function (x, y, theta.fit, theta.predict, ..., ngroup = n)
 	u <- NULL
 	cv.fit <- rep(NA, n)
 	for (j in 1:ngroup) {
-		u <- theta.fit(x[-groups[[j]], ], y[-groups[[j]]])
+		u <- theta.fit(x[-groups[[j]], ], y[-groups[[j]],])
 		cv.fit[groups[[j]]] <- theta.predict(u, x[groups[[j]],])
 	}
 	if (leave.out == 1) 

@@ -33,20 +33,22 @@ F4$waist2hip = F4$uttumf / F4$uthumf
 #S4 features and diseases
 feature.cont = scan(what = character())
 ltalteru
-ll_choln
-ll_hdln
+ltbmi
+ltalkkon
+ll_chola
+ll_hdla
+ll_ldla
+total2HDL
+ltdiamm
 ltsysmm
-ll_ldln
 ll_hgb
 ll_hbav
-ll_trin
+ll_tria
 lh_crp
 lttumf
 lthumf
-ltdiamm
 waist2hip
-ltbmi
-ltalkkon
+
 
 feature.disc = scan(what = character())
 ltcigreg
@@ -86,13 +88,13 @@ F4$waist2hip = F4$uttumf/F4$uthumf
 #	4.us_c07a: parameter describing the cardiac arrhythmias in the last 12 months
 feature.cont = scan(what = character())
 utalteru
-ul_choln
-ul_hdln
+ul_chola
+ul_hdla
 utsysmm
-ul_ldln
+ul_ldla
 ul_hgb
 ul_hbav
-ul_trin
+ul_tria
 uh_crp
 uttumf
 uthumf
@@ -161,19 +163,27 @@ for(i in 1:length(diseases.s4)){
 #				return(paste(m, "(", s, ")", sep = ""))
 #			} 
 #	)
-	write.csv(t(chars), file = "Stroke S4 prospective.csv")
+	write.csv(t(chars), file = "stroke S4 prospective.csv")
 }
+
+S4$my.alkkon = rep(0, dim(S4)[1])
+S4$my.alkkon[which(S4$ltalkkon >=40 & S4$lcsex==1 )] = 1
+S4$my.alkkon[which(S4$ltalkkon >=20 & S4$lcsex==2 )] = 1
+
+F4$my.alkkon = rep(0, dim(F4)[1])
+F4$my.alkkon[which(F4$utalkkon >=40 & F4$ucsex==1 )] = 1
+F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
 
 
 
 for(i in 1:3){
 	print(diseases[i])
 
-	tmps4 = as.factor(S4$prev_mi)
-	tmpf4 = as.factor(S4$inz_mi)
+	tmps4 = as.factor(S4$lthyact)
+	tmpf4 = as.factor(S4$uthyact)
 	#which(S4$lthyact==2)
 	print(
-			tapply(S4[, "lcsex"], 
+			tapply(S4[, "my.alkkon"], 
 					INDEX = interaction(tmpf4, tmps4), 
 					function(x) length(which(x == 1))#/length(x)
 			)
@@ -181,7 +191,9 @@ for(i in 1:3){
 
 }
 
-apply(S4[which(S4$lthyact==1), feature.cont], 2, function(x) wilcox.test(x~S4$inz_apo[which(S4$lthyact==1)]))
+&!(S4$my.apo_typ %in% c(1,2,4))
+
+apply(S4[which(S4$prev_mi == 0), feature.cont], 2, function(x) wilcox.test(x~S4$inz_mi[which(S4$prev_mi == 0)]))
 
 #F4
 

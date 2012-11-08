@@ -151,12 +151,13 @@ table(S4$lthyact, S4$uthyact)
 rst = NULL;
 for (m in S4_valid_measures){
 	metabolite = S4[, m]
-	model = glm(as.factor(uthyact) ~  log(metabolite) +
+	model = glm(as.factor(uthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
+					+ ltsysmm + ltdiamm ##model 2
 			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			#+log(ll_choln)+log(ll_hdln)+ total2HDL##model 3
-			#+ as.factor(ltcigreg) + S4$ltalkkon ##model 4
-			#+ log(ltsysmm) + log(ltdiamm) ##model 5
+			#+log(ll_chola)+log(ll_hdla)+ total2HDL##model 3
+			#+ as.factor(ltcigreg) + ltalkkon ##model 4
+			
 			#+ltmbbl + ltmace + ltmata #model 6 medication
 			,subset = which(S4$lthyact == 2),
 			S4, family = binomial(link = "logit"))
@@ -164,38 +165,77 @@ for (m in S4_valid_measures){
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Hypertension survival analysis_model1.csv")
+write.csv(rst, file = "Hypertension survival analysis_model2.csv")
 
 #Association with current hypertension
+S4.feature = scan(what = character())
+ltalteru
+lcsex
+ltbmi
+lp_diab_who06
+ll_chola
+ll_hdla
+total2HDL
+ltcigreg
+ltalkkon
+ltsysmm
+ltdiamm
+ltmbbl
+ltmace
+ltmata
+my.alkkon
+
+F4.feature = scan(what = character())
+utalteru
+ucsex
+utbmi
+uk_diab_who06
+ul_choln
+ul_hdln
+total2HDL
+utcigreg
+utalkkon
+utsysmm
+utdiamm
+utmbbl
+utmace
+utmata
+my.alkkon
+
+F4 = preprocess(F4, F4_valid_measures)
+require(nlme)
+valid_measures = intersect(S4_valid_measures, F4_valid_measures)
+participants=rep(1:1009,2)
+data=data.frame(
+		participants, 
+		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
+		rbind(as.matrix(S4[ Cohort$zz_nr_s4, S4.feature]), as.matrix(F4[ Cohort$zz_nr_f4, F4.feature]))
+)
+rst=NULL
+for(i in valid_measures){
+	m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
+	mixed.dum <- lme( m ~ disease +
+					#ltmbbl + ltmace + ltmata + #model 6 medication
+					ltalteru + as.factor(lcsex) + ltbmi## model 1
+					+ as.factor(ltcigreg) + as.factor(my.alkkon) ##model 2
+					+ (lp_diab_who06==4|lp_diab_who06==5)  ##model 3
+					+ log(ll_chola)+log(ll_hdla)+ total2HDL##model 4
+					#+ log(ltsysmm) + log(ltdiamm) ##model 5
+			,random = ~  1 | participants, na.action=na.exclude, data=data)
+	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
+}
+rst=data.frame(rst,
+		fdr=p.adjust(rst[, 5], method="fdr"),
+		bonf=p.adjust(rst[, 5], method="bonferroni")
+)
+rownames( rst )=valid_measures
+write.csv(rst, file = "hypertension associated metabolites_model4.csv")
+
+
+
+
 
 ###########################	Stroke	########################################
-#require(nlme)
-#
-#valid_measures = intersect(S4_valid_measures, F4_valid_measures)
-#participants=rep(1:1009,2)
-#
-#data=data.frame(
-#		participants, 
-#		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "ltjnc7"], F4[Cohort$zz_nr_f4, "utjnc7"])),
-#		rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.cont.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.cont.f4])),
-#		apply(rbind(as.matrix(S4[ Cohort$zz_nr_s4, feature.disc.s4]), as.matrix(F4[ Cohort$zz_nr_f4, feature.disc.f4])), 2, function(x) as.factor(x))
-#)
-#
-#rst=NULL
-#for(i in valid_measures){
-#
-#	m = c(S4[Cohort$zz_nr_s4, i], F4[Cohort$zz_nr_f4, i])
-#	
-#	mixed.dum <- lme( m ~  ltsysmm + ltbmi + ltalteru + ltalkkon + lttumf + waist2hip + ltrauchp + lcsex , random = ~  1 | participants, na.action=na.exclude, data=data)
-#	
-#	rst = rbind(rst, summary(mixed.dum)$tTable[5,])
-#}
-#rst=data.frame(rst,
-#		fdr=p.adjust(rst[, 5], method="fdr"),
-#		bonf=p.adjust(rst[, 5], method="bonferroni")
-#)
-#rownames( rst )=valid_measures
-
 require(survival)
 rst = NULL;
 for (m in S4_valid_measures){
@@ -203,8 +243,8 @@ for (m in S4_valid_measures){
 	model = coxph(Surv(apo_time, inz_apo) ~  log(metabolite) +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
 			+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			#+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon##model 3
-	 		#+ log(lh_crp)# +total2HDL ##model 4
+			+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon ##model 3
+	 		#+ log(lh_crp) + total2HDL ##model 4
 			#+ltdiamm ## model 5
 			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(5,1,2,9))),#
 			S4)
@@ -212,7 +252,7 @@ for (m in S4_valid_measures){
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Stroke survival analysis_model2.csv")
+write.csv(rst, file = "Stroke survival analysis_model3.csv")
 
 table(S4$inz_apo==1, S4$apo_typ)
 S4$my.apo_typ = S4$apo_typ
@@ -257,14 +297,14 @@ PC_ae_C40_4
 
 ###################	Myocardial infarction ##############################
 require(survival)
-S4$total2HDL = S4$ll_choln/S4$ll_hdln
+S4$total2HDL = S4$ll_chola/S4$ll_hdla
 rst = NULL;
 for (m in S4_valid_measures){
 	metabolite = S4[, m]
 	model = coxph(Surv(mi_time, inz_mi) ~  log(metabolite) +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
 					+as.factor(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-					+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon##model 3
+					+log(ll_chola)+log(ll_hdla)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon##model 3
 	 				+ lh_crp +total2HDL ##model 4
 					#+ltdiamm ## model 5
 					#+lh_crp #model 6
@@ -322,8 +362,8 @@ selectCox <- function(formula, data, rule = "aic") {
 }
 
 selectCox(
-		formula = Surv(mi_time, inz_mi) ~  Arg+Trp+lysoPC_a_C16_0+lysoPC_a_C16_1+lysoPC_a_C17_0+lysoPC_a_C18_0+lysoPC_a_C18_1+lysoPC_a_C18_2+PC_aa_C28_1+PC_aa_C32_2+PC_aa_C34_2+PC_aa_C34_3+PC_aa_C34_4+PC_aa_C36_2+PC_aa_C36_3+PC_aa_C36_6+PC_ae_C36_2+PC_ae_C38_0+PC_ae_C40_1+SM_C24_1,
-		data = data.frame(log(S4[, metabolites.asso]), S4[, model1], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
+		formula = Surv(mi_time, inz_mi) ~  .,
+		data = data.frame(tmp[,c(metabo.selected3, clinical)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
 		rule = "p")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)

@@ -34,7 +34,7 @@ require(globaltest)##pretesting by global test
 gt(Surv(tmp$time[subset], tmp$event[subset]), tmp[subset, c(11:19)])
 
 model.penal = cvl(
-		Surv(time, event)~., data = tmp[subset,c("event", "time", metabo.asso)], 
+		Surv(time, event)~., data = tmp[subset,c("event", "time", metabo.selected3)], 
 		standardize = T, ##centralize the covariates 
 		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
 		#positive = T, ## positive restriction to all regression coefficients
@@ -42,7 +42,7 @@ model.penal = cvl(
 		lambda1 = 2, lambda2= 0#penalization parameter
 )
 
-model.penal = optL1(
+model.penal = profL1(
 		Surv(time, event)~., data = tmp[subset,c("event", "time", metabo.asso)],
 		fold = 10,
 		plot = T,
@@ -51,6 +51,7 @@ model.penal = optL1(
 )
 plot(model.penal$lambda, model.penal$cvl, type = "l", log = "x")
 plotpath(model.penal$fullfit, log = "x")
+
 pred = prediction((1-survival(model.penal.opt$predictions,2833)), tmp$event[subset])#ROC evaluation at each time point, after profiling of the model at different lamda
 plot(performance(pred, "tpr", "fpr"), add= T, col = "red");abline(0,1)
 performance(pred, "auc")
@@ -60,17 +61,21 @@ cat("~",paste(metabo.asso, collapse = "+"))
 
 tmp2=tmp[subset,]
 
-model.penal.opt =penalized(
+model.penal.opt =optL1(
 		Surv(time, event), 
-		penalized = tmp2[,14:29],
-		unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL, 
+		penalized = tmp2[,metabo.asso],
+		unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL,
 		data = tmp2,
 		#fold = 10,	
+		minlambda1 = 0.5, maxlambda1 = 10, 
 		standardize = T
 )
-coxph(Surv(time, event)~., data = tmp[subset, c(1:2, 11:18)])
+#coxph(Surv(time, event)~., data = tmp[subset, c(1:2, 11:18)])
 
+		
+				unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL,
 
+		
 metabo.selected2 = scan(what = character())
 Arg
 PC_ae_C38_0
@@ -79,8 +84,48 @@ lysoPC_a_C18_1
 Trp
 
 
+
+metabo.selected3 = scan(what = character())
+Arg
+Trp
+lysoPC_a_C17_0
+PC_aa_C32_2
+
+
+Arg
+Trp
+lysoPC_a_C17_0
+PC_aa_C32_2
+PC_aa_C34_2
+PC_ae_C36_2
+
+Arg
+Trp
+lysoPC_a_C17_0
+lysoPC_a_C18_2
+PC_aa_C28_1
+PC_aa_C32_2 
+PC_aa_C34_2
+PC_aa_C36_3
+PC_ae_C38_2
+PC_ae_C40_1
+
+
+C16_1
+Arg
+Trp
+lysoPC_a_C18_1
+lysoPC_a_C18_2
+PC_aa_C28_1
+PC_aa_C32_2
+PC_aa_C34_2
+PC_aa_C36_3
+PC_ae_C38_0
+PC_ae_C38_2
+PC_ae_C40_1
+
 Models <- list(
-		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected2)]),
+		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected3)]),
 		"Cox.clinical" = coxph(Surv(time, event) ~ ., data = tmp[subset,  c("event", "time",clinical)]),
 		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected2, clinical)])
 )

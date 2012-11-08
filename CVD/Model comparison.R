@@ -40,6 +40,7 @@ plot(PredError, xlim = c(3000, 4000), smooth = T)
 
 
 #testing the differences of predicting performances by auc (package: survAUC)
+require(survAUC)
 Surv.rsp <- Surv(tmp$time[train], tmp$event[train])
 Surv.rsp.new <- Surv(tmp$time[test], tmp$event[test])
 
@@ -69,13 +70,12 @@ anova(Models$Cox.all, Models$Cox.clinical, Models$Cox.metabolites)
 #testing the differences of prediction performance by roc (package: pROC)
 set.seed(10)
 Predicts <-list(
-		"metabolites.boost" = crossval.cox(x = tmp[subset, metabo.selected], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
-		"metabolites.regularize" = crossval.cox(x = tmp[subset, metabo.selected2], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
-		"clinical" = crossval.cox(x = tmp[subset, clinical], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
-		"all.boost" = crossval.cox(x = tmp[subset, c(clinical,metabo.selected)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),	
-		"all. regularize" = crossval.cox(x = tmp[subset, c(clinical,metabo.selected2)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330)
+		#"metabolites.boost" = crossval.cox(x = tmp[subset, metabo.selected], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
+		"metabolites.regularize" = crossval.cox(x = tmp[subset, metabo.selected3], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1315),
+		"clinical" = crossval.cox(x = tmp[subset, clinical], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1315),
+		#"all.boost" = crossval.cox(x = tmp[subset, c(clinical,metabo.selected)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),	
+		"all.regularize" = crossval.cox(x = tmp[subset, c(clinical,metabo.selected3)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1315)
 )
-
 
 auc = NULL
 for (i in 1:length(Predicts)){
@@ -99,7 +99,7 @@ legend(0.5, 0.2,
 #pred = prediction(1-survival(model.penal.opt$predictions, 3671), tmp$event[subset])
 #plot(performance(pred, "tpr", "fpr"), col = 5, add = T)
 
-pred.1 = roc(tmp$event[subset], Predicts[[4]]$cv.fit, ci = T)
+pred.1 = roc(tmp$event[subset], Predicts[[3]]$cv.fit, ci = T)
 pred.2 = roc(tmp$event[subset], Predicts[[1]]$cv.fit, ci = T)
 roc.test(pred.1, pred.2)
 
