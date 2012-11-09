@@ -296,16 +296,22 @@ PC_ae_C40_4
 
 
 ###################	Myocardial infarction ##############################
+S4$my.cigreg = S4$ltcigreg
+S4$my.cigreg[which(S4$ltcigreg ==2)] = 1
+S4$my.cigreg[which(S4$ltcigreg ==3)] = 2
+S4$my.cigreg[which(S4$ltcigreg ==4)] = 3
+S4$my.cigreg = factor(S4$my.cigreg, ordered = T)
+
 require(survival)
 S4$total2HDL = S4$ll_chola/S4$ll_hdla
 rst = NULL;
 for (m in S4_valid_measures){
-	metabolite = S4[, m]
-	model = coxph(Surv(mi_time, inz_mi) ~  log(metabolite) +
-					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+as.factor(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-					+log(ll_chola)+log(ll_hdla)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon##model 3
-	 				+ lh_crp +total2HDL ##model 4
+	metabolite = scale(log(S4[, m]))
+	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
+					ltalteru + factor(lcsex, ordered = F) + ltbmi## model 1
+					+ factor(lp_diab_who06==4|lp_diab_who06==5, ordered = F)  ##model 2
+					+ log(ltsysmm)+ my.cigreg + ltalkkon + log(ll_chola) + log(ll_hdla)##model 3
+	 				# + lh_crp  ##model 4 + total2HDL
 					#+ltdiamm ## model 5
 					#+lh_crp #model 6
 					#+waist2hip#model 7
@@ -315,7 +321,7 @@ for (m in S4_valid_measures){
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "MI survival analysis_model4.csv")
+write.csv(rst, file = "MI survival analysis_model3_without ratio.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
