@@ -4,17 +4,30 @@
 ###############################################################################
 
 #################	change of covariate coefficients while adding metabolites into the model	##################
-
-model = coxph(Surv(mi_time, inz_mi) ~ log(Arg) + log(Trp) + log(lysoPC_a_C17_0) + log(PC_aa_C32_2) +
-				ltalteru + factor(lcsex, ordered = F) + ltbmi## model 1
-				+ factor(lp_diab_who06==4|lp_diab_who06==5, ordered = F)  ##model 2
-				+ log(ltsysmm)+ my.cigreg + my.alkkon  + my.chola + my.hdla ##model 3+ total2HDL
-		+ lh_crp  ##model 4 + total2HDL
+#Arg = scale(S4$Arg); 
+#Trp = scale(S4$Trp);
+#lysoPC_a_C17_0 = scale(log(S4$lysoPC_a_C17_0))
+#PC_aa_C32_2 = scale(log(S4$PC_aa_C32_2))
+data = S4
+data[, metabo.selected3] =  scale(log(S4[, metabo.selected3]))
+model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				#scale(ltalteru) + factor(lcsex, ordered = F) + scale(ltbmi) +## model 1
+				#my.diab +  ##model 2
+				#scale(ltsysmm)+ my.cigreg  + my.chola+
+				my.hdla  + total2HDL##model 3+ my.alkkon  + my.chola
+		#+ scale(lh_crp)  ##model 4 
+		#+ lttumf +waist2hip + my.physical
 		#+ltdiamm ## model 5
 		#+lh_crp #model 6
 		#+waist2hip#model 7
 		,subset = which(S4$prev_mi == 0),
-		S4)
+		data)
+
+
+plotCI(1:length(coef(model))+0.5, y = coef(model), liw = coef(model)-confint(model)[,1], uiw = abs(coef(model)-confint(model)[,2]), col = "green")
+
+abline(h = 0)
+plotCI(1:length(coef(model)[5:14]), y = coef(model)[5:14], liw = coef(model)[5:14]-confint(model)[5:14,1], uiw = abs(coef(model)[5:14]-confint(model)[5:14,2]), add = T)
 
 
 ###################	evaluation by prediction error curve #############
