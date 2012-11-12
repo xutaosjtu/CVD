@@ -149,8 +149,8 @@ remove(H); remove(S)
 source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
 for(i in 1:length(diseases.s4)){
 	
-	tmps4 = as.factor(S4$prev_apo)
-	tmpf4 = as.factor(S4$inz_apo)
+	tmps4 = as.factor(S4$prev_mi)
+	tmpf4 = as.factor(S4$inz_mi)
 	
 	chars = characteristics(S4[, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
 #	chars = apply(
@@ -183,17 +183,20 @@ for(i in 1:3){
 	tmpf4 = as.factor(S4$uthyact)
 	#which(S4$lthyact==2)
 	print(
-			tapply(S4[, "my.alkkon"], 
+			tapply(S4[, "my.physical"], 
 					INDEX = interaction(tmpf4, tmps4), 
-					function(x) length(which(x == 1))#/length(x)
+					function(x) table(x)#/length(x)
 			)
 	)
-
 }
 
 &!(S4$my.apo_typ %in% c(1,2,4))
 
 apply(S4[which(S4$prev_mi == 0), feature.cont], 2, function(x) wilcox.test(x~S4$inz_mi[which(S4$prev_mi == 0)]))
+
+x = 22; y = 193; X = 58; Y = 467
+a = matrix(c(x, X-x, y, Y-y), ncol = 2)
+fisher.test(a)
 
 #F4
 

@@ -300,7 +300,7 @@ S4$my.cigreg = S4$ltcigreg
 S4$my.cigreg[which(S4$ltcigreg ==2)] = 1
 S4$my.cigreg[which(S4$ltcigreg ==3)] = 2
 S4$my.cigreg[which(S4$ltcigreg ==4)] = 3
-S4$my.cigreg = factor(S4$my.cigreg, ordered = T)
+S4$my.cigreg = factor(S4$my.cigreg, ordered = F)
 
 require(survival)
 S4$total2HDL = S4$ll_chola/S4$ll_hdla
