@@ -214,7 +214,7 @@ data=data.frame(
 rst=NULL
 for(i in valid_measures){
 	m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
-	mixed.dum <- lme( m ~ disease +
+	mixed.dum <- lme( log(m) ~ disease +
 					#ltmbbl + ltmace + ltmata + #model 6 medication
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
 					+ as.factor(ltcigreg) + as.factor(my.alkkon) ##model 2
@@ -231,9 +231,78 @@ rst=data.frame(rst,
 rownames( rst )=valid_measures
 write.csv(rst, file = "hypertension associated metabolites_model4.csv")
 
+############	calculate the residues	########
+data = data.frame(log(S4[,valid_measures]),
+		"alteru" = S4$ltalteru, 
+		"sex" = as.factor(S4$lcsex),
+		"bmi" = S4$ltbmi,
+		"cigreg" = as.factor(S4$ltcigreg),
+		"alkkon" = as.factor(S4$my.alkkon),
+		"diabetes" = as.factor((S4$lp_diab_who06==4|S4$lp_diab_who06==5)),
+		"chol" = log(S4$ll_chola),
+		"HDL" = log(S4$ll_hdla),
+		"med1" = as.factor(S4$ltmbbl),
+		"med2" = as.factor(S4$ltmace),
+		"med3" = as.factor(S4$ltmata),
+		"hyper" = S4$lthyact
+)
+data = data[Cohort$zz_nr_s4, ]
+S4.residue = residue(data, valid_measures, adj = colnames(data)[122:132], control_group = 1:dim(data)[1])
 
+data = data.frame(log(F4[,valid_measures]),
+		"alteru" = F4$utalteru, 
+		"sex" = as.factor(F4$ucsex),
+		"bmi" = F4$utbmi,
+		"cigreg" = as.factor(F4$utcigreg),
+		"alkkon" = as.factor(F4$my.alkkon),
+		"diabetes" = as.factor((F4$uk_diab_who06==4|F4$uk_diab_who06==5)),
+		"chol" = log(F4$ul_chola),
+		"HDL" = log(F4$ul_hdla),
+		"med1" = as.factor(F4$utmbbl),
+		"med2" = as.factor(F4$utmace),
+		"med3" = as.factor(F4$utmata),
+		"hyper" = F4$uthyact
+)
+data = data[Cohort$zz_nr_f4, ]
+F4.residue = residue(data, valid_measures, adj = colnames(data)[122:132], control_group = 1:dim(data)[1])
 
+metabo.selected = scan(what = character())
+C8
+C10
+C10_1
+C14_2
+Phe
+Pro
+lysoPC_a_C17_0
+lysoPC_a_C18_2
+PC_ae_C32_2
+PC_ae_C34_1
+PC_ae_C34_2
+PC_ae_C34_3
+PC_ae_C36_1
+PC_ae_C36_2
+PC_ae_C42_3
+SM__OH__C16_1
+SM__OH__C22_2
+H1
 
+pdf(file = "S4 F4 prospective change.pdf", width = 15, height = 27)
+close.screen(all = T)
+split.screen(c(6,3))
+k = 1
+for(i in metabo.selected){
+	screen(k)
+	data = data.frame("m" = c(S4.residue[,i], F4.residue[,i]),  
+			"group" = rep(interaction(as.factor(S4[Cohort$zz_nr_s4, "lthyact"]),as.factor(F4[Cohort$zz_nr_f4, "uthyact"])),2),
+			"t" = c(rep(1, dim(S4.residue)[1]),rep(2, dim(S4.residue)[1]))
+	)
+	plotmeans(m ~ t, data, subset = which(data$group ==1.1 ), ylim = c(-0.1,0.1), main = i)
+	plotmeans(m ~ t, data, subset = which(data$group ==1.2 ), col = "blue", add = T)
+	plotmeans(m ~ t, data, subset = which(data$group ==2.1 ), col = "red", add = T)
+	plotmeans(m ~ t, data, subset = which(data$group ==2.2 ), col = "green", add = T)
+	k = k+1
+}
+dev.off()
 
 ###########################	Stroke	########################################
 require(survival)
@@ -304,24 +373,30 @@ S4$my.cigreg = factor(S4$my.cigreg, ordered = F)
 
 require(survival)
 S4$total2HDL = S4$ll_chola/S4$ll_hdla
-rst = NULL;
+rst = NULL; rst1 = NULL
+rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
 	metabolite = scale(log(S4[, m]))
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
 					ltalteru + factor(lcsex, ordered = F) + ltbmi## model 1
 					+ factor(lp_diab_who06==4|lp_diab_who06==5, ordered = F)  ##model 2
-					+ log(ltsysmm)+ my.cigreg + ltalkkon + log(ll_chola) + log(ll_hdla)##model 3
-	 				# + lh_crp  ##model 4 + total2HDL
+					+ log(ltsysmm)+ my.cigreg + my.alkkon  + my.chola + my.hdla ##model 3+ total2HDL
+	 				#+ lh_crp  ##model 4 + total2HDL
 					#+ltdiamm ## model 5
 					#+lh_crp #model 6
 					#+waist2hip#model 7
 					,subset = which(S4$prev_mi == 0),
 					S4)
-	rst = rbind(rst, summary(model)$coefficients[1,])
+	rst = rbind(rst, summary(model)$coefficients[11,])
+	#rst1 = rbind(rst , summary(model)$coefficients[10,])
+	#rst2 = rbind(rst2, summary(model)$coefficients[11,])
+	#rst3 = rbind(rst3, summary(model)$coefficients[12,])
+	#table(model$y[,2]) #number of sample used exactly in the estimation.
 }
+table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "MI survival analysis_model3_without ratio.csv")
+write.csv(rst, file = "Coef invest_MI survival analysis_model3_ withonly ratio.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 

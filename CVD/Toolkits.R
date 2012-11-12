@@ -79,7 +79,7 @@ cor2link = function(Zeta, threshold)
 }
 
 #	Differential correxpression
-#	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. “Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.” BMC Bioinformatics 10, no. 1 (2009): 109.
+#	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. “Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.BMC Bioinformatics 10, no. 1 (2009): 109.
 #	Description of parameters:
 #	cor1, cor2: two pearson correlation values
 #	N1, N2: the number of samples used for the calculation of cor1 and cor2
@@ -95,6 +95,19 @@ diffcorr <- function(cor1, cor2, N1, N2)
 #function(parameters , optional = "l"){
 #	substr(parameters, 1, 2) <- optional
 #}
+
+#############	residual calculation	##########
+residue<-function(data,Metabolites,adj, control_group){
+	tmp=NULL;
+	tmp=cbind(data[,adj])
+	adj_f=paste(adj,collapse='+')
+	for(i in 1:length(Metabolites)){
+		model=lm(as.formula(paste(Metabolites[i],adj_f,sep="~")),data[control_group,])	
+		data[,Metabolites[i]]=data[,Metabolites[i]]-predict(model,tmp)
+	}
+	return(data[,Metabolites])
+}
+
 
 # regression analysis
 logisticRegression = function(meta , disease, valid_measures , feature.cont, feature.disc, metalog = TRUE, ...)
@@ -147,6 +160,7 @@ Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
 	
 }
 
+###############	cross validation for cox regression	################
 theta.fit <- function(x, y, ...) 
 {
 	#d = data.frame(y, x)

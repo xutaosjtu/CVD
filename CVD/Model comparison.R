@@ -3,6 +3,20 @@
 # Author: tao.xu
 ###############################################################################
 
+#################	change of covariate coefficients while adding metabolites into the model	##################
+
+model = coxph(Surv(mi_time, inz_mi) ~ log(Arg) + log(Trp) + log(lysoPC_a_C17_0) + log(PC_aa_C32_2) +
+				ltalteru + factor(lcsex, ordered = F) + ltbmi## model 1
+				+ factor(lp_diab_who06==4|lp_diab_who06==5, ordered = F)  ##model 2
+				+ log(ltsysmm)+ my.cigreg + my.alkkon  + my.chola + my.hdla ##model 3+ total2HDL
+		+ lh_crp  ##model 4 + total2HDL
+		#+ltdiamm ## model 5
+		#+lh_crp #model 6
+		#+waist2hip#model 7
+		,subset = which(S4$prev_mi == 0),
+		S4)
+
+
 ###################	evaluation by prediction error curve #############
 test = sample(subset, 300)
 train = setdiff(subset,test)
