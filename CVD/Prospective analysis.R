@@ -369,6 +369,7 @@ S4$my.cigreg = S4$ltcigreg
 S4$my.cigreg[which(S4$ltcigreg ==2)] = 1
 S4$my.cigreg[which(S4$ltcigreg ==3)] = 2
 S4$my.cigreg[which(S4$ltcigreg ==4)] = 3
+S4$my.cigreg = 3-S4$my.cigreg
 S4$my.cigreg = factor(S4$my.cigreg, ordered = F)
 
 require(survival)

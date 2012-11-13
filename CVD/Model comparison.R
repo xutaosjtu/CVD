@@ -3,26 +3,38 @@
 # Author: tao.xu
 ###############################################################################
 
+#################	Framingham score	##########################
+framingham<-function(x){
+	X = rep(0, 6)
+	X[1] =  3.06117 * log(x$ltalteru)
+	X[2] = 1.12370 * log(x$ll_chola)
+	X[3] = log(x$ll_hdla)
+	if(!(x$ltmbbl ==1 | x$ltmace ==1 | x$ltmata ==1)) = 1.99881*log(x$ltsysmm)
+	else  = 1.93303*log(x$ltsysmm)
+	0.65451* as.numeric(x$ltcigreg==1|x$ltcigreg==2)
+	as.numeric(x$my.diab)
+}
+
+
 #################	change of covariate coefficients while adding metabolites into the model	##################
 #Arg = scale(S4$Arg); 
 #Trp = scale(S4$Trp);
 #lysoPC_a_C17_0 = scale(log(S4$lysoPC_a_C17_0))
 #PC_aa_C32_2 = scale(log(S4$PC_aa_C32_2))
 data = S4
-data[, metabo.selected3] =  scale(log(S4[, metabo.selected3]))
-model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				#scale(ltalteru) + factor(lcsex, ordered = F) + scale(ltbmi) +## model 1
-				#my.diab +  ##model 2
-				#scale(ltsysmm)+ my.cigreg  + my.chola+
-				my.hdla  + total2HDL##model 3+ my.alkkon  + my.chola
-		#+ scale(lh_crp)  ##model 4 
+data[, metabo.selected3] =  log(S4[, metabo.selected3])
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2   
+#				ltalteru + factor(lcsex, ordered = F) + ltbmi +## model 1
+#				my.diab +  ##model 2
+#				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
+#				+ lh_crp  ##model 4 
 		#+ lttumf +waist2hip + my.physical
 		#+ltdiamm ## model 5
 		#+lh_crp #model 6
 		#+waist2hip#model 7
 		,subset = which(S4$prev_mi == 0),
 		data)
-
+extractAIC(model)
 
 plotCI(1:length(coef(model))+0.5, y = coef(model), liw = coef(model)-confint(model)[,1], uiw = abs(coef(model)-confint(model)[,2]), col = "green")
 
