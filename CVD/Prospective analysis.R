@@ -422,7 +422,7 @@ PC_ae_C40_1
 
 
 
-clinical = c("ltalteru", "ltbmi", "lcsex","lp_diab_who06", "ltsysmm", "ll_hdln", "ll_choln", "ltcigreg", "ltalkkon", "lh_crp","total2HDL")
+clinical = c("ltalteru", "ltbmi", "lcsex","my.diab", "ltsysmm", "ll_hdln", "ll_choln", "my.cigreg", "my.alkkon", "lh_crp")
 
 #### stepwise selection of cox regression
 selectCox <- function(formula, data, rule = "aic") {

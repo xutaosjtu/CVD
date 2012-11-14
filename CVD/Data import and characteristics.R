@@ -149,10 +149,10 @@ remove(H); remove(S)
 source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
 for(i in 1:length(diseases.s4)){
 	
-	tmps4 = as.factor(S4$prev_mi)
-	tmpf4 = as.factor(S4$inz_mi)
+	tmps4 = as.factor(S4$prev_mi)[subset]
+	tmpf4 = as.factor(S4$inz_mi)[subset]
 	
-	chars = characteristics(S4[, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+	chars = characteristics(S4[subset, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
 #	chars = apply(
 #			S4[Cohort$zz_nr_s4,feature.cont], 2, 
 #			function(x) {
@@ -163,7 +163,7 @@ for(i in 1:length(diseases.s4)){
 #				return(paste(m, "(", s, ")", sep = ""))
 #			} 
 #	)
-	write.csv(t(chars), file = "stroke S4 prospective.csv")
+	write.csv(t(chars), file = "stroke S4 prospective_female.csv")
 }
 
 S4$my.alkkon = rep(0, dim(S4)[1])
@@ -183,7 +183,7 @@ for(i in 1:3){
 	tmpf4 = as.factor(S4$uthyact)
 	#which(S4$lthyact==2)
 	print(
-			tapply(S4[, "my.physical"], 
+			tapply(S4[, "my.diab"], 
 					INDEX = interaction(tmpf4, tmps4), 
 					function(x) table(x)#/length(x)
 			)
@@ -192,9 +192,10 @@ for(i in 1:3){
 
 &!(S4$my.apo_typ %in% c(1,2,4))
 
-apply(S4[which(S4$prev_mi == 0), feature.cont], 2, function(x) wilcox.test(x~S4$inz_mi[which(S4$prev_mi == 0)]))
+subset = which(S4$prev_mi == 0 & S4$lcsex==2)
+apply(S4[subset, feature.cont], 2, function(x) wilcox.test(x~S4$inz_mi[subset]))
 
-x = 22; y = 193; X = 58; Y = 467
+x = 104; y = 14; X = 1275; Y = 68
 a = matrix(c(x, X-x, y, Y-y), ncol = 2)
 fisher.test(a)
 

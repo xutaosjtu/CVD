@@ -7,14 +7,14 @@
 tmp = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model1
-		(S4$lp_diab_who06==4|S4$lp_diab_who06==5), ##model 2
-		log(S4$ltsysmm),log(S4$ll_hdln), log(S4$ll_choln), as.factor(S4$ltcigreg),##model 3
+		S4$my.diab, ##model 2
+		S4$ltsysmm,S4$ll_hdln, S4$ll_choln, S4$my.cigreg,##model 3
 		##log(S4$total2HDL), ##model 4
 		##log(S4$ltdiamm), ##model 5
-		S4$ltalkkon, S4$lh_crp, S4$total2HDL,
+		S4$my.alkkon, S4$lh_crp,
 		log(as.matrix(S4[, metabo.asso]))
 )
-colnames(tmp)[3:13] = clinical#, "total2HDL"
+colnames(tmp)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
 

@@ -2,39 +2,109 @@
 # 
 # Author: tao.xu
 ###############################################################################
+S4$my.sysmm.untreat = log(S4$ltsysmm)
+S4$my.sysmm.untreat[which((S4$ltmbbl ==1 | S4$ltmace ==1 | S4$ltmata ==1))] = 0
+S4$my.sysmm.treat = log(S4$ltsysmm)
+S4$my.sysmm.treat[which(!(S4$ltmbbl ==1 | S4$ltmace ==1 | S4$ltmata ==1))] = 0
+data = S4
+data[, metabo.selected3] =  log(S4[, metabo.selected3])
 
 #################	Framingham score	##########################
 framingham<-function(x){
+	#print(x["lcsex"])
+	if(x["lcsex"] == 1){ beta = c(3.06117, 1.12370, -0.93263, 1.99881, 1.93303, 0.65451, 0.57367, 23.9802); S0 = 0.88936}
+	else {beta = c(2.32888, 1.20904, -0.70833, 2.76157, 2.82263, 0.52873, 0.69154, 26.1931); S0 = 0.95012}
 	X = rep(0, 6)
-	X[1] =  3.06117 * log(x$ltalteru)
-	X[2] = 1.12370 * log(x$ll_chola)
-	X[3] = log(x$ll_hdla)
-	if(!(x$ltmbbl ==1 | x$ltmace ==1 | x$ltmata ==1)) = 1.99881*log(x$ltsysmm)
-	else  = 1.93303*log(x$ltsysmm)
-	0.65451* as.numeric(x$ltcigreg==1|x$ltcigreg==2)
-	as.numeric(x$my.diab)
+	X[1] = beta[1] * log(x$ltalteru)#age
+	X[2] = beta[2] * log(x$ll_chola)#total cholesterol
+	X[3] = beta[3] * log(x$ll_hdla)#HDL
+	if(is.na(x$ltmbbl) & is.na(x$ltmace) & is.na(x$ltmata)) { X[4]=NA }
+	else if(!(x$ltmbbl ==1 | x$ltmace ==1 | x$ltmata ==1)) X[4]= beta[4]*log(x$ltsysmm) #systolic blood pressure if un-treated
+	else  X[4] = beta[5]*log(x$ltsysmm) #systolic blood pressure if treated
+	X[5] = beta[6]* as.numeric(x$ltcigreg==1|x$ltcigreg==2)#smoking
+	X[6] = beta[7] * (as.numeric(x$my.diab)-1)
+	risk = 1-S0^exp(sum(X) - beta[8]);
+	#risk = exp(sum(X) - beta[8])
+	return(risk)
 }
 
+for(i in 1:dim(data)[1]){
+	data$framingham[i] = framingham(data[i,]) 
+}
+
+
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				log(ltalteru) + #age
+				log(ll_chola) + #total cholesterol
+				log(ll_hdla) + #HDL cholesterol
+				my.sysmm.untreat + 	#systolic blood pressure if untreated
+				my.sysmm.treat +	#systolic blood pressure if treated
+				as.numeric(ltcigreg==1|ltcigreg==2) +
+				(as.numeric(my.diab)-1),
+		subset = which(S4$prev_mi == 0&S4$lcsex ==1),
+		data)
+prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				log(ltalteru) + #age
+				log(ll_chola) + #total cholesterol
+				log(ll_hdla) + #HDL cholesterol
+				my.sysmm.untreat + 	#systolic blood pressure if untreated
+				my.sysmm.treat +	#systolic blood pressure if treated
+				as.numeric(ltcigreg==1|ltcigreg==2) +
+				(as.numeric(my.diab)-1),
+		subset = which(S4$prev_mi == 0&S4$lcsex ==2),
+		data)
+prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+
+subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
+pred.3 = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+
+pred.framingham = roc (data$inz_mi[which(S4$prev_mi == 0)], data$framingham[which(S4$prev_mi == 0)], ci = T)
+
+base = data.frame(ltalteru=0, ll_chola =0, ll_hdla = 0, my.sysmm.untreat = 0, my.sysmm.treat = 0, ltcigreg = 0, my.diab = 0)
 
 #################	change of covariate coefficients while adding metabolites into the model	##################
 #Arg = scale(S4$Arg); 
 #Trp = scale(S4$Trp);
 #lysoPC_a_C17_0 = scale(log(S4$lysoPC_a_C17_0))
 #PC_aa_C32_2 = scale(log(S4$PC_aa_C32_2))
-data = S4
-data[, metabo.selected3] =  log(S4[, metabo.selected3])
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2   
-#				ltalteru + factor(lcsex, ordered = F) + ltbmi +## model 1
-#				my.diab +  ##model 2
-#				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
-#				+ lh_crp  ##model 4 
-		#+ lttumf +waist2hip + my.physical
-		#+ltdiamm ## model 5
-		#+lh_crp #model 6
-		#+waist2hip#model 7
+
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				ltalteru + ltbmi +## model 1
+				my.diab +  ##model 2
+				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
+				+ lh_crp  ##model 4 + my.physical
+		,subset = which(S4$prev_mi == 0&S4$lcsex ==1),
+		data)
+prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				ltalteru + ltbmi +## model 1
+				my.diab +  ##model 2
+				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
+				+ lh_crp  ##model 4 + my.physical
+		,subset = which(S4$prev_mi == 0&S4$lcsex ==2),
+		data)
+prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+
+extractAIC(model)
+
+
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				ltalteru + as.factor(lcsex) + ltbmi +## model 1
+				my.diab +  ##model 2
+				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
+				+ lh_crp  ##model 4 + my.physical
 		,subset = which(S4$prev_mi == 0),
 		data)
-extractAIC(model)
+prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+
+tmp.pred = crossval.cox(x = tmp[subset, c(metabo.selected3, clinical)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+
+
 
 plotCI(1:length(coef(model))+0.5, y = coef(model), liw = coef(model)-confint(model)[,1], uiw = abs(coef(model)-confint(model)[,2]), col = "green")
 
@@ -107,7 +177,10 @@ pchisq(-2*(Models$Cox.all$loglik[2] - Models$Cox.clinical$loglik[2]), df=1)
 anova(Models$Cox.all, Models$Cox.clinical, Models$Cox.metabolites)
 
 #testing the differences of prediction performance by roc (package: pROC)
+require(pROC)
 set.seed(10)
+
+subset
 Predicts <-list(
 		#"metabolites.boost" = crossval.cox(x = tmp[subset, metabo.selected], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1330),
 		"metabolites.regularize" = crossval.cox(x = tmp[subset, metabo.selected3], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = 1315),
