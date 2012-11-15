@@ -23,19 +23,58 @@ framingham<-function(x){
 	else  X[4] = beta[5]*log(x$ltsysmm) #systolic blood pressure if treated
 	X[5] = beta[6]* as.numeric(x$ltcigreg==1|x$ltcigreg==2)#smoking
 	X[6] = beta[7] * (as.numeric(x$my.diab)-1)
-	risk = 1-S0^exp(sum(X) - beta[8]);
-	#risk = exp(sum(X) - beta[8])
+	#risk = 1-S0^exp(sum(X) - beta[8]);
+	risk = sum(X) - beta[8]
 	return(risk)
 }
 
 for(i in 1:dim(data)[1]){
-	data$framingham[i] = framingham(data[i,]) 
+	S4$framingham.linear[i] = framingham(S4[i,]) 
 }
 
-
+###	men and women separated, using the framingham score
 prediction = rep(NA, dim(data)[1])
 names(prediction) = rownames(data)
 model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				framingham.linear,
+		subset = which(S4$prev_mi == 0&S4$lcsex ==1),
+		data)
+sort(survfit(model)$surv)[1]
+model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+				framingham.linear,
+		subset = which(S4$prev_mi == 0&S4$lcsex ==2),
+		data)
+sort(survfit(model)$surv)[1]
+
+tmp = data.frame(
+		time = S4$mi_time, event = S4$inz_mi,  # time and events
+		framingham.linear = S4$framingham.linear,
+		log(as.matrix(S4[, metabo.asso]))
+)
+na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
+#men
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
+pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, "framingham.linear")], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1- 0.5819581 ^ pred.cv$cv.fit 
+#women
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
+pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, "framingham.linear")], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] =1- 0.9879792 ^ pred.cv$cv.fit 
+
+fits = list()
+fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+#fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$inz_mi[which(S4$prev_mi == 0)], S4$framingham[which(S4$prev_mi == 0)], ci = T)
+roc.test(fits[[1]], fits[[2]])
+
+plot(fits[[1]], col = "red", lty = 1, main = "Comparison with Framingham score")
+
+
+###	men and women separated, using the framingham model
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
+##without cross-validation
+model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
 				log(ltalteru) + #age
 				log(ll_chola) + #total cholesterol
 				log(ll_hdla) + #HDL cholesterol
@@ -46,7 +85,7 @@ model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +
 		subset = which(S4$prev_mi == 0&S4$lcsex ==1),
 		data)
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
 				log(ltalteru) + #age
 				log(ll_chola) + #total cholesterol
 				log(ll_hdla) + #HDL cholesterol
@@ -58,21 +97,40 @@ model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +
 		data)
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 
-subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
-pred.3 = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+#with cross-validation
+tmp = data.frame(
+		time = S4$mi_time, event = S4$inz_mi,  # time and events
+		log(S4$ltalteru), #age
+		as.factor(S4$lcsex), #sex
+		log(S4$ll_chola),	#total cholesterol
+		log(S4$ll_hdla),	#HDL cholesterol
+		S4$my.sysmm.untreat,#systolic blood pressure untreated
+		S4$my.sysmm.treat,	#systolic blood pressure treated    
+		as.numeric(S4$ltcigreg==1|S4$ltcigreg==2),	#smoking 
+		(as.numeric(S4$my.diab)-1),	#diabetes
+		log(as.matrix(S4[, metabo.asso]))
+)
+clinical = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
+colnames(tmp)[3:10] = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
+na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
+#men
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
+pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, clinical[-2])], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1- 0.6882019 ^ pred.cv$cv.fit 
+#women
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
+pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, clinical[-2])], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] =1- 0.9735755 ^ pred.cv$cv.fit 
 
-pred.framingham = roc (data$inz_mi[which(S4$prev_mi == 0)], data$framingham[which(S4$prev_mi == 0)], ci = T)
+fits = list()
+fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 
-base = data.frame(ltalteru=0, ll_chola =0, ll_hdla = 0, my.sysmm.untreat = 0, my.sysmm.treat = 0, ltcigreg = 0, my.diab = 0)
-
-#################	change of covariate coefficients while adding metabolites into the model	##################
-#Arg = scale(S4$Arg); 
-#Trp = scale(S4$Trp);
-#lysoPC_a_C17_0 = scale(log(S4$lysoPC_a_C17_0))
-#PC_aa_C32_2 = scale(log(S4$PC_aa_C32_2))
-
+##########################	reference model used to selecte metabolites	########################
+###	men and women separated, using reference model 4
 prediction = rep(NA, dim(data)[1])
 names(prediction) = rownames(data)
+#without cross-validation
 model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
 				ltalteru + ltbmi +## model 1
 				my.diab +  ##model 2
@@ -89,22 +147,75 @@ model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +
 		,subset = which(S4$prev_mi == 0&S4$lcsex ==2),
 		data)
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+###with cross validation
+tmp = data.frame(
+		time = S4$mi_time, event = S4$inz_mi,  # time and events
+		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model 1
+		S4$my.diab, ##model 2
+		S4$ltsysmm, S4$ll_hdla, S4$ll_chola, S4$my.cigreg, S4$my.alkkon,##model 3
+		S4$lh_crp, ##model 4
+		log(as.matrix(S4[, metabo.asso]))
+)
+clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
+colnames(tmp)[3:12] = clinical#, "total2HDL"
+na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
+#men
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
+pred = crossval.cox(x = tmp[subset, c(clinical[-3])], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1- 0.5742368 ^ pred$cv.fit
+#women
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
+pred = crossval.cox(x = tmp[subset, c(clinical[-3])], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1- 0.9902676 ^ pred$cv.fit
 
-extractAIC(model)
+fits = list()
+fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 
+reclassification(tmp[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.3, 1))
 
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+plotDiscriminationBox(tmp[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor)
+, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.3, 1)
+
+###	combined men and women, using reference model 4
+#estimation without cross-validation
+model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
 				ltalteru + as.factor(lcsex) + ltbmi +## model 1
 				my.diab +  ##model 2
-				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
-				+ lh_crp  ##model 4 + my.physical
+				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3
+				+ lh_crp  ##model 4
 		,subset = which(S4$prev_mi == 0),
 		data)
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 
-tmp.pred = crossval.cox(x = tmp[subset, c(metabo.selected3, clinical)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+tmp = data.frame(
+		time = S4$mi_time, event = S4$inz_mi,  # time and events
+		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model 1
+		S4$my.diab, ##model 2
+		S4$ltsysmm, S4$ll_hdla, S4$ll_chola, S4$my.cigreg, S4$my.alkkon,##model 3
+		S4$lh_crp, ##model 4
+		log(as.matrix(S4[, metabo.asso]))
+)
+clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
+colnames(tmp)[3:12] = clinical#, "total2HDL"
+na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
+pred = crossval.cox(x = tmp[subset, c( metabo.selected3, clinical)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-  0.8270135 ^ pred$cv.fit
+
+fits = list()
+fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 
 
+#subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
+#pred.3 = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+#
+#pred.framingham = roc (data$inz_mi[which(S4$prev_mi == 0)], data$framingham[which(S4$prev_mi == 0)], ci = T)
+#
+#base = data.frame(ltalteru=0, ll_chola =0, ll_hdla = 0, my.sysmm.untreat = 0, my.sysmm.treat = 0, ltcigreg = 0, my.diab = 0)
+
+extractAIC(model)
 
 plotCI(1:length(coef(model))+0.5, y = coef(model), liw = coef(model)-confint(model)[,1], uiw = abs(coef(model)-confint(model)[,2]), col = "green")
 
