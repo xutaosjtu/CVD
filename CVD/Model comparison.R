@@ -33,72 +33,60 @@ for(i in 1:dim(data)[1]){
 }
 
 ###	men and women separated, using the framingham score
-prediction = rep(NA, dim(data)[1])
-names(prediction) = rownames(data)
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				framingham.linear,
-		subset = which(S4$prev_mi == 0&S4$lcsex ==1),
-		data)
-sort(survfit(model)$surv)[1]
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				framingham.linear,
-		subset = which(S4$prev_mi == 0&S4$lcsex ==2),
-		data)
-sort(survfit(model)$surv)[1]
-
-tmp = data.frame(
+data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		framingham.linear = S4$framingham.linear,
 		log(as.matrix(S4[, metabo.asso]))
 )
-na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
+na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
+
+loglik = 0
+for (i in 1:2){
+	model = coxph(Surv(data$time, data$event) ~ .,
+			subset = which(S4$prev_mi == 0&S4$lcsex ==i),
+			data[ ,c(metabo.selected3, "framingham.linear")])
+	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
+	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+	loglik = model$loglik[2] + loglik
+}
+##likelihood ratio test
+logliks = list()
+logliks[[1]] = loglik
+logliks[[2]] = loglik
+pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1) 
+
 #men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
-pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, "framingham.linear")], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] = 1- 0.5819581 ^ pred.cv$cv.fit 
 #women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
-pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, "framingham.linear")], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] =1- 0.9879792 ^ pred.cv$cv.fit 
 
 fits = list()
-fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 #fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
-fits[[2]] = roc (data$inz_mi[which(S4$prev_mi == 0)], S4$framingham[which(S4$prev_mi == 0)], ci = T)
-roc.test(fits[[1]], fits[[2]])
+fits[[2]] = roc (data$event[which(!is.na(prediction))], S4$framingham[which(!is.na(prediction))], ci = T)
 
-plot(fits[[1]], col = "red", lty = 1, main = "Comparison with Framingham score")
+
+#calculate delta AUC
+fits.test =  roc.test(fits[[1]], fits[[2]])
+deltaAUC <- function(fits.test){
+	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+	se = delta / fits.test$statistic
+	return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+}
+deltaAUC(fits.test)
+
+#calculate NRI and IDI
+fits.recl = reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 
 ###	men and women separated, using the framingham model
-prediction = rep(NA, dim(data)[1])
-names(prediction) = rownames(data)
-##without cross-validation
-model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				log(ltalteru) + #age
-				log(ll_chola) + #total cholesterol
-				log(ll_hdla) + #HDL cholesterol
-				my.sysmm.untreat + 	#systolic blood pressure if untreated
-				my.sysmm.treat +	#systolic blood pressure if treated
-				as.numeric(ltcigreg==1|ltcigreg==2) +
-				(as.numeric(my.diab)-1),
-		subset = which(S4$prev_mi == 0&S4$lcsex ==1),
-		data)
-prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				log(ltalteru) + #age
-				log(ll_chola) + #total cholesterol
-				log(ll_hdla) + #HDL cholesterol
-				my.sysmm.untreat + 	#systolic blood pressure if untreated
-				my.sysmm.treat +	#systolic blood pressure if treated
-				as.numeric(ltcigreg==1|ltcigreg==2) +
-				(as.numeric(my.diab)-1),
-		subset = which(S4$prev_mi == 0&S4$lcsex ==2),
-		data)
-prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-
-#with cross-validation
-tmp = data.frame(
+data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		log(S4$ltalteru), #age
 		as.factor(S4$lcsex), #sex
@@ -111,42 +99,80 @@ tmp = data.frame(
 		log(as.matrix(S4[, metabo.asso]))
 )
 clinical = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
-colnames(tmp)[3:10] = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
-na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
+colnames(data)[3:10] = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
+na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
+
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
+
+##without cross-validation
+loglik = 0
+for( i in 1:2){
+	model = coxph(Surv(data$time, data$event) ~ .,
+		subset = which(S4$prev_mi == 0&S4$lcsex ==i),
+		data[, c( clinical[-2])])
+	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
+	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+	loglik = model$loglik[2] + loglik
+}
+
+##likelihood ratio test
+logliks = list()
+logliks[[1]] = loglik
+logliks[[2]] = loglik
+pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1) 
+
+#with cross-validation
 #men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
-pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, clinical[-2])], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1- 0.6882019 ^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c(  clinical[-2])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-0.6882019 ^ pred.cv$cv.fit 
 #women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
-pred.cv = crossval.cox(x = tmp[subset, c( metabo.selected3, clinical[-2])], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c(  clinical[-2])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] =1- 0.9735755 ^ pred.cv$cv.fit 
 
 fits = list()
-fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
-fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+
+#calculate delta AUC
+fits.test =  roc.test(fits[[1]], fits[[2]])
+deltaAUC <- function(fits.test){
+	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+	se = delta / fits.test$statistic
+	return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+}
+deltaAUC(fits.test)
+
+#calculate NRI and IDI
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 ##########################	reference model used to selecte metabolites	########################
 ###	men and women separated, using reference model 4
 prediction = rep(NA, dim(data)[1])
 names(prediction) = rownames(data)
+loglik = 0
 #without cross-validation
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				ltalteru + ltbmi +## model 1
-				my.diab +  ##model 2
-				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
-				+ lh_crp  ##model 4 + my.physical
-		,subset = which(S4$prev_mi == 0&S4$lcsex ==1),
-		data)
-prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-model = coxph(Surv(mi_time, inz_mi) ~ Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				ltalteru + ltbmi +## model 1
-				my.diab +  ##model 2
-				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
-				+ lh_crp  ##model 4 + my.physical
-		,subset = which(S4$prev_mi == 0&S4$lcsex ==2),
-		data)
-prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+for( i in 1:2){
+	model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
+					ltalteru + ltbmi +## model 1
+					my.diab +  ##model 2
+					ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3+ my.chola + my.hdla + ll_chola + total2HDL +ll_hdla
+					+ lh_crp  ##model 4 + my.physical
+			,subset = which(S4$prev_mi == 0&S4$lcsex ==i),
+			data)
+	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
+	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+	loglik = model$loglik[2] + loglik
+}
+
+##likelihood ratio test
+logliks = list()
+logliks[[1]] = loglik
+logliks[[2]] = loglik
+pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1) 
+
 ###with cross validation
 tmp = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
@@ -172,23 +198,21 @@ fits = list()
 fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 
-reclassification(tmp[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.3, 1))
+#calculate delta AUC
+fits.test =  roc.test(fits[[1]], fits[[2]])
+deltaAUC <- function(fits.test){
+	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+	se = delta / fits.test$statistic
+	return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+}
+deltaAUC(fits.test)
 
-plotDiscriminationBox(tmp[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor)
-, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.3, 1)
+#calculate NRI and IDI
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 ###	combined men and women, using reference model 4
 #estimation without cross-validation
-model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-				ltalteru + as.factor(lcsex) + ltbmi +## model 1
-				my.diab +  ##model 2
-				ltsysmm+ my.cigreg  + my.alkkon + ll_chola + ll_hdla ##model 3
-				+ lh_crp  ##model 4
-		,subset = which(S4$prev_mi == 0),
-		data)
-prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-
-tmp = data.frame(
+data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model 1
 		S4$my.diab, ##model 2
@@ -197,15 +221,41 @@ tmp = data.frame(
 		log(as.matrix(S4[, metabo.asso]))
 )
 clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
-colnames(tmp)[3:12] = clinical#, "total2HDL"
+colnames(data)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
-pred = crossval.cox(x = tmp[subset, c( metabo.selected3, clinical)], y= Surv(tmp$time[subset], tmp$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1-  0.8270135 ^ pred$cv.fit
+
+model = coxph(Surv(data$time, data$event) ~ .
+		,subset = which(S4$prev_mi == 0),
+		data[, c( clinical)])
+prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+loglik = model$loglik[2]
+sort(survfit(model)$surv)[1]
+
+logliks = list()
+logliks[[1]] = loglik
+logliks[[2]] = loglik
+pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
+
+
+pred = crossval.cox(x = data[subset, c( clinical)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-  0.8607801 ^ pred$cv.fit
 
 fits = list()
-fits[[1]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
-fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+
+#calculate delta AUC
+fits.test =  roc.test(fits[[1]], fits[[2]])
+deltaAUC <- function(fits.test){
+	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+	se = delta / fits.test$statistic
+	return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+}
+deltaAUC(fits.test)
+
+#calculate NRI and IDI
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 
 #subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
