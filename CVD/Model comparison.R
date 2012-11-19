@@ -226,10 +226,16 @@ clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "smoking", "alkkon", 
 colnames(data)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
+model = list()
+model[[1]] = clinical[1:3]
+model[[2]] = clinical[1:4]
+model[[3]] = clinical[1:9]
+model[[4]] = clinical
+
 
 model = coxph(Surv(data$time, data$event) ~ .
 		,subset = which(S4$prev_mi == 0),
-		data[, c("Trp", clinical)])
+		data[, c(metabo.selected3, model[[i]])])
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 loglik = model$loglik[2]
 sort(survfit(model)$surv)[1]
@@ -241,27 +247,41 @@ logliks[[1]] = loglik
 logliks[[2]] = loglik
 1-pchisq(2*(logliks[[1]] - logliks[[2]]), df=1)
 
-prediction = rep(NA, dim(data)[1])
-names(prediction) = rownames(data)
-subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
-pred = crossval.cox(x = data[subset, c(metabo.selected3, clinical)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1-   0.8482743 ^ pred$cv.fit
+for(i in 5:8){
+	prediction = rep(NA, dim(data)[1])
+	names(prediction) = rownames(data)
+	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
+	pred = crossval.cox(x = data[subset, c(model[[i-4]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
+	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+}
+
+#prediction = rep(NA, dim(data)[1])
+#names(prediction) = rownames(data)
+#subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
+#pred = crossval.cox(x = data[subset, c(metabo.selected3, clinical)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+#prediction[subset] = 1-   0.8482743 ^ pred$cv.fit
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 fits[[2]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 
 #calculate delta AUC
-fits.test =  roc.test(fits[[1]], fits[[2]])
-deltaAUC <- function(fits.test){
-	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
-	se = delta / fits.test$statistic
-	return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+for(i in 1:4){
+	fits[[i]]$ci[1:3]
+	fits[[i+4]]$ci[1:3]
+	fits.test =  roc.test(fits[[i]], fits[[i+4]])
+	print(fits.test)
+	deltaAUC <- function(fits.test){
+		delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+		se = delta / fits.test$statistic
+		return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+	}
+	deltaAUC(fits.test)
 }
-deltaAUC(fits.test)
 
 #calculate NRI and IDI
-reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[i+4]]$predictor, fits[[i]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 
 #subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
