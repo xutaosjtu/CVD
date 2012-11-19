@@ -377,18 +377,18 @@ S4$total2HDL = S4$ll_chola/S4$ll_hdla
 rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
-	metabolite = scale(log(S4[, m]))
+	metabolite = log(S4[, m])
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
-					ltalteru + factor(lcsex, ordered = F) + ltbmi## model 1
-					+ factor(lp_diab_who06==4|lp_diab_who06==5, ordered = F)  ##model 2
-					+ log(ltsysmm)+ my.cigreg + my.alkkon  + my.chola + my.hdla ##model 3+ total2HDL
+					ltalteru + factor(lcsex) + ltbmi## model 1
+					+ my.diab  ##model 2
+					+ ltsysmm+ my.cigreg + my.alkkon  + ll_chola + ll_hdla ##model 3+ total2HDL
 	 				#+ lh_crp  ##model 4 + total2HDL
 					#+ltdiamm ## model 5
 					#+lh_crp #model 6
 					#+waist2hip#model 7
 					,subset = which(S4$prev_mi == 0),
 					S4)
-	rst = rbind(rst, summary(model)$coefficients[11,])
+	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[10,])
 	#rst2 = rbind(rst2, summary(model)$coefficients[11,])
 	#rst3 = rbind(rst3, summary(model)$coefficients[12,])
@@ -397,7 +397,7 @@ for (m in S4_valid_measures){
 table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Coef invest_MI survival analysis_model3_ withonly ratio.csv")
+write.csv(rst, file = "Coef invest_MI survival analysis_model3_ without ratio.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 

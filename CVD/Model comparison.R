@@ -101,7 +101,6 @@ data = data.frame(
 clinical = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
 colnames(data)[3:10] = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
-
 prediction = rep(NA, dim(data)[1])
 names(prediction) = rownames(data)
 
@@ -110,7 +109,7 @@ loglik = 0
 for( i in 1:2){
 	model = coxph(Surv(data$time, data$event) ~ .,
 		subset = which(S4$prev_mi == 0&S4$lcsex ==i),
-		data[, c( clinical[-2])])
+		data[, c( metabo.selected3,clinical[-2])])
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
 	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 	loglik = model$loglik[2] + loglik
@@ -125,12 +124,12 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 #with cross-validation
 #men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
-pred.cv = crossval.cox(x = data[subset, c(  clinical[-2])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1-0.6882019 ^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, clinical[-2])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-0.6187485 ^ pred.cv$cv.fit #metabolite+reference:0.6187485; reference: 0.6882019
 #women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
-pred.cv = crossval.cox(x = data[subset, c(  clinical[-2])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] =1- 0.9735755 ^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, clinical[-2])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] =1- 0.9888222 ^ pred.cv$cv.fit #metabolite+reference:0.9888222; reference: 0.9735755
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
@@ -211,35 +210,40 @@ deltaAUC(fits.test)
 reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 ###	combined men and women, using reference model 4
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
+loglik = 0
 #estimation without cross-validation
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model 1
 		S4$my.diab, ##model 2
-		S4$ltsysmm, S4$ll_hdla, S4$ll_chola, S4$my.cigreg, S4$my.alkkon,##model 3
+		S4$ltsysmm,  S4$my.cigreg, S4$my.alkkon, S4$ll_hdla, S4$ll_chola, ##model 3
 		S4$lh_crp, ##model 4
 		log(as.matrix(S4[, metabo.asso]))
 )
-clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
+clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
 colnames(data)[3:12] = clinical#, "total2HDL"
-na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
-subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
+na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
+
 
 model = coxph(Surv(data$time, data$event) ~ .
 		,subset = which(S4$prev_mi == 0),
-		data[, c( clinical)])
+		data[, c( metabo.selected3 ,clinical)])
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 loglik = model$loglik[2]
 sort(survfit(model)$surv)[1]
+
+"Arg"
 
 logliks = list()
 logliks[[1]] = loglik
 logliks[[2]] = loglik
 pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 
-
-pred = crossval.cox(x = data[subset, c( clinical)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1-  0.8607801 ^ pred$cv.fit
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
+pred = crossval.cox(x = data[subset, c(metabo.selected3, clinical)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-   0.8646054 ^ pred$cv.fit
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
