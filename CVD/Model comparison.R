@@ -229,7 +229,7 @@ na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 model = coxph(Surv(data$time, data$event) ~ .
 		,subset = which(S4$prev_mi == 0),
-		data[, c( metabo.selected3 ,clinical)])
+		data[, c("Trp", clinical)])
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 loglik = model$loglik[2]
 sort(survfit(model)$surv)[1]
@@ -239,11 +239,13 @@ sort(survfit(model)$surv)[1]
 logliks = list()
 logliks[[1]] = loglik
 logliks[[2]] = loglik
-pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
+1-pchisq(2*(logliks[[1]] - logliks[[2]]), df=1)
 
+prediction = rep(NA, dim(data)[1])
+names(prediction) = rownames(data)
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
 pred = crossval.cox(x = data[subset, c(metabo.selected3, clinical)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1-   0.8646054 ^ pred$cv.fit
+prediction[subset] = 1-   0.8482743 ^ pred$cv.fit
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
