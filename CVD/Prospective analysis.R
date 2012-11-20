@@ -379,14 +379,14 @@ rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
 	metabolite = log(S4[, m])
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
-					ltalteru + factor(lcsex) + ltbmi## model 1
+					ltalteru  + ltbmi## model 1+ as.factor(lcsex)
 					+ my.diab  ##model 2
 					+ ltsysmm+ my.cigreg + my.alkkon  + ll_chola + ll_hdla ##model 3+ total2HDL
-	 				#+ lh_crp  ##model 4 + total2HDL
+	 				+ lh_crp  ##model 4 + total2HDL
 					#+ltdiamm ## model 5
 					#+lh_crp #model 6
 					#+waist2hip#model 7
-					,subset = which(S4$prev_mi == 0),
+					,subset = which(S4$prev_mi == 0&S4$lcsex==2),
 					S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[10,])
@@ -397,7 +397,7 @@ for (m in S4_valid_measures){
 table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Coef invest_MI survival analysis_model3_ without ratio.csv")
+write.csv(rst, file = "Coef invest_MI survival analysis_model4_ female without ratio.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
