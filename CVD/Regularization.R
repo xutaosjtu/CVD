@@ -2,18 +2,43 @@
 # 
 # Author: tao.xu
 ###############################################################################
+metabo.asso = scan(what = character())
+M22030
+M35675
+M17945
+M32654
+M32675
+M15122
+M32346
+M39379
+M35126
+M35127
+M37058
+M32319
+M16634
+M22649
+M24074
+M32634
+M32740
+M33132
+M33638
+M34123
+M35193
+M35464
+
 
 ###data
 tmp = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
-		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model1
+		scale(S4$ltalteru), scale(S4$ltbmi), as.factor(S4$lcsex), ##model1
 		S4$my.diab, ##model 2
-		S4$ltsysmm,S4$ll_hdln, S4$ll_choln, S4$my.cigreg,##model 3
+		scale(S4$ltsysmm),scale(S4$ll_hdla), scale(S4$ll_chola), S4$my.cigreg,##model 3
 		##log(S4$total2HDL), ##model 4
 		##log(S4$ltdiamm), ##model 5
-		S4$my.alkkon, S4$lh_crp,
-		log(as.matrix(S4[, metabo.asso]))
+		S4$my.alkkon, scale(S4$lh_crp),
+		scale(as.matrix(S4[, metabo.asso]))
 )
+clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
 colnames(tmp)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
@@ -64,9 +89,9 @@ tmp2=tmp[subset,]
 model.penal.opt =optL1(
 		Surv(time, event), 
 		penalized = tmp2[,metabo.asso],
-		unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL,
+		unpenalized = ~ age +ltbmi + sex + diabetes + ltsysmm + ll_hdla + ll_chola + smoking + alkkon +lh_crp,
 		data = tmp2,
-		#fold = 10,	
+		fold = 10,	
 		minlambda1 = 0.5, maxlambda1 = 10, 
 		standardize = T
 )

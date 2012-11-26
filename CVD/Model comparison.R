@@ -154,18 +154,21 @@ names(prediction) = rownames(data)
 loglik = 0
 #without cross-validation
 for( i in 1:2){
-	model = coxph(Surv(mi_time, inz_mi) ~ #Arg + Trp + lysoPC_a_C17_0 + PC_aa_C32_2 +  
-					ltalteru + #ltbmi +## model 1
+	model = coxph(Surv(mi_time, inz_mi) ~ log(PC_aa_C32_2) +# lysoPC_a_C17_0 + PC_aa_C32_2 +  
+					ltalteru + lcsex +ltbmi +## model 1
 					my.diab +  ##model 2
 					ltsysmm+ my.cigreg  + my.alkkon +
 					ll_chola + ll_hdla ##model 3
 					+ lh_crp  ##model 4 + my.physical
-			,subset = which(S4$prev_mi == 0&S4$lcsex ==i),
+			,subset = which(S4$prev_mi == 0),#&S4$lcsex ==i
 			S4)
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
 	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 	loglik = model$loglik[2] + loglik
 }
+
+coxph(Surv(time,event)~., data = tmp2[, c("time", "event", names(coef(model.penal.opt$fullfit)))])
+
 
 ##likelihood ratio test
 logliks = list()
@@ -209,6 +212,9 @@ deltaAUC <- function(fits.test){
 deltaAUC(fits.test)
 
 #calculate NRI and IDI
+#NRI(category): sum(v[i])/count(EVENTS)-sum(v[j])/count(NONEVENTS)
+#NRI(continous): sum(pnew[i]-pold[i]) - sum(pnew[j] - pold[j])
+#IDI = (IS[new] - IS [old]) - (IP[new] - IP[old])
 reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 ###	combined men and women, using reference model 4
