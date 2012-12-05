@@ -377,16 +377,13 @@ S4$total2HDL = S4$ll_chola/S4$ll_hdla
 require(survival)
 rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
-for (m in S4_valid_measures){
+for (m in metabo.pairs){
 	metabolite = scale(S4[, m])
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
 					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
 					+ my.diab  ##model 2
 					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				+ scale(lh_crp)  ##model 4 + total2HDL
-					#+ltdiamm ## model 5
-					#+lh_crp #model 6
-					#+waist2hip#model 7
+	 				+ scale(lh_crp)  ##model 4
 					,subset = which(S4$prev_mi == 0),
 					S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
@@ -397,9 +394,9 @@ for (m in S4_valid_measures){
 }
 table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = S4_valid_measures
-rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "Coef invest_MI survival analysis_model4_metabolon_imputed.csv")
+rownames(rst) = metabo.pairs
+#rst = cbind(rst, annotation[rownames(rst),])
+write.csv(rst, file = "metabolite ratio invest_MI survival analysis_model4.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 

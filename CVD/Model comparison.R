@@ -154,12 +154,11 @@ names(prediction) = rownames(data)
 loglik = 0
 #without cross-validation
 for( i in 1:2){
-	model = coxph(Surv(mi_time, inz_mi) ~ log(PC_aa_C32_2) +# lysoPC_a_C17_0 + PC_aa_C32_2 +  
-					ltalteru + lcsex +ltbmi +## model 1
-					my.diab +  ##model 2
-					ltsysmm+ my.cigreg  + my.alkkon +
-					ll_chola + ll_hdla ##model 3
-					+ lh_crp  ##model 4 + my.physical
+	model = coxph(Surv(mi_time, inz_mi) ~ scale(Arg.Trp) +  scale(log(PC_aa_C32_2)) + scale(log(lysoPC_a_C17_0))+ #scale(log(Trp))+scale(log(Arg))
+					scale(ltalteru) + as.factor(lcsex) +scale(ltbmi)## model 1
+					+ my.diab ##model 2
+					+scale(ltsysmm) + my.cigreg  + my.alkkon + scale(ll_chola) + scale(ll_hdla) ##model 3
+					+ scale(lh_crp)  ##model 4 + my.physical
 			,subset = which(S4$prev_mi == 0),#&S4$lcsex ==i
 			S4)
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
@@ -168,6 +167,14 @@ for( i in 1:2){
 }
 
 coxph(Surv(time,event)~., data = tmp2[, c("time", "event", names(coef(model.penal.opt$fullfit)))])
+
+rst = vector(mode = "numeric", length = dim(S4)[1])
+name = ""
+for(i in 1:(length(metabo.asso)-1)){
+	tmp = log(S4[, metabo.asso[i]]) - log(S4[, metabo.asso[(i+1):length(metabo.asso)]])
+	name = c(name, paste(metabo.asso[i], metabo.asso[(i+1):length(metabo.asso)], sep = "."))
+	rst = cbind(rst, tmp)
+}
 
 
 ##likelihood ratio test
@@ -224,9 +231,9 @@ loglik = 0
 #estimation without cross-validation
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
-		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model 1
+		scale(S4$ltalteru), scale(S4$ltbmi), as.factor(S4$lcsex), ##model 1
 		S4$my.diab, ##model 2
-		S4$ltsysmm,  S4$my.cigreg, S4$my.alkkon, S4$ll_hdla, S4$ll_chola, ##model 3
+		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		S4$lh_crp, ##model 4
 		log(as.matrix(S4[, metabo.asso]))
 )
@@ -242,7 +249,7 @@ ref[[4]] = clinical
 
 model = coxph(Surv(data$time, data$event) ~ .
 		,subset = which(S4$prev_mi == 0),
-		data[, c(metabo.selected3, ref[[i]])])
+		data[, c(metabo.selected3[-1], ref[[i]])])
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 loglik = model$loglik[2]
 sort(survfit(model)$surv)[1]
