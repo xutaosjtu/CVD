@@ -396,7 +396,7 @@ table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = metabo.pairs
 #rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolite ratio invest_MI survival analysis_model4.csv")
+write.csv(rst, file = "metabolite ratio (all) invest_MI survival analysis_model4.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
@@ -419,34 +419,33 @@ PC_ae_C36_2
 PC_ae_C38_2
 PC_ae_C40_1
 
+metabo.ratio.asso = scan(what = character())
+Arg.Trp
+Arg.lysoPC_a_C16_0
+Arg.lysoPC_a_C17_0
+Arg.lysoPC_a_C18_2
+Arg.PC_aa_C28_1
+Arg.PC_aa_C32_2
+Arg.PC_aa_C32_3
+Arg.PC_aa_C34_2
+Arg.PC_aa_C34_3
+Arg.PC_aa_C36_2
+Arg.PC_aa_C36_3
+Arg.PC_ae_C36_1
+Arg.PC_ae_C36_2
+Arg.PC_ae_C38_2
+Arg.PC_ae_C40_1
+PC_aa_C32_2.PC_aa_C32_3
+PC_aa_C32_2.PC_aa_C34_2
+PC_aa_C32_2.PC_aa_C34_3
+PC_aa_C32_2.PC_aa_C36_2
+PC_aa_C32_2.PC_aa_C36_3
+PC_aa_C32_2.PC_ae_C36_1
+PC_aa_C32_2.PC_ae_C38_2
+
 
 
 clinical = c("ltalteru", "ltbmi", "lcsex","my.diab", "ltsysmm", "ll_hdln", "ll_choln", "my.cigreg", "my.alkkon", "lh_crp")
 
-#### stepwise selection of cox regression
-selectCox <- function(formula, data, rule = "aic") {
-	require("rms")
-	require("prodlim")
-	fit <- cph(formula, data, surv = TRUE)
-	bwfit <- fastbw(fit, rule = rule)
-	if (length(bwfit$names.kept) == 0) {
-		newform <- reformulate("1", formula[[2]])
-		newfit <- prodlim(newform, data = data)
-	} else{
-		newform <- reformulate(bwfit$names.kept, formula[[2]])
-		newfit <- cph(newform, data, surv = TRUE)
-	}
-	out <- list(fit = newfit,In = bwfit$names.kept)
-	out$call <- match.call()
-	class(out) <- "selectCox"
-	out
-}
-
-selectCox(
-		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(tmp[,c(metabo.selected3, clinical)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
-		rule = "p")
-
-+ ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
 
 

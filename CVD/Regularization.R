@@ -36,7 +36,7 @@ tmp = data.frame(
 		##log(S4$total2HDL), ##model 4
 		##log(S4$ltdiamm), ##model 5
 		S4$my.alkkon, scale(S4$lh_crp),
-		scale(as.matrix(S4[, metabo.asso]))
+		scale(log(S4[, metabo.asso])), scale(S4[, metabo.ratio.asso])
 )
 clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
 colnames(tmp)[3:12] = clinical#, "total2HDL"
@@ -85,10 +85,9 @@ performance(pred, "auc")
 cat("~",paste(metabo.asso, collapse = "+"))
 
 tmp2=tmp[subset,]
-
 model.penal.opt =optL1(
 		Surv(time, event), 
-		penalized = tmp2[,metabo.asso],
+		penalized = tmp2[,c(metabo.asso, metabo.ratio.asso)],
 		unpenalized = ~ age +ltbmi + sex + diabetes + ltsysmm + ll_hdla + ll_chola + smoking + alkkon +lh_crp,
 		data = tmp2,
 		fold = 10,	
@@ -111,6 +110,21 @@ Trp
 
 
 metabo.selected3 = scan(what = character())
+Arg.Trp
+PC_aa_C32_2
+lysoPC_a_C17_0
+
+
+lysoPC_a_C16_0
+PC_aa_C28_1
+PC_aa_C32_2
+PC_aa_C34_2
+PC_ae_C40_1
+Arg.Trp
+Arg.lysoPC_a_C17_0
+Arg.lysoPC_a_C18_2 
+ 
+
 Arg
 Trp
 lysoPC_a_C17_0
@@ -155,6 +169,31 @@ Models <- list(
 		"Cox.all" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected2, clinical)])
 )
 
+#### stepwise selection of cox regression
+selectCox <- function(formula, data, rule = "aic") {
+	require("rms")
+	require("prodlim")
+	fit <- cph(formula, data, surv = TRUE)
+	bwfit <- fastbw(fit, rule = rule)
+	if (length(bwfit$names.kept) == 0) {
+		newform <- reformulate("1", formula[[2]])
+		newfit <- prodlim(newform, data = data)
+	} else{
+		newform <- reformulate(bwfit$names.kept, formula[[2]])
+		newfit <- cph(newform, data, surv = TRUE)
+	}
+	out <- list(fit = newfit,In = bwfit$names.kept)
+	out$call <- match.call()
+	class(out) <- "selectCox"
+	out
+}
+
+selectCox(
+		formula = Surv(mi_time, inz_mi) ~  .,
+		data = data.frame(tmp[,c(metabo.selected3)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
+		rule = "p")
+
++ ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
 
 #sapply(names(Predicts), function(x)  substitute(x))
 #(AUC: k), list(k = round(auc[[x]],3))))

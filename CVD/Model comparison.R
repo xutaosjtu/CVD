@@ -170,9 +170,9 @@ coxph(Surv(time,event)~., data = tmp2[, c("time", "event", names(coef(model.pena
 
 rst = vector(mode = "numeric", length = dim(S4)[1])
 name = ""
-for(i in 1:(length(metabo.asso)-1)){
-	tmp = log(S4[, metabo.asso[i]]) - log(S4[, metabo.asso[(i+1):length(metabo.asso)]])
-	name = c(name, paste(metabo.asso[i], metabo.asso[(i+1):length(metabo.asso)], sep = "."))
+for(i in 1:(length(S4_valid_measures)-1)){
+	tmp = log(S4[, S4_valid_measures[i]]) - log(S4[, S4_valid_measures[(i+1):length(S4_valid_measures)]])
+	name = c(name, paste(S4_valid_measures[i], S4_valid_measures[(i+1):length(S4_valid_measures)], sep = "."))
 	rst = cbind(rst, tmp)
 }
 
@@ -235,7 +235,7 @@ data = data.frame(
 		S4$my.diab, ##model 2
 		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		S4$lh_crp, ##model 4
-		log(as.matrix(S4[, metabo.asso]))
+		scale(log(S4[, metabo.asso])), scale(S4[,metabo.ratio.asso])
 )
 clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
 colnames(data)[3:12] = clinical#, "total2HDL"
@@ -249,7 +249,7 @@ ref[[4]] = clinical
 
 model = coxph(Surv(data$time, data$event) ~ .
 		,subset = which(S4$prev_mi == 0),
-		data[, c(metabo.selected3[-1], ref[[i]])])
+		data[, c(metabo.selected3, ref[[i]])])
 prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 loglik = model$loglik[2]
 sort(survfit(model)$surv)[1]
@@ -263,7 +263,7 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=4)
 
 
 
-for(i in 1:4){
+for(i in 1:3){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
