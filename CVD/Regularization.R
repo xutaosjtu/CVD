@@ -32,13 +32,11 @@ tmp = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		scale(S4$ltalteru), scale(S4$ltbmi), as.factor(S4$lcsex), ##model1
 		S4$my.diab, ##model 2
-		scale(S4$ltsysmm),scale(S4$ll_hdla), scale(S4$ll_chola), S4$my.cigreg,##model 3
-		##log(S4$total2HDL), ##model 4
-		##log(S4$ltdiamm), ##model 5
-		S4$my.alkkon, scale(S4$lh_crp),
+		scale(S4$ltsysmm), S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
+		scale(S4$lh_crp),
 		scale(log(S4[, metabo.asso])), scale(S4[, metabo.ratio.asso])
 )
-clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
+clinical = c("age", "ltbmi", "sex", "diabetes", "smoking", "alkkon","ltsysmm", "ll_hdla", "ll_chola", "lh_crp")
 colnames(tmp)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
@@ -190,7 +188,7 @@ selectCox <- function(formula, data, rule = "aic") {
 
 selectCox(
 		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(tmp[,c(metabo.selected3)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
+		data = data.frame(tmp[,c(metabo.selected3, clinical)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
 		rule = "p")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)

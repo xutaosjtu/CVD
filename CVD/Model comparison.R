@@ -36,7 +36,7 @@ for(i in 1:dim(data)[1]){
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		framingham.linear = S4$framingham.linear,
-		log(as.matrix(S4[, metabo.asso]))
+		scale(log(as.matrix(S4[, metabo.asso]))), scale(S4[, metabo.ratio.asso])
 )
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 prediction = rep(NA, dim(data)[1])
@@ -60,11 +60,11 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 #men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
 pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1- 0.5819581 ^ pred.cv$cv.fit 
+prediction[subset] = 1- 0.560712 ^ pred.cv$cv.fit 
 #women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)
 pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] =1- 0.9879792 ^ pred.cv$cv.fit 
+prediction[subset] =1- 0.988062 ^ pred.cv$cv.fit 
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
@@ -154,11 +154,11 @@ names(prediction) = rownames(data)
 loglik = 0
 #without cross-validation
 for( i in 1:2){
-	model = coxph(Surv(mi_time, inz_mi) ~ scale(log(Trp))+scale(log(Arg)) +  scale(log(PC_aa_C32_2)) + scale(log(lysoPC_a_C17_0))+ #scale(log(Trp))+scale(log(Arg)) + scale(Arg.Trp)
-					scale(ltalteru) + as.factor(lcsex) +scale(ltbmi)## model 1
+	model = coxph(Surv(mi_time, inz_mi) ~# scale(log(Trp))+scale(log(Arg)) +  scale(log(PC_aa_C32_2)) + scale(log(lysoPC_a_C17_0))+ #scale(log(Trp))+scale(log(Arg)) + scale(Arg.Trp)
+					log(ltalteru) + as.factor(lcsex) +log(ltbmi)## model 1
 					+ my.diab ##model 2
-					+scale(ltsysmm) + my.cigreg  + my.alkkon + scale(ll_chola) + scale(ll_hdla) ##model 3
-					+ scale(lh_crp)  ##model 4 + my.physical
+					+log(ltsysmm) + my.cigreg  + my.alkkon + log(ll_chola) + log(ll_hdla) ##model 3
+					#+ scale(lh_crp)  ##model 4 + my.physical
 			,subset = which(S4$prev_mi == 0),#&S4$lcsex ==i
 			S4)
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
@@ -307,7 +307,7 @@ for(i in 1:4){
 
 #calculate NRI and IDI
 require(PredictABEL)
-reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[5]]$predictor, fits[[i]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[8]]$predictor, fits.ref4[[i]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 
 #subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
