@@ -400,7 +400,27 @@ write.csv(rst, file = "metabolite ratio (all) invest_MI survival analysis_model4
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
-###variable selection by boosting method
+############	association in different quantiles	################
+
+par(mfrow =c(2,2))
+for(m in metabo.selected3){
+	
+	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2)), include.lowest = T,ordered_result = F)
+	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+					+ my.diab  ##model 2
+					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+					+ scale(lh_crp)  ##model 4
+			,subset = which(S4$prev_mi == 0),
+			S4)
+	rst = summary(model)$coefficients[1:4, ]
+	upper = abs(exp(rst[,1] + rst[,3]) - rst[,2])
+	lower = abs(exp(rst[,1] - rst[,3]) - rst[,2]) 
+	plotCI(rst[, 2], uiw = upper, liw = lower, main = m, xlim = c(0,4), ylim = c(0, max(rst[, 2]+upper)), ylab = "relative risk" )
+}
+
+
+###metabolites associated with MI
 metabo.asso = scan(what = character())
 Arg
 Trp

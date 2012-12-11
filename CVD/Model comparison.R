@@ -300,14 +300,14 @@ deltaAUC <- function(fits.test){
 for(i in 1:4){
 	print(fits[[i]]$ci[1:3])
 	#fits[[5]]$ci[1:3]
-	fits.test =  roc.test(fits[[i]], fits.dif_ref[[7]])
+	fits.test =  roc.test(fits.ref4[[i]], fits.dif_ref[[8]])
 	print(fits.test)
 	print(deltaAUC(fits.test))
 }
 
 #calculate NRI and IDI
 require(PredictABEL)
-reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[8]]$predictor, fits.ref4[[i]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[i+4]]$predictor, fits[[i]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
 
 #subset =  which(S4$prev_mi == 0&S4$lcsex ==2)
