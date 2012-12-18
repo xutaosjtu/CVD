@@ -95,7 +95,7 @@ model.penal.opt =optL1(
 #coxph(Surv(time, event)~., data = tmp[subset, c(1:2, 11:18)])
 
 		
-				unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL,
+unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + strata(ltcigreg) + ltalkkon +lh_crp + total2HDL,
 
 		
 metabo.selected2 = scan(what = character())
