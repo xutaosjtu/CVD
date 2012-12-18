@@ -400,7 +400,7 @@ write.csv(rst, file = "metabolite ratio (all) invest_MI survival analysis_model4
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
-############	association in different quantiles	################
+############	Hazardous ratios in different quantiles	################
 
 par(mfrow =c(2,2))
 for(m in metabo.selected3){
