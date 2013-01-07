@@ -34,12 +34,15 @@ tmp = data.frame(
 		S4$my.diab, ##model 2
 		scale(S4$ltsysmm), S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		scale(S4$lh_crp),
+		as.factor(S4$ltmstati),
 		scale(log(S4[, metabo.asso])), scale(S4[, metabo.ratio.asso])
 )
-clinical = c("age", "ltbmi", "sex", "diabetes", "smoking", "alkkon","ltsysmm", "ll_hdla", "ll_chola", "lh_crp")
-colnames(tmp)[3:12] = clinical#, "total2HDL"
+clinical = c("age", "ltbmi", "sex", "diabetes", "smoking", "alkkon","ltsysmm", "ll_hdla", "ll_chola", "lh_crp", "ltmstati")
+colnames(tmp)[3:13] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(tmp, 2, function(x) which(is.na(x)))))
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)
+
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$ltmstati !=1), na.index)
 
 ##regularization based selection
 require(penalized)
@@ -85,8 +88,8 @@ cat("~",paste(metabo.asso, collapse = "+"))
 tmp2=tmp[subset,]
 model.penal.opt =optL1(
 		Surv(time, event), 
-		penalized = tmp2[,c(metabo.asso, metabo.ratio.asso)],
-		unpenalized = ~ age +ltbmi + sex + diabetes + ltsysmm + ll_hdla + ll_chola + smoking + alkkon +lh_crp,
+		penalized = tmp2[,c(metabo.ratio.asso)],
+		unpenalized = ~ age +ltbmi + sex + diabetes + ltsysmm + ll_hdla + ll_chola + smoking + alkkon +lh_crp ,
 		data = tmp2,
 		fold = 10,	
 		minlambda1 = 0.5, maxlambda1 = 10, 
@@ -112,54 +115,67 @@ Arg.Trp
 PC_aa_C32_2
 lysoPC_a_C17_0
 
+#exclude statine users
+lysoPC_a_C16_0
+lysoPC_a_C17_0
+lysoPC_a_C18_1
+lysoPC_a_C18_2
+PC_aa_C28_1
+PC_aa_C34_2
+PC_ae_C38_0
+Arg.Trp
+Arg.lysoPC_a_C18_2
+PC_aa_C32_2.PC_aa_C32_3
+PC_aa_C32_2.PC_aa_C34_3
 
+Trp
+lysoPC_a_C17_0
+lysoPC_a_C18_2
+PC_aa_C28_1
+PC_aa_C32_2
+PC_aa_C34_2
+PC_ae_C38_0
+
+Arg.Trp
+Arg.lysoPC_a_C17_0
+Arg.lysoPC_a_C18_2
+Arg.PC_aa_C28_1
+PC_aa_C32_2.PC_aa_C32_3
+PC_aa_C32_2.PC_aa_C34_3
+PC_aa_C32_2.PC_aa_C36_2
+
+#Statine use as a covariate
+Arg.Trp
+Arg.lysoPC_a_C17_0
+Arg.lysoPC_a_C18_2
 lysoPC_a_C16_0
 PC_aa_C28_1
 PC_aa_C32_2
 PC_aa_C34_2
-PC_ae_C40_1
+PC_ae_C40_1 
+
+Arg
+Trp
+lysoPC_a_C16_0
+lysoPC_a_C17_0
+lysoPC_a_C18_2
+PC_aa_C28_1
+PC_aa_C32_2
+PC_aa_C34_2
+PC_ae_C40_1 
+
 Arg.Trp
 Arg.lysoPC_a_C17_0
-Arg.lysoPC_a_C18_2 
- 
-
-Arg
-Trp
-lysoPC_a_C17_0
-PC_aa_C32_2
+Arg.lysoPC_a_C18_2
+Arg.PC_aa_C28_1
+Arg.PC_ae_C40_1
+PC_aa_C32_2.PC_aa_C36_2
+PC_aa_C32_2.PC_ae_C36_1
 
 
-Arg
-Trp
-lysoPC_a_C17_0
-PC_aa_C32_2
-PC_aa_C34_2
-PC_ae_C36_2
 
-Arg
-Trp
-lysoPC_a_C17_0
-lysoPC_a_C18_2
-PC_aa_C28_1
-PC_aa_C32_2 
-PC_aa_C34_2
-PC_aa_C36_3
-PC_ae_C38_2
-PC_ae_C40_1
+#other
 
-
-C16_1
-Arg
-Trp
-lysoPC_a_C18_1
-lysoPC_a_C18_2
-PC_aa_C28_1
-PC_aa_C32_2
-PC_aa_C34_2
-PC_aa_C36_3
-PC_ae_C38_0
-PC_ae_C38_2
-PC_ae_C40_1
 
 Models <- list(
 		"Cox.metabolites" = coxph(Surv(time, event) ~ ., data = tmp[subset, c("event", "time", metabo.selected3)]),
@@ -188,8 +204,8 @@ selectCox <- function(formula, data, rule = "aic") {
 
 selectCox(
 		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(tmp[,c(metabo.selected3, clinical)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
-		rule = "p")
+		data = data.frame(tmp[,c(metabo.selected3)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
+		rule = "aic")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
 

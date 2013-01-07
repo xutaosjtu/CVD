@@ -377,15 +377,15 @@ S4$total2HDL = S4$ll_chola/S4$ll_hdla
 require(survival)
 rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
-for (m in metabo.pairs.candidates){
-	metabolite = scale((S4[, m]))
+for (m in S4_valid_measures){
+	metabolite = scale(log(S4[, m]))
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
 					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
 					+ my.diab  ##model 2
 					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
 	 				+ scale(lh_crp)  ##model 4
-					+ as.factor(ltmstati)
-					,subset = which(S4$prev_mi == 0),
+					#+ as.factor(ltmstati)
+					,subset = which(S4$prev_mi == 0 & S4$ltmstati !=1),
 					S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[10,])
@@ -395,19 +395,22 @@ for (m in metabo.pairs.candidates){
 }
 table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = metabo.pairs.candidates
+rownames(rst) = S4_valid_measures
 #rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolite ratio (all) invest_MI survival analysis_model4.csv")
+write.csv(rst, file = "metabolites invest_MI survival analysis_model4_statine use exclude.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
 ############	Hazardous ratios in different quantiles	################
-
-pdf("quintile plot of replative risk.pdf", width = 12, height = 12)
+require(gplots)
+pdf("quintile plot of replative risk (norm) ratio.pdf", width = 12, height = 12)
 par(mfrow =c(2,2));
-yrange = NULL
-for(m in candidates){
-	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2)), include.lowest = T,ordered_result = F)
+yrange = NULL; RRquin = NULL
+for(m in candidates[17:38]){
+	metabo.quintile = cut(exp(S4[, m]), breaks = 
+					#range(exp(S4[, m]))[1] + abs(range(exp(S4[, m]))[1]-range(exp(S4[, m]))[2])/6*(1:6), 
+					quantile(exp(S4[, m]), probs = seq(0, 1, 0.2)), 
+			include.lowest = T,ordered_result = F)
 	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
 					+ my.diab  ##model 2
@@ -416,6 +419,11 @@ for(m in candidates){
 			,subset = which(S4$prev_mi == 0&S4$ltmstati !=1),
 			S4)
 	rst = summary(model)$coefficients[1:4, ]
+	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
+			round(exp(rst[,1] + 1.96*rst[,3]), 3),
+			sep = ",")
+	interval = paste(round(rst[,2],3), interval, sep = "(")
+	RRquin = cbind(RRquin, interval)
 	upper = abs(exp(rst[,1] + rst[,3]) - rst[,2])
 	lower = abs(exp(rst[,1] - rst[,3]) - rst[,2]) 
 	if(max(rst[, 2]+upper)>1){
@@ -424,14 +432,16 @@ for(m in candidates){
 	else{
 		yrange = c( min(rst[, 2]-upper), 1)
 	}
-	plotCI(rst[, 2], uiw = upper, liw = lower, main = m, 
-			xlim = c(0,4), ylim = yrange, 
+	x= tapply(exp(S4[,m]), INDEX = metabo.quintile, median)
+	plotCI(x = x[2:5], y = rst[, 2], uiw = upper, liw = lower, main = m, 
+			xlim = range(x), 
+			ylim = yrange, 
 			xaxt = "n",
 			#labels = levels(metabo.quintile), 
 			ylab = "relative risk", xlab = "quintiles of metabolites (ratios)" )
-	plotCI(x=0, y=1, uiw = 0, add=T)
-	axis(1, at = c(0:4), labels = levels(metabo.quintile), col.axis = "blue")
-	lines(lowess(c(0:4), c(1, rst[,2]), f = 0.8), col = "red")
+	plotCI(x=x[1], y=1, uiw = 0, add=T)
+	axis(1, at = x, labels = levels(metabo.quintile), col.axis = "blue")
+	lines(lowess(x, c(1, rst[,2]), f = 0.8), col = "red")
 	abline(h = 1, lty = 2)
 }
 dev.off()
@@ -482,6 +492,7 @@ PC_ae_C36_2
 PC_ae_C38_2
 PC_ae_C40_1
 
+
 metabo.ratio.asso = scan(what = character())
 Arg.Trp
 Arg.lysoPC_a_C16_0
@@ -503,8 +514,8 @@ PC_aa_C32_2.PC_aa_C34_2
 PC_aa_C32_2.PC_aa_C34_3
 PC_aa_C32_2.PC_aa_C36_2
 PC_aa_C32_2.PC_aa_C36_3
-PC_aa_C32_2.PC_ae_C36_1
-PC_aa_C32_2.PC_ae_C38_2
+
+
 
 
 
