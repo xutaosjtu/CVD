@@ -17,14 +17,14 @@ colnames(data)[2:11] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 #############	effect of statine	################
-rst=NULL
-for(i in 1:length(metabo.ratio.asso)){
+rst=NULL; candidates = c(metabo.asso, metabo.ratio.asso)
+for(i in 1:length(candidates)){
 	model = glm(ltmstati ~. ,
 	family = binomial(link = "logit")
-	, data = data[, c(metabo.ratio.asso[i], clinical, "ltmstati")])
+	, data = data[, c(candidates[i], clinical, "ltmstati")])
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
-rownames(rst) = metabo.ratio.asso
+rownames(rst) = candidates
 
 
 rst=NULL; candidates = c(metabo.asso, metabo.ratio.asso)
@@ -36,7 +36,6 @@ for(i in 1:length(candidates)){
 			subset = which(S4$inz_mi==1),
 			data = data[, c("ltmstati", clinical[-10])]
 	)
-	
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
@@ -52,11 +51,13 @@ for(i in 1:length(candidates)){
 rownames(rst) = candidates
 
 
-model = lm(lh_crp ~ ., data = data[, c(metabo.selected3, clinical)])
-write.csv(summary(model)$coef[2:4,], file = "metabolite association with C reactive protein.csv")
+model = lm(lh_crp ~ ., 
+		#subset = which(S4$ltmstati!=1),
+		data = data[, c( clinical, "ltmstati")])
+write.csv(summary(model)$coef, file = "metabolite association with C reactive protein2.csv")
 
 
-
+metabo.selected3,
 
 
 

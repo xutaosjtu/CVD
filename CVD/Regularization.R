@@ -152,7 +152,7 @@ lysoPC_a_C16_0
 PC_aa_C28_1
 PC_aa_C32_2
 PC_aa_C34_2
-PC_ae_C40_1 
+PC_ae_C40_1
 
 Arg
 Trp
@@ -227,28 +227,12 @@ selectCox(
 #pred = prediction(Cox.metabolites$cv.fit, tmp$event[subset])#metabolites model red
 #plot(performance(pred, "tpr", "fpr"), col = "red", add = T)
 #auc[3] = performance(pred, "auc")@y.values
-#legend(0.6, 0.2, 
-#		legend = c(
-#				substitute(all (AUC: k), list(k = round(auc[[1]],2))),
-#				substitute(metabolites (AUC: k), list(k = round(auc[[2]],2))),
-#				substitute(clinical (AUC: k), list(k = round(auc[[3]],2)))
-#				), 
-#		col = c("blue","red", "green"), lty = 1)
+legend(0.6, 0.2, 
+		legend = c(
+				substitute(Reference (AUC: k), list(k = round(ci(fits.dif_ref[[4]])[c(1,3)],2))),
+				substitute(Full (AUC: k), list(k = round(ci(fits.dif_full[[4]])[c(1,3)],2)))
+				#substitute(clinical (AUC: k), list(k = round(auc[[3]],2)))
+				), 
+		col = c("blue","red"), lty = c(2,1))
 #dev.off()
 #auc
-
-
-#test = function (response, penalized, unpenalized, minlambda1, maxlambda1, 
-#		base1, lambda2 = 0, fusedl = FALSE, positive = FALSE, data, 
-#		model = c("cox", "logistic", "linear", "poisson"), startbeta, 
-#		startgamma, fold, epsilon = 1e-10, maxiter = Inf, standardize = FALSE, 
-#		tol = .Machine$double.eps^0.25, trace = TRUE) 
-#{
-#	prep<-.checkinput(match.call(), parent.frame())
-#	#fit <- .modelswitch(prep$model, prep)
-#}
-#
-#test(Surv(time, event)~., unpenalized = ~ ltalteru +ltbmi + lcsex + lp_diab_who06 + ltsysmm + ll_hdln + ll_choln + ltcigreg, data = tmp[subset, c("event", "time", metabo.asso, clinical)],
-#		fold = 10,	
-#		standardize = T
-#)
