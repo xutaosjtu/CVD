@@ -67,8 +67,9 @@ lc044f_1
 names(diseases) = c("Hypertension","Stroke","Myocardio","Heart failure")
 
 #population characteristics
+subset = 1:dim(S4)[1]
 for(i in 1:length(diseases)){
-	chars = apply(S4[,feature.cont], 2, function(x) tapply(x, INDEX = as.factor(S4[, diseases[i]]), mean, na.rm= T))
+	chars = apply(S4[subset,feature.cont], 2, function(x) tapply(x, INDEX = as.factor(S4[subset, diseases[i]]), mean, na.rm= T))
 	write.csv(t(chars), file = paste(names(diseases)[i],"S4 cross sectional.csv", sep = " "))
 }
 
@@ -179,11 +180,11 @@ F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
 for(i in 1:3){
 	print(diseases[i])
 
-	tmps4 = as.factor(S4$lthyact)
-	tmpf4 = as.factor(S4$uthyact)
+	tmps4 = as.factor(S4$prev_mi)[subset]
+	tmpf4 = as.factor(S4$inz_mi)[subset]
 	#which(S4$lthyact==2)
 	print(
-			tapply(S4[, "my.diab"], 
+			tapply(S4$my.physical[subset], 
 					INDEX = interaction(tmpf4, tmps4), 
 					function(x) table(x)#/length(x)
 			)

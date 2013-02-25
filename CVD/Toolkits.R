@@ -50,8 +50,8 @@ characteristics = function(data , factor, d, ...)
 	return(chars)
 }
 
-
-# partial correlation calculation
+## Correlation network analysis tools
+## partial correlation calculation
 cor.partial <- function(data, variables, ...)
 {
 	P = cor( data[,variables], ... )
@@ -68,7 +68,7 @@ cor2link = function(Zeta, threshold)
 	links = NULL;
 	for(i in 1:(dim(Zeta)[1]-1)){
 		for(j in (i+1):dim(Zeta)[1]){
-			if(abs( Zeta[i,j] ) >= threshold){
+			if( abs(Zeta[i,j])  >= threshold){
 				tmp = c( colnames( Zeta )[i], colnames( Zeta )[j], 
 						Zeta[i,j])
 				links = rbind(links, tmp)
@@ -78,6 +78,18 @@ cor2link = function(Zeta, threshold)
 	return(links)
 }
 
+## convert number to coordinates in the matrix
+## input 	num: the index number
+##			ncol: number of columns
+##			nrow: number of rows, by default equals to ncol
+## output	vector with two elements indicating the (x,y) coordinate of the corresponding index
+
+num2coord=function(num,ncol, nrow=ncol){
+	y=ceiling(num/ncol)
+	x=num%%ncol
+	if(x==0){x=ncol}
+	return(c(x,y))
+}
 #	Differential correxpression
 #	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. “Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.BMC Bioinformatics 10, no. 1 (2009): 109.
 #	Description of parameters:

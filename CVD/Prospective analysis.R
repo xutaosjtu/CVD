@@ -403,44 +403,65 @@ plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= w
 
 ############	Hazardous ratios in different quantiles	################
 require(gplots)
-pdf("quintile plot of replative risk (norm) ratio.pdf", width = 12, height = 12)
+pdf("quintile plot of replative risk (ynorm) _full model _decile.pdf", width = 12, height = 12)
 par(mfrow =c(2,2));
 yrange = NULL; RRquin = NULL
 for(m in candidates[1:16]){
-	metabo.quintile = cut((S4[, m]), breaks = 
+	m.conc=S4[, m]
+	metabo.quintile = cut(m.conc, breaks = 
 					#range(exp(S4[, m]))[1] + abs(range(exp(S4[, m]))[1]-range(exp(S4[, m]))[2])/6*(1:6), 
-					quantile((S4[, m]), probs = seq(0, 1, 0.2)), 
+					quantile(m.conc, probs = seq(0, 1, 0.1)), 
 			include.lowest = T,ordered_result = F)
-	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+	model1 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
 					#+ my.diab  ##model 2
 					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
 					#+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
 			,subset = which(S4$prev_mi == 0),
 			S4)
-	rst = summary(model)$coefficients[1:4, ]
-	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
-			round(exp(rst[,1] + 1.96*rst[,3]), 3),
-			sep = ",")
-	interval = paste(round(rst[,2],3), interval, sep = "(")
-	RRquin = cbind(RRquin, interval)
+	rst = summary(model1)$coefficients[1:9, ]
+	
+	model2 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+			+ my.diab  ##model 2
+			+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3
+			+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
+			,subset = which(S4$prev_mi == 0),
+			S4)
+	rst2=summary(model2)$coefficients[1:9,]
+	
+#	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
+#			round(exp(rst[,1] + 1.96*rst[,3]), 3),
+#			sep = ",")
+#	interval = paste(round(rst[,2],3), interval, sep = "(")
+#	RRquin = cbind(RRquin, interval)
 	upper = abs(exp(rst[,1] + rst[,3]) - rst[,2])
 	lower = abs(exp(rst[,1] - rst[,3]) - rst[,2]) 
 	if(max(rst[, 2]+upper)>1){
-		yrange = c(0, max(rst[, 2]+upper))
+		yrange = c(min(rst[, 2]-upper), max(rst[, 2]+upper))
 	}
 	else{
 		yrange = c( min(rst[, 2]-upper), 1)
 	}
-	x= tapply(exp(S4[,m]), INDEX = metabo.quintile, median)
-	plotCI(x = x[2:5], y = rst[, 2], uiw = upper, liw = lower, main = m, 
+	x= tapply(m.conc, INDEX = metabo.quintile, median)
+	plotCI(x = x[2:10], y = rst[, 2], uiw = upper, liw = lower, main = m, 
 			xlim = range(x), 
 			ylim = yrange, 
-			xaxt = "n",
+			#xaxt = "n",
+			#log="y",
+			pch=22,cex=3,pt.bg="black",
 			#labels = levels(metabo.quintile), 
 			ylab = "relative risk", xlab = "quintiles of metabolites (ratios)" )
-	plotCI(x=x[1], y=1, uiw = 0, add=T)
-	axis(1, at = x, labels = levels(metabo.quintile), col.axis = "blue")
+	plotCI(x=x[1], y=1, uiw = 0, add=T, pch=22, cex=3, pt.bg="black")
+	plotCI(x = x[2:10], y = rst2[, 2], uiw = upper, liw = lower, main = m, 
+			xlim = range(x), 
+			ylim = yrange, 
+			#xaxt = "n",
+			#log="y",
+			pch=21,cex=3,pt.bg="grey",
+			)
+	plotCI(x=x[1], y=1, uiw = 0, add=T, pch=21, cex=3, pt.bg="grey")
+	#axis(1, at = x, labels = levels(metabo.quintile), col.axis = "blue")
 	lines(lowess(x, c(1, rst[,2]), f = 0.8), col = "red")
 	abline(h = 1, lty = 2)
 }

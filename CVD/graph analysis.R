@@ -31,7 +31,7 @@ lines(density(log(metabolites$degree),adjust=0.9),col="red")
 
 ####################	Find shortest path	##########################
 require(igraph)
-score = 0.7
+score = 0.9
 
 all=read.csv('F:/Database/meta_enzyme_string_unique.v9.0',head=F, sep = "\t")
 all=all[all[,3] >= score,]
@@ -51,7 +51,15 @@ Trp-PTC
 PC-aa-C32:2
 lysoPC-a-C17:0
 
-To=unique(as.matrix(read.csv('F:/Cardiovascular disease/SNPs/CAD gene GWAS.csv',head=F)))
+SM-C24:0
+PC-ae-C38:6
+PC-aa-C32:1
+SM-OH-C22:2
+His-PTC
+
+To=c(unique(as.matrix(read.csv('F:/Cardiovascular disease/SNPs/CAD gene GWAS.csv',head=F))),
+		unique(as.matrix(read.csv('F:/Cardiovascular disease/SNPs/CAD gene FDR.csv', header = F)))
+)
 
 tmp=unique(c(as.character(all[,1]),as.character(all[,2])))
 setdiff(To,tmp)
@@ -78,7 +86,7 @@ for (i in 1:length(fid)){
 	if(i ==2){
 		path = path[which(sapply(path, length)<=4)]	
 	}
-	else path = path[which(sapply(path, length)<=3)]
+	else path = path[which(sapply(path, length)<=4)]
 	link = lapply(path, path2link)
 	for(j in 1:length(link)){
 		network = rbind(network, link[[j]])
@@ -96,6 +104,7 @@ rst = as.matrix(rst)
 rst[which(rst[,1] %in% enzymes), 2] = "enzymes"
 rst[which(rst[,1] %in% metabolites), 2] = "metabolites"
 rst[which(rst[,1] %in% To), 3] = "GWAS"
+
 
 meta_enzyme = all[which(all[,1] %in% From),]
 
