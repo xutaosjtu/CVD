@@ -16,7 +16,8 @@
 # 	tapply(x, INDEX = index, FUN)
 #}
 
-preprocess=function(data,Metabolites){
+preprocess=function(data,Metabolites)
+{
 	####log transform
 	tmp=as.matrix(data[,Metabolites])
 	tmp[which(tmp==0)]=NA
@@ -48,6 +49,12 @@ characteristics = function(data , factor, d, ...)
 			}
 	)
 	return(chars)
+}
+
+characteristics.disc <- function(data, factor)
+{
+	rst = sapply(data, function(x) tapply(x,INDEX = factor, function(a) table(a)/length(a)))
+	return(rst)
 }
 
 ## Correlation network analysis tools
@@ -84,7 +91,8 @@ cor2link = function(Zeta, threshold)
 ##			nrow: number of rows, by default equals to ncol
 ## output	vector with two elements indicating the (x,y) coordinate of the corresponding index
 
-num2coord=function(num,ncol, nrow=ncol){
+num2coord=function(num,ncol, nrow=ncol)
+{
 	y=ceiling(num/ncol)
 	x=num%%ncol
 	if(x==0){x=ncol}
@@ -109,7 +117,8 @@ diffcorr <- function(cor1, cor2, N1, N2)
 #}
 
 #############	residual calculation	##########
-residue<-function(data,Metabolites,adj, control_group){
+residue<-function(data,Metabolites,adj, control_group)
+{
 	tmp=NULL;
 	tmp=cbind(data[,adj])
 	adj_f=paste(adj,collapse='+')
@@ -149,7 +158,8 @@ logisticRegression = function(meta , disease, valid_measures , feature.cont, fea
 }
 
 #########	longitudinal analysis using logistic regression	################
-Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
+Comparison.prospective<- function(baseline, feature, metabo, adj, subset)
+{
 #	baseline	---		data frame of variables at baseline 
 #	feature		---		list or matrix indicating the disease state in at different time points
 #	metabo		---		names of metabolites
@@ -229,7 +239,8 @@ crossval.cox = function (x, y, theta.fit, theta.predict, ..., ngroup = n)
 
 
 ## likelihood ratio test
-likeli.test <- function(model1, model0){
+likeli.test <- function(model1, model0)
+{
 	D = -2*logLik(model0)[1]+2*logLik(model1)[1]
 	pvalue=pchisq(D, df = abs(model1$df.residual-model0$df.residual))
 	return(data.frame(D,pvalue))

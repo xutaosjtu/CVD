@@ -30,6 +30,46 @@ which(sample_availiable !=0)
 S4$waist2hip = S4$lttumf / S4$lthumf
 F4$waist2hip = F4$uttumf / F4$uthumf
 
+## redefine features
+## alcohol consumption
+S4$my.alkkon = rep(0, dim(S4)[1])
+S4$my.alkkon[which(S4$ltalkkon >=40 & S4$lcsex==1 )] = 1
+S4$my.alkkon[which(S4$ltalkkon >=20 & S4$lcsex==2 )] = 1
+
+F4$my.alkkon = rep(0, dim(F4)[1])
+F4$my.alkkon[which(F4$utalkkon >=40 & F4$ucsex==1 )] = 1
+F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
+
+## smoking
+S4$my.cigreg = S4$ltcigreg
+S4$my.cigreg[which(S4$ltcigreg==1)]=2
+S4$my.cigreg = 4-S4$my.cigreg
+
+F4$my.cigreg = F4$utcigreg
+F4$my.cigreg[which(F4$utcigreg==1)]=2
+F4$my.cigreg = 4-F4$my.cigreg
+
+## diabetes
+S4$my.diab=S4$lp_diab_who06
+S4$my.diab[which(S4$lp_diab_who06>10)]=NA
+S4$my.diab[which(S4$lp_diab_who06==4|S4$lp_diab_who06==5)]=1
+S4$my.diab[which(S4$lp_diab_who06<4)]=0
+
+F4$my.diab=F4$uk_diab_who06
+F4$my.diab[which(F4$uk_diab_who06>10)]=NA
+F4$my.diab[which(F4$uk_diab_who06==4|S4$lp_diab_who06==5)]=1
+F4$my.diab[which(F4$uk_diab_who06<4)]=0
+
+## physical activity
+S4$my.physical = S4$ltphact
+S4$my.physical[which(S4$ltphact<=2)]=1
+S4$my.physical[which(S4$ltphact>2)]=0
+
+F4$my.physical = F4$ltphact
+F4$my.physical[which(F4$ltphact<=2)]=1
+F4$my.physical[which(F4$ltphact>2)]=0
+
+
 #S4 features and diseases
 feature.cont = scan(what = character())
 ltalteru
@@ -148,12 +188,12 @@ remove(H); remove(S)
 ######################	population characteristics of prospective data	#####################
 #S4
 source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
-for(i in 1:length(diseases.s4)){
 	
-	tmps4 = as.factor(S4$prev_mi)[subset]
-	tmpf4 = as.factor(S4$inz_mi)[subset]
+tmps4 = as.factor(S4$prev_mi)[subset]
+tmpf4 = as.factor(S4$inz_mi)[subset]
 	
-	chars = characteristics(S4[subset, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+chars = characteristics(S4[subset, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+write.csv(t(chars), file = "stroke S4 prospective_female.csv")
 #	chars = apply(
 #			S4[Cohort$zz_nr_s4,feature.cont], 2, 
 #			function(x) {
@@ -164,17 +204,10 @@ for(i in 1:length(diseases.s4)){
 #				return(paste(m, "(", s, ")", sep = ""))
 #			} 
 #	)
-	write.csv(t(chars), file = "stroke S4 prospective_female.csv")
-}
 
-S4$my.alkkon = rep(0, dim(S4)[1])
-S4$my.alkkon[which(S4$ltalkkon >=40 & S4$lcsex==1 )] = 1
-S4$my.alkkon[which(S4$ltalkkon >=20 & S4$lcsex==2 )] = 1
 
-F4$my.alkkon = rep(0, dim(F4)[1])
-F4$my.alkkon[which(F4$utalkkon >=40 & F4$ucsex==1 )] = 1
-F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
-
+subset = Cohort$zz_nr_f4
+tapply(F4[subset, "my.alkkon"], INDEX = interaction(tmpf4, tmps4), function(a) table(a)/length(a))
 
 
 for(i in 1:3){
