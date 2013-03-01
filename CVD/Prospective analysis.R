@@ -114,7 +114,6 @@ table(tmps4 = S4[Cohort$zz_nr_s4, "lc044f_1"], tmpf4 = F4[Cohort$zz_nr_f4, "us_c
 
 
 for(i in 2:4){
-	
 	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
 	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
 	feature = data.frame(tmps4, tmpf4)
@@ -147,18 +146,17 @@ for(i in 2:4){
 
 #########################	hypertension	################################
 #Prediction of future hypertension
-table(S4$lthyact, S4$uthyact)
+table(S4$lthyact, S4$uthyact, useNA='ifany')
 rst = NULL;
 for (m in S4_valid_measures){
 	metabolite = S4[, m]
 	model = glm(as.factor(uthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+ ltsysmm + ltdiamm ##model 2
-			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			#+log(ll_chola)+log(ll_hdla)+ total2HDL##model 3
-			#+ as.factor(ltcigreg) + ltalkkon ##model 4
-			
-			#+ltmbbl + ltmace + ltmata #model 6 medication
+					+ ltsysmm #+ ltdiamm ##model 2
+			+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+			+log(ll_chola)+log(ll_hdla)+ total2HDL##model 3
+			+ my.cigreg + my.alkkon ##model 4
+			+as.factor(ltantihy) #+ ltmata #model 6 medication
 			,subset = which(S4$lthyact == 2),
 			S4, family = binomial(link = "logit"))
 	rst = rbind(rst, summary(model)$coefficients[2,])
@@ -167,72 +165,79 @@ rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adj
 rownames(rst) = S4_valid_measures
 write.csv(rst, file = "Hypertension survival analysis_model2.csv")
 
+
 #Association with current hypertension
 S4.feature = scan(what = character())
 ltalteru
 lcsex
 ltbmi
-lp_diab_who06
+my.diab
 ll_chola
 ll_hdla
+ll_ldla
 total2HDL
-ltcigreg
+my.cigreg
 ltalkkon
 ltsysmm
 ltdiamm
 ltmbbl
 ltmace
 ltmata
+ltantihy
 my.alkkon
 
 F4.feature = scan(what = character())
 utalteru
 ucsex
 utbmi
-uk_diab_who06
-ul_choln
-ul_hdln
+my.diab
+ul_chola
+ul_hdla
+ul_ldla
 total2HDL
-utcigreg
+my.cigreg
 utalkkon
 utsysmm
 utdiamm
 utmbbl
 utmace
 utmata
+utantihy
 my.alkkon
 
-F4 = preprocess(F4, F4_valid_measures)
+#F4 = preprocess(F4, F4_valid_measures)
 require(nlme)
 valid_measures = intersect(S4_valid_measures, F4_valid_measures)
 participants=rep(1:1009,2)
+tmpF4 = F4[Cohort$zz_nr_f4,F4.feature]
+colnames(tmpF4) = S4.feature
 data=data.frame(
 		participants, 
 		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
-		rbind(as.matrix(S4[ Cohort$zz_nr_s4, S4.feature]), as.matrix(F4[ Cohort$zz_nr_f4, F4.feature]))
+		rbind(S4[Cohort$zz_nr_s4, S4.feature], tmpF4)
 )
 rst=NULL
 for(i in valid_measures){
-	m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
-	mixed.dum <- lme( log(m) ~ disease +
-					#ltmbbl + ltmace + ltmata + #model 6 medication
+	m = c((S4[Cohort$zz_nr_s4, i]), (F4[Cohort$zz_nr_f4, i]))
+	mixed.dum <- lme( m ~ disease +
+					platform +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+ as.factor(ltcigreg) + as.factor(my.alkkon) ##model 2
-					+ (lp_diab_who06==4|lp_diab_who06==5)  ##model 3
-					+ log(ll_chola)+log(ll_hdla)+ total2HDL##model 4
-					#+ log(ltsysmm) + log(ltdiamm) ##model 5
-			,random = ~  1 | participants, na.action=na.exclude, data=data)
+					+ my.cigreg + my.alkkon ##model 2
+					#+ my.diab  ##model 3
+					+ ll_chola+ll_hdla##model 4
+			        + as.factor(ltantihy) #+as.factor(ltmbbl) #model 5 medication				
+			,random = ~  1 | participants, na.action=na.exclude, subset = which(data$my.diab==1), data=data)
 	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
 }
 rst=data.frame(rst,
 		fdr=p.adjust(rst[, 5], method="fdr"),
 		bonf=p.adjust(rst[, 5], method="bonferroni")
 )
-rownames( rst )=valid_measures
+rownames(rst)=valid_measures
 write.csv(rst, file = "hypertension associated metabolites_model4.csv")
 
 ############	calculate the residues	########
-data = data.frame(log(S4[,valid_measures]),
+data = data.frame(
 		"alteru" = S4$ltalteru, 
 		"sex" = as.factor(S4$lcsex),
 		"bmi" = S4$ltbmi,
@@ -241,15 +246,17 @@ data = data.frame(log(S4[,valid_measures]),
 		"diabetes" = as.factor((S4$lp_diab_who06==4|S4$lp_diab_who06==5)),
 		"chol" = log(S4$ll_chola),
 		"HDL" = log(S4$ll_hdla),
-		"med1" = as.factor(S4$ltmbbl),
-		"med2" = as.factor(S4$ltmace),
-		"med3" = as.factor(S4$ltmata),
-		"hyper" = S4$lthyact
+		#"med1" = as.factor(S4$ltmbbl),
+		#"med2" = as.factor(S4$ltmace),
+		#"med3" = as.factor(S4$ltmata),
+		'med' = as.factor(S4$ltantihy),
+		"hyper" = S4$lthyact,
+		log(S4[,valid_measures])
 )
 data = data[Cohort$zz_nr_s4, ]
-S4.residue = residue(data, valid_measures, adj = colnames(data)[122:132], control_group = 1:dim(data)[1])
+S4.residue = residue(data, valid_measures, adj = colnames(data)[1:12], control_group = 1:dim(data)[1])
 
-data = data.frame(log(F4[,valid_measures]),
+data = data.frame(
 		"alteru" = F4$utalteru, 
 		"sex" = as.factor(F4$ucsex),
 		"bmi" = F4$utbmi,
@@ -258,13 +265,15 @@ data = data.frame(log(F4[,valid_measures]),
 		"diabetes" = as.factor((F4$uk_diab_who06==4|F4$uk_diab_who06==5)),
 		"chol" = log(F4$ul_chola),
 		"HDL" = log(F4$ul_hdla),
-		"med1" = as.factor(F4$utmbbl),
-		"med2" = as.factor(F4$utmace),
-		"med3" = as.factor(F4$utmata),
-		"hyper" = F4$uthyact
+		#"med1" = as.factor(F4$utmbbl),
+		#"med2" = as.factor(F4$utmace),
+		#"med3" = as.factor(F4$utmata),
+		'med' = as.factor(F4$utantihy),
+		"hyper" = F4$uthyact,
+		log(F4[,valid_measures])
 )
 data = data[Cohort$zz_nr_f4, ]
-F4.residue = residue(data, valid_measures, adj = colnames(data)[122:132], control_group = 1:dim(data)[1])
+F4.residue = residue(data, valid_measures, adj = colnames(data)[1:10], control_group = 1:dim(data)[1])
 
 metabo.selected = scan(what = character())
 C8
@@ -304,64 +313,64 @@ for(i in metabo.selected){
 }
 dev.off()
 
-###########################	Stroke	########################################
-require(survival)
-rst = NULL;
-for (m in S4_valid_measures){
-	metabolite = S4[, m]
-	model = coxph(Surv(apo_time, inz_apo) ~  log(metabolite) +
-					ltalteru + as.factor(lcsex) + ltbmi## model 1
-			+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon ##model 3
-	 		#+ log(lh_crp) + total2HDL ##model 4
-			#+ltdiamm ## model 5
-			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(5,1,2,9))),#
-			S4)
-	rst = rbind(rst, summary(model)$coefficients[1,])
-}
-rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Stroke survival analysis_model3.csv")
-
-table(S4$inz_apo==1, S4$apo_typ)
-S4$my.apo_typ = S4$apo_typ
-S4$my.apo_typ[which(S4$apo_typ == 0)] = 0
-S4$my.apo_typ[which(S4$apo_typ == 2)] = 1
-S4$my.apo_typ[which(S4$apo_typ == 3)] = 2
-S4$my.apo_typ[which(S4$apo_typ == 4)] = 2
-S4$my.apo_typ[which(S4$apo_typ == 5)] = 3
-S4$my.apo_typ[which(S4$apo_typ == 9)] = 4
-
-require(caret)
-require(pls)
-require(gplots)
-index = which((S4$my.apo_typ == 1|S4$my.apo_typ == 2)&S4$prev_apo==0)#
-S4pls<-plsr(S4$my.apo_typ[index] ~ . , data=log2(S4[index, c(S4_valid_measures)]),  validation = "CV")
-S4pls<-plsda(x=log2(S4[index, c(S4_valid_measures)]), y = as.factor(S4$my.apo_typ[index]))
-#S4pls<-plsda(x=data.normalized, COPD.data$COPD, ncomp = 10)
-
-color = greenred(24)[c(c(4:1)*2,c(18,20, 22, 24)) ]
-plot(S4pls$scores[,c(1,2)],col = color[c(1,8)][S4$my.apo_typ[index]], pch=c(17, 19)[S4$my.apo_typ[index]])
-legend(1, -3, 
-		legend = c("Ischemic","Hemorrhagic"), 
-		col = c(1:8), pch = c(17,19)
-)
-
-S4pca = prcomp(log(S4[index, S4_valid_measures]) )
-S4pca = pcr(S4$my.apo_typ[index] ~ ., data = log2(S4[index, c(S4_valid_measures)]))
-plot(S4pca$scores,col = color[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]], pch=c(17, 19)[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]])
-
-difference = scan(what = character())
-PC_aa_C28_1
-PC_ae_C38_1
-SM__OH__C22_1
-SM_C16_0
-SM_C24_0
-C0
-C10_2
-Pro
-Taurine
-PC_ae_C40_4
+############################	Stroke	########################################
+#require(survival)
+#rst = NULL;
+#for (m in S4_valid_measures){
+#	metabolite = S4[, m]
+#	model = coxph(Surv(apo_time, inz_apo) ~  log(metabolite) +
+#					ltalteru + as.factor(lcsex) + ltbmi## model 1
+#			+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+#			+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon ##model 3
+#	 		#+ log(lh_crp) + total2HDL ##model 4
+#			#+ltdiamm ## model 5
+#			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(5,1,2,9))),#
+#			S4)
+#	rst = rbind(rst, summary(model)$coefficients[1,])
+#}
+#rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+#rownames(rst) = S4_valid_measures
+#write.csv(rst, file = "Stroke survival analysis_model3.csv")
+#
+#table(S4$inz_apo==1, S4$apo_typ)
+#S4$my.apo_typ = S4$apo_typ
+#S4$my.apo_typ[which(S4$apo_typ == 0)] = 0
+#S4$my.apo_typ[which(S4$apo_typ == 2)] = 1
+#S4$my.apo_typ[which(S4$apo_typ == 3)] = 2
+#S4$my.apo_typ[which(S4$apo_typ == 4)] = 2
+#S4$my.apo_typ[which(S4$apo_typ == 5)] = 3
+#S4$my.apo_typ[which(S4$apo_typ == 9)] = 4
+#
+#require(caret)
+#require(pls)
+#require(gplots)
+#index = which((S4$my.apo_typ == 1|S4$my.apo_typ == 2)&S4$prev_apo==0)#
+#S4pls<-plsr(S4$my.apo_typ[index] ~ . , data=log2(S4[index, c(S4_valid_measures)]),  validation = "CV")
+#S4pls<-plsda(x=log2(S4[index, c(S4_valid_measures)]), y = as.factor(S4$my.apo_typ[index]))
+##S4pls<-plsda(x=data.normalized, COPD.data$COPD, ncomp = 10)
+#
+#color = greenred(24)[c(c(4:1)*2,c(18,20, 22, 24)) ]
+#plot(S4pls$scores[,c(1,2)],col = color[c(1,8)][S4$my.apo_typ[index]], pch=c(17, 19)[S4$my.apo_typ[index]])
+#legend(1, -3, 
+#		legend = c("Ischemic","Hemorrhagic"), 
+#		col = c(1:8), pch = c(17,19)
+#)
+#
+#S4pca = prcomp(log(S4[index, S4_valid_measures]) )
+#S4pca = pcr(S4$my.apo_typ[index] ~ ., data = log2(S4[index, c(S4_valid_measures)]))
+#plot(S4pca$scores,col = color[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]], pch=c(17, 19)[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]])
+#
+#difference = scan(what = character())
+#PC_aa_C28_1
+#PC_ae_C38_1
+#SM__OH__C22_1
+#SM_C16_0
+#SM_C24_0
+#C0
+#C10_2
+#Pro
+#Taurine
+#PC_ae_C40_4
 
 
 ###################	Myocardial infarction ##############################

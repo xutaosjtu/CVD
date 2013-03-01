@@ -226,3 +226,11 @@ crossval.cox = function (x, y, theta.fit, theta.predict, ..., ngroup = n)
 	return(list(cv.fit = cv.fit, ngroup = ngroup, leave.out = leave.out, 
 					groups = groups, call = call))
 }
+
+
+## likelihood ratio test
+likeli.test <- function(model1, model0){
+	D = -2*logLik(model0)[1]+2*logLik(model1)[1]
+	pvalue=pchisq(D, df = abs(model1$df.residual-model0$df.residual))
+	return(data.frame(D,pvalue))
+}
