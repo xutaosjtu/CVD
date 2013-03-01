@@ -213,20 +213,27 @@ tmpF4 = F4[Cohort$zz_nr_f4,F4.feature]
 colnames(tmpF4) = S4.feature
 data=data.frame(
 		participants, 
-		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
+		disease =  as.factor(2-c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
 		rbind(S4[Cohort$zz_nr_s4, S4.feature], tmpF4)
 )
+data$platform = rep(1:2, each = 1009)
+
+sub = which(S4[Cohort$zz_nr_s4,"ltantihy"]==F4[Cohort$zz_nr_f4,"utantihy"])
+sub = c(sub, sub+1009)
+
 rst=NULL
 for(i in valid_measures){
-	m = c((S4[Cohort$zz_nr_s4, i]), (F4[Cohort$zz_nr_f4, i]))
+	data$m = c((S4[Cohort$zz_nr_s4, i]), (F4[Cohort$zz_nr_f4, i]))
 	mixed.dum <- lme( m ~ disease +
 					platform +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
 					+ my.cigreg + my.alkkon ##model 2
-					#+ my.diab  ##model 3
+					+ my.diab  ##model 3
 					+ ll_chola+ll_hdla##model 4
 			        + as.factor(ltantihy) #+as.factor(ltmbbl) #model 5 medication				
-			,random = ~  1 | participants, na.action=na.exclude, subset = which(data$my.diab==1), data=data)
+			,random = ~  1 | participants, na.action=na.exclude, 
+			#subset = sub,
+			data=data[sub,])
 	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
 }
 rst=data.frame(rst,
@@ -234,7 +241,7 @@ rst=data.frame(rst,
 		bonf=p.adjust(rst[, 5], method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "hypertension associated metabolites_model4.csv")
+write.csv(rst, file = "hypertension associated metabolites_model5_untransformed.csv")
 
 ############	calculate the residues	########
 data = data.frame(

@@ -31,6 +31,47 @@
 # Author: tao.xu
 ###############################################################################
 
+##Hypertension: blood pressure distribution in different groups
+## diastolic blood pressure in medical diagnosed hypertension or non-hypertension group
+hist(S4$ltdiamm[which(S4$lthyact==1)], breaks= 100, col = "pink", ylim = c(0,25), xlab = "diastolic blood pressure", main = "S4: hyper and non-hyper")
+hist(S4$ltdiamm[which(S4$lthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 90, col = "red", lty = 2, lwd = 3)
+
+hist(F4$utdiamm[which(F4$uthyact==1)], breaks= 100, col = "pink", ylim = c(0,70), xlab = "diastolic blood pressure", main = "F4: hyper and non-hyper")
+hist(F4$utdiamm[which(F4$uthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 90, col = "red", lty = 2, lwd = 3)
+
+## systolic blood pressure in medical diagnosed hypertension or non-hypertension group
+hist(S4$ltsysmm[which(S4$lthyact==1)], breaks= 100, col = "pink", ylim = c(0,25), xlab = "systolic blood pressure", main = "S4: hyper and non-hyper")
+hist(S4$ltsysmm[which(S4$lthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 140, col = "red", lty = 2, lwd = 3)
+
+hist(F4$utsysmm[which(F4$uthyact==1)], breaks= 100, col = "pink", ylim = c(0,70), xlab = "systolic blood pressure", main = "F4: hyper and non-hyper")
+hist(F4$utsysmm[which(F4$uthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 140, col = "red", lty = 2, lwd = 3)
+
+## under medication
+## diastolic blood pressure in medical diagnosed hypertension or non-hypertension group
+hist(S4$ltdiamm[which(S4$lthyact==1&S4$ltantihy==1)], breaks= 100, col = "pink", ylim = c(0,25), xlab = "diastolic blood pressure", main = "S4: hyper(non-med) hyper(med) and non-hyper")
+hist(S4$ltdiamm[which(S4$lthyact==1&S4$ltantihy==2)], breaks= 100, add = T, col = "#00ff0022")
+hist(S4$ltdiamm[which(S4$lthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 90, col = "red", lty = 2, lwd = 3)
+
+hist(F4$utdiamm[which(F4$uthyact==1&F4$utantihy==1)], breaks= 100, col = "pink", ylim = c(0,70),xlab = "diastolic blood pressure", main = "F4: hyper(non-med) hyper(med) and non-hyper")
+hist(F4$utdiamm[which(F4$uthyact==1&F4$utantihy==2)], breaks= 100, add = T, col = "#00ff0022")
+hist(F4$utdiamm[which(F4$uthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 90, col = "red", lty = 2, lwd = 3)
+
+## systolic blood pressure in medical diagnosed hypertension or non-hypertension group
+hist(S4$ltsysmm[which(S4$lthyact==1&S4$ltantihy==1)], breaks= 100, col = "pink", ylim = c(0,25), xlab = "systolic blood pressure", main = "S4: hyper(non-med) hyper(med) and non-hyper")
+hist(S4$ltsysmm[which(S4$lthyact==1&S4$ltantihy==2)], breaks= 100, add = T, col = "#00ff0022")
+hist(S4$ltsysmm[which(S4$lthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 140, col = "red", lty = 2, lwd = 3)
+
+hist(F4$utsysmm[which(F4$uthyact==1&F4$utantihy==1)], breaks= 100, col = "pink", ylim = c(0,70), xlab = "systolic blood pressure", main = "F4: hyper(non-med) hyper(med) and non-hyper")
+hist(F4$utsysmm[which(F4$uthyact==1&F4$utantihy==2)], breaks= 100, add = T, col = "#00ff0022")
+hist(F4$utsysmm[which(F4$uthyact==2)], breaks= 100, add = T, col = "#0000ff22")
+abline(v = 140, col = "red", lty = 2, lwd = 3)
 
 
 # Estimation of clinical model:
@@ -153,18 +194,13 @@ for(i in 4:4){
 
 #################	Ratio analysis
 concen2ratio = function(data){
-	
-	rst = NULL
-	
+	rst = NULL;
 	for(i in 1:dim(data)[2]){
 		tmp =  t(apply(data, 1, function(x) x[i]/x[-i]))
 		colnames(tmp) = paste(colnames(data)[i], colnames(data)[-i], sep = ".")
 		rst = cbind(rst, tmp)
-	
 	}
-	
 	return(rst)
-
 }
 
 substr(feature.cont, 1, 2) <- "l"
