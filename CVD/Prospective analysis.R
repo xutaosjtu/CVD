@@ -217,31 +217,53 @@ data=data.frame(
 		rbind(S4[Cohort$zz_nr_s4, S4.feature], tmpF4)
 )
 data$platform = rep(1:2, each = 1009)
+data$ltantihy = 2-data$ltantihy
 
 sub = which(S4[Cohort$zz_nr_s4,"ltantihy"]==F4[Cohort$zz_nr_f4,"utantihy"])
+sub = which(S4[Cohort$zz_nr_s4,"lthyact"]==1&F4[Cohort$zz_nr_f4,"uthyact"]==1)
+sub = which(S4[Cohort$zz_nr_s4,"lthyact"]!=F4[Cohort$zz_nr_f4,"uthyact"])
 sub = c(sub, sub+1009)
+
+## medication in the populetaion at baseline and follow-up
+table(S4[Cohort$zz_nr_s4[subset],"ltantihy"],F4[Cohort$zz_nr_f4[subset],"utantihy"], S4[Cohort$zz_nr_s4[subset],"lthyact"], F4[Cohort$zz_nr_f4[subset],"uthyact"])
+
 
 rst=NULL
 for(i in valid_measures){
-	data$m = c((S4[Cohort$zz_nr_s4, i]), (F4[Cohort$zz_nr_f4, i]))
-	mixed.dum <- lme( m ~ disease +
+	data$m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
+	#data$m = scale(data$m)
+#	mixed.dum <- lme( m ~ disease + 
+#					as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
+#					platform +
+#					ltalteru + as.factor(lcsex) + ltbmi## model 1
+#					+ my.cigreg + my.alkkon ##model 2
+#					+ my.diab  ##model 3
+#					+ ll_chola+ll_hdla##model 4
+#			,random = ~  1 | participants, na.action=na.exclude, 
+#			#subset = sub,
+#			data=data[sub,])
+#	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
+	mixed.dum <- glmer(disease ~ m + 
+					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
 					platform +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
 					+ my.cigreg + my.alkkon ##model 2
 					+ my.diab  ##model 3
 					+ ll_chola+ll_hdla##model 4
-			        + as.factor(ltantihy) #+as.factor(ltmbbl) #model 5 medication				
-			,random = ~  1 | participants, na.action=na.exclude, 
-			#subset = sub,
-			data=data[sub,])
-	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
+			        + (1 | participants), 
+			na.action=na.exclude, family = binomial,
+			data)
+	rst = rbind(rst, summary(mixed.dum)@coefs[2,])
 }
 rst=data.frame(rst,
-		fdr=p.adjust(rst[, 5], method="fdr"),
-		bonf=p.adjust(rst[, 5], method="bonferroni")
+		fdr=p.adjust(rst[, 4], method="fdr"),
+		bonf=p.adjust(rst[, 4], method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "hypertension associated metabolites_model5_untransformed.csv")
+write.csv(rst, file = "hypertension associated metabolites_full model_logistic.csv")
+
+plot(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1]))
+abline(lm(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1])))
 
 ############	calculate the residues	########
 data = data.frame(
