@@ -183,16 +183,91 @@ colnames(F4_ratio)[which(rst[,5]<0.05)]
 
 ## test the association of the three biomarkers in the cross-sectional data
 ## F4
-F4$m = log(F4$Arg)
-lm(m ~ utmi 
-		+ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
-		+ my.diab  ##model 2
-		+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-		+ scale(lh_crp)  ##model 4
-		+ as.factor(ltmstati)& S4$ltmstati !=1
-		,subset = which(S4$prev_mi == 0 ),
-		S4)
+rst = NULL;
+for(m in F4_valid_measures){
+	F4$m = log(F4[,m])
+	model = glm(as.factor(utmi)~ m 
+					+ scale(utalteru) + as.factor(ucsex) + scale(utbmi)## model 1
+					+ my.diab  ##model 2
+					+ scale(utsysmm) + my.cigreg + my.alkkon  + scale(ul_chola) + scale(ul_hdla) ##model 3+ total2HDL
+					+ scale(uh_crp)  ##model 4
+					#+ as.factor(my.medication),
+			,family=binomial,
+			F4)
+#	model = clogit((utmi-1) ~ m 
+#					+ scale(utalteru) + as.factor(ucsex) + scale(utbmi)## model 1
+#					+ my.diab  ##model 2
+#					+ scale(utsysmm) + my.cigreg + my.alkkon  + scale(ul_chola) + scale(ul_hdla) ##model 3+ total2HDL
+#					+ scale(uh_crp)  ##model 4
+#					+strata(my.medication)
+#			,data = F4)
+	rst = rbind(rst, summary(model)$coef[2,])
+}
+rownames(rst)=F4_valid_measures
 
+
+## S4
+rst = NULL;
+for(m in S4_valid_measures){
+	S4$m = log(S4[,m])
+	model = glm(as.factor(ltmi)~m 
+					+ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+					+ my.diab  ##model 2
+					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_ldla) ##model 3+ total2HDL
+					+ scale(lh_crp)  ##model 4
+					#+my.medication
+	,family =binomial
+	#,subset =which(S4$my.medication)
+	, S4)
+#	model = clogit(prev_mi~m 
+#					+ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#					+ my.diab  ##model 2
+#					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_ldla) ##model 3+ total2HDL
+#					+ scale(lh_crp)  ##model 4
+#					+strata(ltmi)
+#	,data = S4)
+	rst = rbind(rst, summary(model)$coef[2,])
+}
+rownames(rst)=S4_valid_measures
+
+s4.rst = read.csv("MI associated metabolites_S4_logistic.csv")
+f4.rst = read.csv("MI associated metabolites_F4_logistic.csv")
+combined.rst=merge(s4.rst, f4.rst, by="X", sort=F, all=T)
+write.csv(combined.rst, file = "MI associated metabolties_cross sectional_logistic.csv", quote=F, row.names=F)
+
+
+
+C0
+C4
+C5
+C4_1_DC___C6
+C8
+C8_1
+C10
+C10_1
+C10_2
+C14_2
+C16
+C16_1
+C18
+C18_1
+C18_2
+Phe
+PC_aa_C36_4
+PC_aa_C38_4
+PC_ae_C32_1
+PC_ae_C34_0
+PC_ae_C34_3
+PC_ae_C36_2
+PC_ae_C38_2
+PC_ae_C40_2
+PC_ae_C40_5
+PC_ae_C42_0
+PC_ae_C42_2
+PC_ae_C42_4
+PC_ae_C42_5
+lysoPC_a_C20_4
+SM__OH__C14_1
 
 
 
