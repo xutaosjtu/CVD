@@ -237,42 +237,6 @@ write.csv(combined.rst, file = "MI associated metabolties_cross sectional_logist
 
 
 
-C0
-C4
-C5
-C4_1_DC___C6
-C8
-C8_1
-C10
-C10_1
-C10_2
-C14_2
-C16
-C16_1
-C18
-C18_1
-C18_2
-Phe
-PC_aa_C36_4
-PC_aa_C38_4
-PC_ae_C32_1
-PC_ae_C34_0
-PC_ae_C34_3
-PC_ae_C36_2
-PC_ae_C38_2
-PC_ae_C40_2
-PC_ae_C40_5
-PC_ae_C42_0
-PC_ae_C42_2
-PC_ae_C42_4
-PC_ae_C42_5
-lysoPC_a_C20_4
-SM__OH__C14_1
-
-
-
-
-
 
 
 
