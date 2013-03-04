@@ -164,6 +164,7 @@ ltmace
 ltmata
 ltantihy
 my.alkkon
+my.hyper
 
 F4.feature = scan(what = character())
 utalteru
@@ -183,6 +184,7 @@ utmace
 utmata
 utantihy
 my.alkkon
+my.hyper
 
 #F4 = preprocess(F4, F4_valid_measures)
 require(nlme)
@@ -205,7 +207,6 @@ sub = which(S4[Cohort$zz_nr_s4,"lthyact"]==2)
 
 sub = c(sub, sub+1009)
 
-
 ## medication in the populetaion at baseline and follow-up
 table(S4[Cohort$zz_nr_s4[subset],"ltantihy"],F4[Cohort$zz_nr_f4[subset],"utantihy"], S4[Cohort$zz_nr_s4[subset],"lthyact"], F4[Cohort$zz_nr_f4[subset],"uthyact"])
 
@@ -214,30 +215,30 @@ table(S4$lthyact, S4$uthyact, useNA='ifany')
 rst = NULL;
 for (m in valid_measures){
 	## fixed effect estimation
-#	metabolite = log(S4[, m])
-#	model = glm(as.factor(uthyact) ~  metabolite +
-#					ltalteru + as.factor(lcsex) + ltbmi## model 1
-#					+ ltsysmm
-#					+ my.cigreg + my.alkkon ##model 2
-#					+ my.diab  ##model 3
-#					+ ll_chola+ll_hdla##model 4
-#			,subset = which(S4$lthyact == 2),
-#			S4, family = binomial(link = "logit"))
-#	rst = rbind(rst, summary(model)$coefficients[2,])
-#	
-	## mixed effect estimation
-	data$m = c(log(S4[Cohort$zz_nr_s4, m]), log(F4[Cohort$zz_nr_f4, m]))
-	mixed.dum <- glmer(disease ~ m + 
-					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
-					as.factor(platform) +
+	metabolite = log(S4[, m])
+	model = glm(as.factor(uthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
+					+ ltsysmm
 					+ my.cigreg + my.alkkon ##model 2
 					+ my.diab  ##model 3
 					+ ll_chola+ll_hdla##model 4
-					+ (1 | participants), 
-			na.action=na.exclude, family = binomial,
-			data[sub,])
-	rst = rbind(rst, summary(mixed.dum)@coefs[2,])
+			,subset = which(S4$lthyact == 2),
+			S4, family = binomial(link = "logit"))
+	rst = rbind(rst, summary(model)$coefficients[2,])
+	
+	## mixed effect estimation
+#	data$m = c(log(S4[Cohort$zz_nr_s4, m]), log(F4[Cohort$zz_nr_f4, m]))
+#	mixed.dum <- glmer(disease ~ m + 
+#					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
+#					as.factor(platform) +
+#					ltalteru + as.factor(lcsex) + ltbmi## model 1
+#					+ my.cigreg + my.alkkon ##model 2
+#					+ my.diab  ##model 3
+#					+ ll_chola+ll_hdla##model 4
+#					+ (1 | participants), 
+#			na.action=na.exclude, family = binomial,
+#			data[sub,])
+#	rst = rbind(rst, summary(mixed.dum)@coefs[2,])
 
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
@@ -250,7 +251,8 @@ rst=NULL
 for(i in valid_measures){
 	data$m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
 	#data$m = scale(data$m)
-	mixed.dum <- lme( m ~ ltdiamm + ltantihy +
+	mixed.dum <- lme( m ~ my.hyper +
+					#ltdiamm + ltantihy +
 					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
 					platform +
 					ltalteru + as.factor(lcsex) + ltbmi## model 1
@@ -276,7 +278,7 @@ rst=data.frame(rst,
 		bonf=p.adjust(rst[, 5], method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "diastolic blood pressure associated metabolites_full model with medication.csv")
+write.csv(rst, file = "Hypertension associated metabolites_3 groups (hyper, hyper med, nonhyper).csv")
 
 plot(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1]))
 abline(lm(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1])))

@@ -71,6 +71,18 @@ F4$my.physical = F4$ltphact
 F4$my.physical[which(F4$ltphact<=2)]=1
 F4$my.physical[which(F4$ltphact>2)]=0
 
+##
+S4$my.hyper = S4$lthyact
+S4$my.hyper[which(S4$lthyact==2)] = 0
+S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==1)]=1
+S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==2)]=2
+S4$my.hyper = as.factor(S4$my.hyper)
+
+F4$my.hyper = F4$lthyact
+F4$my.hyper[which(F4$uthyact==2)] = 0
+F4$my.hyper[which(F4$uthyact==1&F4$utantihy==1)]=1
+F4$my.hyper[which(F4$uthyact==1&F4$utantihy==2)]=2
+F4$my.hyper = as.factor(F4$my.hyper)
 
 #S4 features and diseases
 feature.cont = scan(what = character())

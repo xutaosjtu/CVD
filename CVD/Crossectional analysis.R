@@ -86,8 +86,7 @@ model = glm(as.factor(disease) ~ ., data = data, family = binomial(link = "logit
 smodel = step(model, trace = 0)
 
 #, subset = c(which(data$disease==1),which(data$disease==4))
-######################	S4	###############
-
+######################	S4	#################
 rst = NULL
 for (m in S4_valid_measures){
 	data = data.frame (disease = as.factor(S4[,diseases.s4[1]]), metabolite = S4[,m], S4[,feature.cont], apply(S4[,feature.disc], 2, function(x) as.factor(x)))
