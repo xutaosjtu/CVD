@@ -147,89 +147,89 @@ for(i in 2:4){
 
 #########################	hypertension	################################
 #Prediction of future hypertension
-table(S4$lthyact, S4$uthyact)
-rst = NULL;
-for (m in S4_valid_measures){
-	metabolite = S4[, m]
-	model = glm(as.factor(uthyact) ~  metabolite +
-					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+ ltsysmm + ltdiamm ##model 2
-			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			#+log(ll_chola)+log(ll_hdla)+ total2HDL##model 3
-			#+ as.factor(ltcigreg) + ltalkkon ##model 4
-			
-			#+ltmbbl + ltmace + ltmata #model 6 medication
-			,subset = which(S4$lthyact == 2),
-			S4, family = binomial(link = "logit"))
-	rst = rbind(rst, summary(model)$coefficients[2,])
-}
-rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
-rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Hypertension survival analysis_model2.csv")
-
-#Association with current hypertension
-S4.feature = scan(what = character())
-ltalteru
-lcsex
-ltbmi
-lp_diab_who06
-ll_chola
-ll_hdla
-total2HDL
-ltcigreg
-ltalkkon
-ltsysmm
-ltdiamm
-ltmbbl
-ltmace
-ltmata
-my.alkkon
-
-F4.feature = scan(what = character())
-utalteru
-ucsex
-utbmi
-uk_diab_who06
-ul_choln
-ul_hdln
-total2HDL
-utcigreg
-utalkkon
-utsysmm
-utdiamm
-utmbbl
-utmace
-utmata
-my.alkkon
-
-F4 = preprocess(F4, F4_valid_measures)
-require(nlme)
-valid_measures = intersect(S4_valid_measures, F4_valid_measures)
-participants=rep(1:1009,2)
-data=data.frame(
-		participants, 
-		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
-		rbind(as.matrix(S4[ Cohort$zz_nr_s4, S4.feature]), as.matrix(F4[ Cohort$zz_nr_f4, F4.feature]))
-)
-rst=NULL
-for(i in valid_measures){
-	m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
-	mixed.dum <- lme( log(m) ~ disease +
-					#ltmbbl + ltmace + ltmata + #model 6 medication
-					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+ as.factor(ltcigreg) + as.factor(my.alkkon) ##model 2
-					+ (lp_diab_who06==4|lp_diab_who06==5)  ##model 3
-					+ log(ll_chola)+log(ll_hdla)+ total2HDL##model 4
-					#+ log(ltsysmm) + log(ltdiamm) ##model 5
-			,random = ~  1 | participants, na.action=na.exclude, data=data)
-	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
-}
-rst=data.frame(rst,
-		fdr=p.adjust(rst[, 5], method="fdr"),
-		bonf=p.adjust(rst[, 5], method="bonferroni")
-)
-rownames( rst )=valid_measures
-write.csv(rst, file = "hypertension associated metabolites_model4.csv")
+#table(S4$lthyact, S4$uthyact)
+#rst = NULL;
+#for (m in S4_valid_measures){
+#	metabolite = S4[, m]
+#	model = glm(as.factor(uthyact) ~  metabolite +
+#					ltalteru + as.factor(lcsex) + ltbmi## model 1
+#					+ ltsysmm + ltdiamm ##model 2
+#			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
+#			#+log(ll_chola)+log(ll_hdla)+ total2HDL##model 3
+#			#+ as.factor(ltcigreg) + ltalkkon ##model 4
+#			
+#			#+ltmbbl + ltmace + ltmata #model 6 medication
+#			,subset = which(S4$lthyact == 2),
+#			S4, family = binomial(link = "logit"))
+#	rst = rbind(rst, summary(model)$coefficients[2,])
+#}
+#rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+#rownames(rst) = S4_valid_measures
+#write.csv(rst, file = "Hypertension survival analysis_model2.csv")
+#
+##Association with current hypertension
+#S4.feature = scan(what = character())
+#ltalteru
+#lcsex
+#ltbmi
+#lp_diab_who06
+#ll_chola
+#ll_hdla
+#total2HDL
+#ltcigreg
+#ltalkkon
+#ltsysmm
+#ltdiamm
+#ltmbbl
+#ltmace
+#ltmata
+#my.alkkon
+#
+#F4.feature = scan(what = character())
+#utalteru
+#ucsex
+#utbmi
+#uk_diab_who06
+#ul_choln
+#ul_hdln
+#total2HDL
+#utcigreg
+#utalkkon
+#utsysmm
+#utdiamm
+#utmbbl
+#utmace
+#utmata
+#my.alkkon
+#
+#F4 = preprocess(F4, F4_valid_measures)
+#require(nlme)
+#valid_measures = intersect(S4_valid_measures, F4_valid_measures)
+#participants=rep(1:1009,2)
+#data=data.frame(
+#		participants, 
+#		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
+#		rbind(as.matrix(S4[ Cohort$zz_nr_s4, S4.feature]), as.matrix(F4[ Cohort$zz_nr_f4, F4.feature]))
+#)
+#rst=NULL
+#for(i in valid_measures){
+#	m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
+#	mixed.dum <- lme( log(m) ~ disease +
+#					#ltmbbl + ltmace + ltmata + #model 6 medication
+#					ltalteru + as.factor(lcsex) + ltbmi## model 1
+#					+ as.factor(ltcigreg) + as.factor(my.alkkon) ##model 2
+#					+ (lp_diab_who06==4|lp_diab_who06==5)  ##model 3
+#					+ log(ll_chola)+log(ll_hdla)+ total2HDL##model 4
+#					#+ log(ltsysmm) + log(ltdiamm) ##model 5
+#			,random = ~  1 | participants, na.action=na.exclude, data=data)
+#	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
+#}
+#rst=data.frame(rst,
+#		fdr=p.adjust(rst[, 5], method="fdr"),
+#		bonf=p.adjust(rst[, 5], method="bonferroni")
+#)
+#rownames( rst )=valid_measures
+#write.csv(rst, file = "hypertension associated metabolites_model4.csv")
 
 ############	calculate the residues	########
 data = data.frame(log(S4[,valid_measures]),

@@ -181,7 +181,17 @@ rst = logisticRegression(data.frame(F4 , F4_ratio) , F4$us_c04a, colnames(F4_rat
 colnames(F4_ratio)[which(rst[,5]<0.05)]
 
 
-
+## test the association of the three biomarkers in the cross-sectional data
+## F4
+F4$m = log(F4$Arg)
+lm(m ~ utmi 
+		+ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+		+ my.diab  ##model 2
+		+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+		+ scale(lh_crp)  ##model 4
+		+ as.factor(ltmstati)& S4$ltmstati !=1
+		,subset = which(S4$prev_mi == 0 ),
+		S4)
 
 
 
