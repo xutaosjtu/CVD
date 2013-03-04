@@ -48,6 +48,7 @@ S4$my.cigreg = 4-S4$my.cigreg
 F4$my.cigreg = F4$utcigreg
 F4$my.cigreg[which(F4$utcigreg==1)]=2
 F4$my.cigreg = 4-F4$my.cigreg
+F4$my.cigreg = as.factor(F4$my.cigreg)
 
 ## diabetes
 S4$my.diab=S4$lp_diab_who06
@@ -57,8 +58,9 @@ S4$my.diab[which(S4$lp_diab_who06<4)]=0
 
 F4$my.diab=F4$uk_diab_who06
 F4$my.diab[which(F4$uk_diab_who06>10)]=NA
-F4$my.diab[which(F4$uk_diab_who06==4|S4$lp_diab_who06==5)]=1
+F4$my.diab[which(F4$uk_diab_who06==4|F4$uk_diab_who06==5)]=1
 F4$my.diab[which(F4$uk_diab_who06<4)]=0
+F4$my.diab = as.factor(F4$my.diab)
 
 ## physical activity
 S4$my.physical = S4$ltphact
