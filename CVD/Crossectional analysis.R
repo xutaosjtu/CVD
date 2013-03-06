@@ -235,9 +235,82 @@ f4.rst = read.csv("MI associated metabolites_F4_logistic.csv")
 combined.rst=merge(s4.rst, f4.rst, by="X", sort=F, all=T)
 write.csv(combined.rst, file = "MI associated metabolties_cross sectional_logistic.csv", quote=F, row.names=F)
 
+## By a matched case control study
+data = S4[which(S4$prev_mi==0),c("ltalteru", "lcsex", "ltbmi","my.diab","ltsysmm","my.cigreg","my.alkkon","ll_chola", "ll_hdla", "ll_ldla", "lh_crp", "inz_mi", S4_valid_measures)]
+data = na.omit(data)
+data$my.cigreg = as.numeric(data$my.cigreg)
+data$my.diab = as.numeric(data$my.diab)
+data$Arg_Trp = 
 
+#Y = 
+tr = data$inz_mi
+data$my.cigreg = as.numeric(data$my.cigreg)
+data$my.diab = as.numeric(data$my.diab)
+x = data[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
+rst.match = Match(Tr = tr, X =x, exact = T, M = 1, ties = F)
 
+#rst.balance = MatchBalance(inz_mi ~ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#+ my.diab  ##model 2
+#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_ldla) ##model 3+ total2HDL
+#+ scale(lh_crp)  ##model 4
+#, data, match = rst.match, nboots = 10)
 
+data = data[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+#data$ID = rep(1:table(data$inz_mi)[1], 2)
+data$ID = c(rep(1:table(data$inz_mi)[2], each = 1),1:table(data$inz_mi)[2])
+require(survival)
+rst = NULL
+for(m in S4_valid_measures){
+	#data$m = log(data[,"Arg"])-log(data$Trp)
+	data$m = log(data[,m])
+	model = clogit(inz_mi ~ m 
+	          		+ scale(ltbmi)## model 1
+					+ scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+					+ scale(lh_crp)  ##model 4
+					+ strata(ID)
+	,data)
+	rst = rbind(rst, summary(model)$coef[1,])
+}
+rownames(rst) = S4_valid_measures
 
+test = sample(which(data$inz_mi==1), 20)
+train = data[-test,]
+tr = train$inz_mi
+x = train[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
+rst.match = Match(Tr = tr, X =x, exact = T, M = 4, ties = F)
+train = train[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+#data$ID = rep(1:table(data$inz_mi)[1], 2)
+train$ID = c(rep(1:table(train$inz_mi)[2], each = 4),1:table(train$inz_mi)[2])
+require(survival)
+rst = NULL
+for(m in S4_valid_measures){
+	train$m = log(train$Arg)-log(train$Trp)
+	#train$m = log(train[,m])
+	model = clogit(inz_mi ~ m 
+					+ scale(ltbmi)## model 1
+					+ scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+					+ scale(lh_crp)  ##model 4
+					+ strata(ID)
+			,train)
+	rst = rbind(rst, summary(model)$coef[1,])
+}
+rownames(rst) = S4_valid_measures
 
+candidate = rownames(rst)[which(rst[,5]<0.05)]
+train$Arg_Trp = train$Arg/train$Trp
+model = clogit(inz_mi ~ Ala + Arg_Trp +Gly+Met+Phe+Ser+Trp+lysoPC_a_C16_0+lysoPC_a_C17_0+lysoPC_a_C18_0+lysoPC_a_C18_2+PC_aa_C28_1+PC_ae_C36_4+PC_ae_C36_5+PC_ae_C38_5
+				+ scale(ltbmi)## model 1
+				+ scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+				+ scale(lh_crp)  ##model 4
+				+ strata(ID)
+		,train)
 
+stepAIC(model)
+
+model = clogit(inz_mi ~ Ala + Arg_Trp +Gly+lysoPC_a_C17_0+PC_ae_C36_5
+				+ scale(ltbmi)## model 1
+				+ scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+				+ scale(lh_crp)  ##model 4
+				+ strata(ID)
+		,train)
+predict(,)
