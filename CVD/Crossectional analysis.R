@@ -240,12 +240,10 @@ data = S4[which(S4$prev_mi==0),c("ltalteru", "lcsex", "ltbmi","my.diab","ltsysmm
 data = na.omit(data)
 data$my.cigreg = as.numeric(data$my.cigreg)
 data$my.diab = as.numeric(data$my.diab)
-data$Arg_Trp = 
+data$Arg_Trp = data$Arg/data$Trp
 
 #Y = 
 tr = data$inz_mi
-data$my.cigreg = as.numeric(data$my.cigreg)
-data$my.diab = as.numeric(data$my.diab)
 x = data[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
 rst.match = Match(Tr = tr, X =x, exact = T, M = 1, ties = F)
 
@@ -313,4 +311,14 @@ model = clogit(inz_mi ~ Ala + Arg_Trp +Gly+lysoPC_a_C17_0+PC_ae_C36_5
 				+ scale(lh_crp)  ##model 4
 				+ strata(ID)
 		,train)
-predict(,)
+
+testset = data[c(test,which(data$inz_mi==0)),]
+tr = testset$inz_mi
+x = testset[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
+rst.match = Match(Tr = tr, X =x, exact = T, M = 1, ties = F)
+testset = testset[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+testset$ID = c(rep(1:table(testset$inz_mi)[2], each = 1),1:table(testset$inz_mi)[2])
+
+pred = predict(model, testset, type = "risk")
+require(pROC)
+plot(roc( testset$inz_mi, pred))
