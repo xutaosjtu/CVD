@@ -10,9 +10,10 @@ data = data.frame(
 		S4$my.diab, ##model 2
 		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		scale(log(S4$lh_crp)), ##model 4
-		scale(log(S4[, metabo.asso])), scale(S4[,metabo.ratio.asso])
+		scale(log(S4[, metabo.asso])), scale(S4[,metabo.ratio.asso]),
+		prev_mi=S4$prev_mi
 )
-clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
+clinical = c("ltalteru", "ltbmi", "lcsex", "my.diab", "ltsysmm", "my.cigreg", "my.alkkon", "ll_hdla", "ll_chola", "lh_crp")
 colnames(data)[2:11] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
@@ -57,9 +58,38 @@ model = lm(lh_crp ~ .,
 write.csv(summary(model)$coef, file = "metabolite association with C reactive protein2.csv")
 
 
-metabo.selected3,
 
 
+plot(lysoPC_a_C17_0 ~ log(lh_crp), data = S4, subset = which(S4$prev_mi==0))
+
+require(grid)
+
+model = lm(log(lh_crp) ~ ., subset = which(S4$prev_mi==0), data = S4[, c(clinical)])
+count=0;rcount=0
+for(i in metabo.selected3){
+	#data = data.frame(marker = S4[,i],crp = log(S4$lh_crp))
+	indx = as.vector(model$na.action)
+	#tmp =data.frame(marker = S4[which(S4$prev_mi==0)[-indx],i], crp = model$residuals)
+	tmp = data.frame(marker = S4[which(S4$prev_mi==0),i], crp = log(S4[which(S4$prev_mi==0),"lh_crp"]))
+	x_min = quantile(tmp$marker,0.01)
+	x_max = quantile(tmp$marker,0.99)
+	
+	#tmp = tmp[which(tmp$marker<x_max&tmp$marker>x_min),]
+	
+	c <- ggplot(tmp ,aes(marker,crp))
+	c <- c + coord_cartesian(xlim = c(x_min,x_max)) + geom_point(alpha = 0.5) + xlab(i) +ylab("log(CRP)")+ stat_smooth(size =1,color="red",method='loess')
+	
+	###make different panels for plots
+	pushViewport(
+			viewport(x=0.25+count*5/10, y=0.75-(rcount*5)/10,width = 0.5, height = 0.5, angle = 0)
+	)
+	print(c,newpage=F)
+	upViewport() 
+	
+	####format control, print 3 figures for each row
+	count=count+1;
+	if(count%%2==0){rcount=rcount+1;count=0}
+}
 
 
 

@@ -243,9 +243,10 @@ data$my.diab = as.numeric(data$my.diab)
 data$Arg_Trp = data$Arg/data$Trp
 
 #Y = 
+require(Matching)
 tr = data$inz_mi
 x = data[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
-rst.match = Match(Tr = tr, X =x, exact = T, M = 1, ties = F)
+rst.match = Match(Tr = tr, X =x, exact = T, M = 2, ties = F)
 
 #rst.balance = MatchBalance(inz_mi ~ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
 #+ my.diab  ##model 2
@@ -271,14 +272,60 @@ for(m in S4_valid_measures){
 }
 rownames(rst) = S4_valid_measures
 
-test = sample(which(data$inz_mi==1), 20)
-train = data[-test,]
-tr = train$inz_mi
-x = train[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
-rst.match = Match(Tr = tr, X =x, exact = T, M = 4, ties = F)
-train = train[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+set.seed(20)
+rst = NULL
+for(j in 1:40){
+	#mstat = NULL;
+	for(i in 1:100){
+		tmp = analysis.matched(data, reduce = j, mnum=4, metabo = "Arg_Trp")
+		rst= rbind(rst, tmp)
+	}
+	#z.est = c(mean(abs(rst[,4])), se = sd(abs(rst[,4]))/sqrt(40))
+}
+rst = data.frame(rst, index = rep(1:40, each = 100))
+
+require(gplots)
+plotmeans(z~index, data = rst, n.label=F,main = "Arginine tryptophan ratio")
+#qnorm(0.025)
+abline(h = qnorm(0.975), col = "red")
+#1-pnorm(mean(abs(rst[,4])))
+
+plot(-log10(rst[,5]))
+abline(h = -log10(0.05))
+
+#rst=boot(data, analysis.matched,R =100, mnum =4, metabo ="Arg")
+#
+#plot(-log10(rst$t[,5]))
+#abline(h = -log10(0.05))
+#
+#sum(rst$t[,4]>rst$t0[4])/(1+rst$R)
+	
+analysis.matched <- function(data, reduce, mnum, metabo)
+{
+	require(survival)
+	require(Matching)
+	#print(indices)
+	test = sample(which(data$inz_mi==1), reduce)
+	train = data[-test,]
+	tr = train$inz_mi
+	x = train[,c("ltalteru", "lcsex", "my.diab","my.cigreg","my.alkkon")]
+	rst.match = Match(Tr = tr, X =x, exact = T, M = mnum, ties = F)
+	train = train[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+	train$ID = c(rep(1:table(train$inz_mi)[2], each = mnum),1:table(train$inz_mi)[2])
+	train$m = log(train[,metabo])
+	#train$m = log(train[,m])
+	model = clogit(inz_mi ~ m 
+			+ scale(ltbmi)## model 1
+			+ scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla)##model 3
+			+ scale(lh_crp)  ##model 4
+			+ strata(ID)
+	,train)
+	return(summary(model)$coef[1,])
+}
+
+
 #data$ID = rep(1:table(data$inz_mi)[1], 2)
-train$ID = c(rep(1:table(train$inz_mi)[2], each = 4),1:table(train$inz_mi)[2])
+
 require(survival)
 rst = NULL
 for(m in S4_valid_measures){
