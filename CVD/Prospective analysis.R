@@ -374,20 +374,25 @@ S4$my.cigreg = factor(S4$my.cigreg, ordered = F)
 
 S4$total2HDL = S4$ll_chola/S4$ll_hdla
 
+plot(
+		S4$mi_time[which(S4$prev_mi==0&!is.na(S4$inz_mi))],
+		S4_raw$mi_time[which(!is.na(S4_raw$inz_mi)&S4_raw$ltnuecht==1)]
+)
+
 require(survival)
 rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
-	metabolite = scale((S4[, m]))
-	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
+	S4$metabolite = scale((S4[, m]))
+	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + starta(ltnuecht) +
 					scale(ltalteru) + as.factor(lcsex)
 					+ scale(ltbmi)## model 1
 					+ my.diab  ##model 2
 					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
 	 				+ scale(lh_crp)  ##model 4
-					+ as.factor(ltmstati)& S4$ltmstati !=1
-					,subset = which(S4$prev_mi == 0 ),
-					S4)
+					#+ as.factor(ltmstati)& S4$ltmstati !=1
+					,subset = which(S4$prev_mi==0),
+					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[10,])
 	#rst2 = rbind(rst2, summary(model)$coefficients[11,])
