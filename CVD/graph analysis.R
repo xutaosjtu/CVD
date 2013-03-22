@@ -31,7 +31,7 @@ lines(density(log(metabolites$degree),adjust=0.9),col="red")
 
 ####################	Find shortest path	##########################
 require(igraph)
-score = 0.9
+score = 0.7
 
 all=read.csv('F:/Database/meta_enzyme_string_unique.v9.0',head=F, sep = "\t")
 all=all[all[,3] >= score,]
@@ -57,8 +57,8 @@ PC-aa-C32:1
 SM-OH-C22:2
 His-PTC
 
-To=c(unique(as.matrix(read.csv('F:/Cardiovascular disease/SNPs/CAD gene GWAS.csv',head=F))),
-		unique(as.matrix(read.csv('F:/Cardiovascular disease/SNPs/CAD gene FDR.csv', header = F)))
+To=c(unique(as.matrix(read.csv('F:/Cardiovascular disease/Results/SNPs/CAD gene GWAS.csv',head=F))),
+		unique(as.matrix(read.csv('F:/Cardiovascular disease/Results/SNPs/CAD gene FDR.csv', header = F)))
 )
 
 tmp=unique(c(as.character(all[,1]),as.character(all[,2])))
@@ -84,9 +84,9 @@ for (i in 1:length(fid)){
 	
 	path = sapply(path, function(x) V(graph)$name[x])
 	if(i ==2){
-		path = path[which(sapply(path, length)<=4)]	
+		path = path[which(sapply(path, length)<=3)]	
 	}
-	else path = path[which(sapply(path, length)<=4)]
+	else path = path[which(sapply(path, length)<=3)]
 	link = lapply(path, path2link)
 	for(j in 1:length(link)){
 		network = rbind(network, link[[j]])

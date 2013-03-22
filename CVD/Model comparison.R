@@ -2,6 +2,11 @@
 # 
 # Author: tao.xu
 ###############################################################################
+require(surivival)
+require(PredictABEL)
+require(pROC)
+require(boot)
+
 S4$my.sysmm.untreat = log(S4$ltsysmm)
 S4$my.sysmm.untreat[which((S4$ltmbbl ==1 | S4$ltmace ==1 | S4$ltmata ==1))] = 0
 S4$my.sysmm.treat = log(S4$ltsysmm)
@@ -44,9 +49,9 @@ names(prediction) = rownames(data)
 
 loglik = 0
 for (i in 1:2){
-	model = coxph(Surv(data$time, data$event) ~ .,
-			subset = which(S4$prev_mi == 0&S4$lcsex ==i&S4),#$ltmstati==2
-			data[ ,c(metabo.selected3, "framingham.linear")])
+	model = coxph(Surv(time, event) ~ .,
+			subset = which(S4$prev_mi == 0&S4$lcsex ==i),#$ltmstati==2
+			data[ ,c( "time", "event", metabo.selected3[3], "framingham.linear")])
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
 	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 	loglik = model$loglik[2] + loglik
@@ -60,12 +65,12 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 
 ##men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1- 0.6460348 ^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected3[3], "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-0.6506087^ pred.cv$cv.fit 
 ##women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c( metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] =1- 0.986016 ^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected3[3], "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] =1- 0.9769533 ^ pred.cv$cv.fit 
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)

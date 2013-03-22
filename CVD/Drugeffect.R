@@ -64,22 +64,22 @@ plot(lysoPC_a_C17_0 ~ log(lh_crp), data = S4, subset = which(S4$prev_mi==0))
 
 require(grid)
 
-model = lm(log(lh_crp) ~ ., subset = which(S4$prev_mi==0), data = S4[, c(clinical)])
+model = lm(lh_crp ~ ., subset = which(S4$prev_mi==0), data = S4[, c(clinical)])
 count=0;rcount=0
 for(i in metabo.selected3){
 	#data = data.frame(marker = S4[,i],crp = log(S4$lh_crp))
 	indx = as.vector(model$na.action)
 	#tmp =data.frame(marker = S4[which(S4$prev_mi==0)[-indx],i], crp = model$residuals)
-	tmp = data.frame(marker = S4[which(S4$prev_mi==0),i], crp = log(S4[which(S4$prev_mi==0),"lh_crp"]))
+	tmp = data.frame(marker = S4[which(S4$prev_mi==0),i], crp = S4[which(S4$prev_mi==0),"lh_crp"])
 	x_min = quantile(tmp$marker,0.01)
 	x_max = quantile(tmp$marker,0.99)
 	
-	#tmp = tmp[which(tmp$marker<x_max&tmp$marker>x_min),]
+	tmp = tmp[which(tmp$marker<x_max&tmp$marker>x_min),]
 	
-	c <- ggplot(tmp ,aes(marker,crp))
-	c <- c + coord_cartesian(xlim = c(x_min,x_max)) + geom_point(alpha = 0.5) + xlab(i) +ylab("log(CRP)")+ stat_smooth(size =1,color="red",method='loess')
+	c <- ggplot(tmp ,aes(marker,crp))+theme_bw()
+	c <- c  + geom_point(alpha = 0.5) + xlab(i) +ylab("log(CRP)")+ stat_smooth(size =1,color="red",method='lm')
 	
-	###make different panels for plots
+	###make different panels for plots+ coord_cartesian(xlim = c(x_min,x_max))
 	pushViewport(
 			viewport(x=0.25+count*5/10, y=0.75-(rcount*5)/10,width = 0.5, height = 0.5, angle = 0)
 	)

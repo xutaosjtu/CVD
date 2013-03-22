@@ -230,3 +230,4 @@ tmp = data.frame ( S4 = S4 [as.character(Cohort[,1]),"ltalteru"], F4 = F4[as.cha
 tmp = read.csv("F:/nicotine/Diabetes and Smoking/S4_addition.csv")
 tmp = tmp[,-5]
 tmp = merge(tmp, S4)
+
