@@ -383,8 +383,8 @@ require(survival)
 rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
-	S4$metabolite = scale((S4[, m]))
-	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + starta(ltnuecht) +
+	S4$metabolite = scale(log(S4[, m]))
+	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + as.factor(ltnuecht) +
 					scale(ltalteru) + as.factor(lcsex)
 					+ scale(ltbmi)## model 1
 					+ my.diab  ##model 2

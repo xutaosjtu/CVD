@@ -10,11 +10,16 @@ F4 = read.csv("data/K9512_Wang_Sattler_F4_tra300712.csv", sep = ";")
 S4_F4_map = read.csv("data/K9512_Wang_S_S4_F4trans300712.csv", sep = ";")
 
 ####	additional data
+S4.add = read.csv("data/S4 addition.csv")
+S4.add = S4.add[, which(colnames(S4.add)!="ZZ_nr")]
+S4 = merge(S4, S4.add)
 add = read.csv("data/sas data/pv95_12_add.csv", colClass = "character")
-add = apply(add, 2, as.numeric)
-tmp = merge(S4, add, by.x = "ZZ_nr.x", by.y = "ZZ_nr")
+#add = apply(add, 2, as.numeric)
+tmp = merge(S4, add, by.x = "ZZ_nr", by.y = "ZZ_nr")
+S4 = tmp
 
-
+S4$inz_mi[which(S4$inz_mi==".")]=NA
+S4$inz_mi = as.numeric(S4$inz_mi)
 #S4_valid_measure = 
 #F4_valid_measure = 
 load("F:/nicotine/F4_valid_measures.RData")
