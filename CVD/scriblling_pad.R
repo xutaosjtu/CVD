@@ -6,7 +6,6 @@
 
 time <-read.csv("F:/Cardiovascular disease/data/sas data/pv95_12_add.csv")
 
-
 setwd("H:/Met_ED_Val/")
 load("data.RData")
 require(boot)
