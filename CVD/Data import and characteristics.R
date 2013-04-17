@@ -67,9 +67,9 @@ S4$my.physical = S4$ltphact
 S4$my.physical[which(S4$ltphact<=2)]=1
 S4$my.physical[which(S4$ltphact>2)]=0
 
-F4$my.physical = F4$ltphact
-F4$my.physical[which(F4$ltphact<=2)]=1
-F4$my.physical[which(F4$ltphact>2)]=0
+F4$my.physical = F4$utphact
+F4$my.physical[which(F4$utphact<=2)]=1
+F4$my.physical[which(F4$utphact>2)]=0
 
 ##
 S4$my.hyper = S4$lthyact

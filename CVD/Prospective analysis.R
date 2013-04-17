@@ -207,7 +207,7 @@ sub = which(S4[Cohort$zz_nr_s4,"lthyact"]==2)
 
 sub = c(sub, sub+1009)
 
-## medication in the populetaion at baseline and follow-up
+## medication in the population at baseline and follow-up
 table(S4[Cohort$zz_nr_s4[subset],"ltantihy"],F4[Cohort$zz_nr_f4[subset],"utantihy"], S4[Cohort$zz_nr_s4[subset],"lthyact"], F4[Cohort$zz_nr_f4[subset],"uthyact"])
 
 #Prediction of future hypertension
@@ -216,23 +216,26 @@ rst = NULL;
 for (m in valid_measures){
 	## fixed effect estimation
 	metabolite = log(S4[, m])
-	model = glm(as.factor(uthyact) ~  metabolite +
-					ltalteru + as.factor(lcsex) + ltbmi## model 1
-					+ ltsysmm
-					+ my.cigreg + my.alkkon ##model 2
+	model = glm(as.factor(2-uthyact) ~  #metabolite +
+					ltalteru + as.factor(lcsex) ## model 1
+					+ scale(ltsysmm)
+					+ scale(ltbmi)
+					+ as.factor(my.cigreg) + as.factor(my.alkkon) ##model 2
 					+ my.diab  ##model 3
-					+ ll_chola+ll_hdla##model 4
+					+ scale(ll_chola) + scale(ll_hdla)
+					+ scale(log(lh_crp))##model 4
 			,subset = which(S4$lthyact == 2),
 			S4, family = binomial(link = "logit"))
-	rst = rbind(rst, summary(model)$coefficients[2,])
+	rst = rbind(rst, summary(model)$coefficients[5,])
 	
 	## mixed effect estimation
 #	data$m = c(log(S4[Cohort$zz_nr_s4, m]), log(F4[Cohort$zz_nr_f4, m]))
 #	mixed.dum <- glmer(disease ~ m + 
 #					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
 #					as.factor(platform) +
-#					ltalteru + as.factor(lcsex) + ltbmi## model 1
-#					+ my.cigreg + my.alkkon ##model 2
+#					ltalteru + as.factor(lcsex) ## model 1
+#					+ ltsysmm
+#					+ ltbmi + my.cigreg + my.alkkon ##model 2
 #					+ my.diab  ##model 3
 #					+ ll_chola+ll_hdla##model 4
 #					+ (1 | participants), 
@@ -243,10 +246,48 @@ for (m in valid_measures){
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = valid_measures
-write.csv(rst, file = "Hypertension survival analysis_full model_with platform.csv")
+write.csv(rst, file = "Hypertension survival analysis_mixed effect_full model.csv")
 
 
 #Association with current hypertension
+#fixed effect model
+rst = NULL
+for (m in valid_measures){
+	metabolite = log(S4[, m])
+	model = glm(as.factor(2-lthyact) ~  metabolite +
+					ltalteru + as.factor(lcsex) ## model 1
+					+ scale(ltbmi)
+					+ as.factor(my.cigreg) + as.factor(my.alkkon)
+					+ my.diab
+					+ scale(ll_chola) + scale(ll_hdla)
+					+ scale(log(lh_crp))##model 4
+			,subset = which(S4$ltantihy == 2),
+			S4, family = binomial(link = "logit"))
+	rst = rbind(rst, summary(model)$coefficients[2,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = valid_measures
+write.csv(rst, file = "Hypertension cross-sectional analysis_S4_full model.csv")
+
+rst = NULL
+for (m in valid_measures){
+	metabolite = log(F4[, m])
+	model = glm(as.factor(2-uthyact) ~  metabolite +
+					utalteru + as.factor(ucsex) ## model 1
+					+ scale(utbmi)
+					+ as.factor(my.cigreg) + as.factor(my.alkkon)
+					+ my.diab
+					+ scale(ul_chola) + scale(ul_hdla)
+					+ scale(log(uh_crp))##model 4
+			,subset = which(F4$utantihy == 2),
+			F4, family = binomial(link = "logit"))
+	rst = rbind(rst, summary(model)$coefficients[2,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = valid_measures
+write.csv(rst, file = "Hypertension cross-sectional analysis_F4_full model.csv")
+
+#mixed effect estimate
 rst=NULL
 for(i in valid_measures){
 	data$m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
@@ -420,183 +461,183 @@ dev.off()
 #PC_ae_C40_4
 
 
-###################	Myocardial infarction ##############################
-S4$my.cigreg = S4$ltcigreg
-S4$my.cigreg[which(S4$ltcigreg ==2)] = 1
-S4$my.cigreg[which(S4$ltcigreg ==3)] = 2
-S4$my.cigreg[which(S4$ltcigreg ==4)] = 3
-S4$my.cigreg = 3-S4$my.cigreg
-S4$my.cigreg = factor(S4$my.cigreg, ordered = F)
-
-S4$total2HDL = S4$ll_chola/S4$ll_hdla
-
-require(survival)
-rst = NULL; rst1 = NULL
-rst2 = NULL; rst3 = NULL
-for (m in metabo.ratio.asso){
-	metabolite = scale((S4[, m]))
-	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
-					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
-					#+ my.diab  ##model 2
-					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				#+ scale(lh_crp)  ##model 4
-					#+ as.factor(ltmstati)& S4$ltmstati !=1
-					,subset = which(S4$prev_mi == 0 ),
-					S4)
-	rst = rbind(rst, summary(model)$coefficients[1,])
-	#rst1 = rbind(rst , summary(model)$coefficients[10,])
-	#rst2 = rbind(rst2, summary(model)$coefficients[11,])
-	#rst3 = rbind(rst3, summary(model)$coefficients[12,])
-	#table(model$y[,2]) #number of sample used exactly in the estimation.
-}
-table(model$y[,2])
-rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = metabo.ratio.asso
-#rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolites ratio invest_MI survival analysis_model1.csv")
-
-plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
-
-############	Hazardous ratios in different quantiles	################
-require(gplots)
-pdf("quintile plot of replative risk (ynorm) _full model _decile.pdf", width = 12, height = 12)
-par(mfrow =c(2,2));
-yrange = NULL; RRquin = NULL
-for(m in candidates[1:16]){
-	m.conc=S4[, m]
-	metabo.quintile = cut(m.conc, breaks = 
-					#range(exp(S4[, m]))[1] + abs(range(exp(S4[, m]))[1]-range(exp(S4[, m]))[2])/6*(1:6), 
-					quantile(m.conc, probs = seq(0, 1, 0.1)), 
-			include.lowest = T,ordered_result = F)
-	model1 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
-					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
-					#+ my.diab  ##model 2
-					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-					#+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
-			,subset = which(S4$prev_mi == 0),
-			S4)
-	rst = summary(model1)$coefficients[1:9, ]
-	
-	model2 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
-					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
-			+ my.diab  ##model 2
-			+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3
-			+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
-			,subset = which(S4$prev_mi == 0),
-			S4)
-	rst2=summary(model2)$coefficients[1:9,]
-	
-#	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
-#			round(exp(rst[,1] + 1.96*rst[,3]), 3),
-#			sep = ",")
-#	interval = paste(round(rst[,2],3), interval, sep = "(")
-#	RRquin = cbind(RRquin, interval)
-	upper = abs(exp(rst[,1] + rst[,3]) - rst[,2])
-	lower = abs(exp(rst[,1] - rst[,3]) - rst[,2]) 
-	if(max(rst[, 2]+upper)>1){
-		yrange = c(min(rst[, 2]-upper), max(rst[, 2]+upper))
-	}
-	else{
-		yrange = c( min(rst[, 2]-upper), 1)
-	}
-	x= tapply(m.conc, INDEX = metabo.quintile, median)
-	plotCI(x = x[2:10], y = rst[, 2], uiw = upper, liw = lower, main = m, 
-			xlim = range(x), 
-			ylim = yrange, 
-			#xaxt = "n",
-			#log="y",
-			pch=22,cex=3,pt.bg="black",
-			#labels = levels(metabo.quintile), 
-			ylab = "relative risk", xlab = "quintiles of metabolites (ratios)" )
-	plotCI(x=x[1], y=1, uiw = 0, add=T, pch=22, cex=3, pt.bg="black")
-	plotCI(x = x[2:10], y = rst2[, 2], uiw = upper, liw = lower, main = m, 
-			xlim = range(x), 
-			ylim = yrange, 
-			#xaxt = "n",
-			#log="y",
-			pch=21,cex=3,pt.bg="grey",
-			)
-	plotCI(x=x[1], y=1, uiw = 0, add=T, pch=21, cex=3, pt.bg="grey")
-	#axis(1, at = x, labels = levels(metabo.quintile), col.axis = "blue")
-	lines(lowess(x, c(1, rst[,2]), f = 0.8), col = "red")
-	abline(h = 1, lty = 2)
-}
-dev.off()
-
-#test the trend
-rst= NULL;
-for(m in metabo.selected3){
-	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2)), include.lowest = T,ordered_result = F)
-	#log(S4[,m])
-	if(m == "Arg.Trp"){
-		metabo.quintile.value = tapply(scale(S4[, m]), INDEX = metabo.quintile, median, na.rm=T)
-	}
-	else{
-		metabo.quintile.value = tapply(scale(log(S4[, m])), INDEX = metabo.quintile, median, na.rm=T)		
-	}
-	tmp = rep(0, length(metabo.quintile))
-	for (q in levels(metabo.quintile)){
-		tmp[which(metabo.quintile %in% q)]=metabo.quintile.value[q]
-	}
-	metabo.quintile = tmp
-	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
-					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
-					#+ my.diab  ##model 2
-					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-					#+ scale(lh_crp)  ##model 4
-			,subset = which(S4$prev_mi == 0&S4$ltmstati !=1),
-			S4)
-	rst = rbind(rst, summary(model)$coefficients[1, ])
-}
-
-
-###metabolites associated with MI
-metabo.asso = scan(what = character())
-Arg
-Trp
-lysoPC_a_C16_0
-lysoPC_a_C17_0
-lysoPC_a_C18_2
-PC_aa_C28_1
-PC_aa_C32_2
-PC_aa_C32_3
-PC_aa_C34_2
-PC_aa_C34_3
-PC_aa_C36_2
-PC_aa_C36_3
-PC_ae_C36_1
-PC_ae_C36_2
-PC_ae_C38_2
-PC_ae_C40_1
-
-
-metabo.ratio.asso = scan(what = character())
-Arg.Trp
-Arg.lysoPC_a_C16_0
-Arg.lysoPC_a_C17_0
-Arg.lysoPC_a_C18_2
-Arg.PC_aa_C28_1
-Arg.PC_aa_C32_2
-Arg.PC_aa_C32_3
-Arg.PC_aa_C34_2
-Arg.PC_aa_C34_3
-Arg.PC_aa_C36_2
-Arg.PC_aa_C36_3
-Arg.PC_ae_C36_1
-Arg.PC_ae_C36_2
-Arg.PC_ae_C38_2
-Arg.PC_ae_C40_1
-PC_aa_C32_2.PC_aa_C32_3
-PC_aa_C32_2.PC_aa_C34_2
-PC_aa_C32_2.PC_aa_C34_3
-PC_aa_C32_2.PC_aa_C36_2
-PC_aa_C32_2.PC_aa_C36_3
-
-
-
-
-
-clinical = c("ltalteru", "ltbmi", "lcsex","my.diab", "ltsysmm", "ll_hdln", "ll_choln", "my.cigreg", "my.alkkon", "lh_crp")
+####################	Myocardial infarction ##############################
+#S4$my.cigreg = S4$ltcigreg
+#S4$my.cigreg[which(S4$ltcigreg ==2)] = 1
+#S4$my.cigreg[which(S4$ltcigreg ==3)] = 2
+#S4$my.cigreg[which(S4$ltcigreg ==4)] = 3
+#S4$my.cigreg = 3-S4$my.cigreg
+#S4$my.cigreg = factor(S4$my.cigreg, ordered = F)
+#
+#S4$total2HDL = S4$ll_chola/S4$ll_hdla
+#
+#require(survival)
+#rst = NULL; rst1 = NULL
+#rst2 = NULL; rst3 = NULL
+#for (m in metabo.ratio.asso){
+#	metabolite = scale((S4[, m]))
+#	model = coxph(Surv(mi_time, inz_mi) ~ metabolite +
+#					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#					#+ my.diab  ##model 2
+#					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+#	 				#+ scale(lh_crp)  ##model 4
+#					#+ as.factor(ltmstati)& S4$ltmstati !=1
+#					,subset = which(S4$prev_mi == 0 ),
+#					S4)
+#	rst = rbind(rst, summary(model)$coefficients[1,])
+#	#rst1 = rbind(rst , summary(model)$coefficients[10,])
+#	#rst2 = rbind(rst2, summary(model)$coefficients[11,])
+#	#rst3 = rbind(rst3, summary(model)$coefficients[12,])
+#	#table(model$y[,2]) #number of sample used exactly in the estimation.
+#}
+#table(model$y[,2])
+#rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+#rownames(rst) = metabo.ratio.asso
+##rst = cbind(rst, annotation[rownames(rst),])
+#write.csv(rst, file = "metabolites ratio invest_MI survival analysis_model1.csv")
+#
+#plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
+#
+#############	Hazardous ratios in different quantiles	################
+#require(gplots)
+#pdf("quintile plot of replative risk (ynorm) _full model _decile.pdf", width = 12, height = 12)
+#par(mfrow =c(2,2));
+#yrange = NULL; RRquin = NULL
+#for(m in candidates[1:16]){
+#	m.conc=S4[, m]
+#	metabo.quintile = cut(m.conc, breaks = 
+#					#range(exp(S4[, m]))[1] + abs(range(exp(S4[, m]))[1]-range(exp(S4[, m]))[2])/6*(1:6), 
+#					quantile(m.conc, probs = seq(0, 1, 0.1)), 
+#			include.lowest = T,ordered_result = F)
+#	model1 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+#					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#					#+ my.diab  ##model 2
+#					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+#					#+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
+#			,subset = which(S4$prev_mi == 0),
+#			S4)
+#	rst = summary(model1)$coefficients[1:9, ]
+#	
+#	model2 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+#					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#			+ my.diab  ##model 2
+#			+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3
+#			+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
+#			,subset = which(S4$prev_mi == 0),
+#			S4)
+#	rst2=summary(model2)$coefficients[1:9,]
+#	
+##	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
+##			round(exp(rst[,1] + 1.96*rst[,3]), 3),
+##			sep = ",")
+##	interval = paste(round(rst[,2],3), interval, sep = "(")
+##	RRquin = cbind(RRquin, interval)
+#	upper = abs(exp(rst[,1] + rst[,3]) - rst[,2])
+#	lower = abs(exp(rst[,1] - rst[,3]) - rst[,2]) 
+#	if(max(rst[, 2]+upper)>1){
+#		yrange = c(min(rst[, 2]-upper), max(rst[, 2]+upper))
+#	}
+#	else{
+#		yrange = c( min(rst[, 2]-upper), 1)
+#	}
+#	x= tapply(m.conc, INDEX = metabo.quintile, median)
+#	plotCI(x = x[2:10], y = rst[, 2], uiw = upper, liw = lower, main = m, 
+#			xlim = range(x), 
+#			ylim = yrange, 
+#			#xaxt = "n",
+#			#log="y",
+#			pch=22,cex=3,pt.bg="black",
+#			#labels = levels(metabo.quintile), 
+#			ylab = "relative risk", xlab = "quintiles of metabolites (ratios)" )
+#	plotCI(x=x[1], y=1, uiw = 0, add=T, pch=22, cex=3, pt.bg="black")
+#	plotCI(x = x[2:10], y = rst2[, 2], uiw = upper, liw = lower, main = m, 
+#			xlim = range(x), 
+#			ylim = yrange, 
+#			#xaxt = "n",
+#			#log="y",
+#			pch=21,cex=3,pt.bg="grey",
+#			)
+#	plotCI(x=x[1], y=1, uiw = 0, add=T, pch=21, cex=3, pt.bg="grey")
+#	#axis(1, at = x, labels = levels(metabo.quintile), col.axis = "blue")
+#	lines(lowess(x, c(1, rst[,2]), f = 0.8), col = "red")
+#	abline(h = 1, lty = 2)
+#}
+#dev.off()
+#
+##test the trend
+#rst= NULL;
+#for(m in metabo.selected3){
+#	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2)), include.lowest = T,ordered_result = F)
+#	#log(S4[,m])
+#	if(m == "Arg.Trp"){
+#		metabo.quintile.value = tapply(scale(S4[, m]), INDEX = metabo.quintile, median, na.rm=T)
+#	}
+#	else{
+#		metabo.quintile.value = tapply(scale(log(S4[, m])), INDEX = metabo.quintile, median, na.rm=T)		
+#	}
+#	tmp = rep(0, length(metabo.quintile))
+#	for (q in levels(metabo.quintile)){
+#		tmp[which(metabo.quintile %in% q)]=metabo.quintile.value[q]
+#	}
+#	metabo.quintile = tmp
+#	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+#					scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#					#+ my.diab  ##model 2
+#					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+#					#+ scale(lh_crp)  ##model 4
+#			,subset = which(S4$prev_mi == 0&S4$ltmstati !=1),
+#			S4)
+#	rst = rbind(rst, summary(model)$coefficients[1, ])
+#}
+#
+#
+####metabolites associated with MI
+#metabo.asso = scan(what = character())
+#Arg
+#Trp
+#lysoPC_a_C16_0
+#lysoPC_a_C17_0
+#lysoPC_a_C18_2
+#PC_aa_C28_1
+#PC_aa_C32_2
+#PC_aa_C32_3
+#PC_aa_C34_2
+#PC_aa_C34_3
+#PC_aa_C36_2
+#PC_aa_C36_3
+#PC_ae_C36_1
+#PC_ae_C36_2
+#PC_ae_C38_2
+#PC_ae_C40_1
+#
+#
+#metabo.ratio.asso = scan(what = character())
+#Arg.Trp
+#Arg.lysoPC_a_C16_0
+#Arg.lysoPC_a_C17_0
+#Arg.lysoPC_a_C18_2
+#Arg.PC_aa_C28_1
+#Arg.PC_aa_C32_2
+#Arg.PC_aa_C32_3
+#Arg.PC_aa_C34_2
+#Arg.PC_aa_C34_3
+#Arg.PC_aa_C36_2
+#Arg.PC_aa_C36_3
+#Arg.PC_ae_C36_1
+#Arg.PC_ae_C36_2
+#Arg.PC_ae_C38_2
+#Arg.PC_ae_C40_1
+#PC_aa_C32_2.PC_aa_C32_3
+#PC_aa_C32_2.PC_aa_C34_2
+#PC_aa_C32_2.PC_aa_C34_3
+#PC_aa_C32_2.PC_aa_C36_2
+#PC_aa_C32_2.PC_aa_C36_3
+#
+#
+#
+#
+#
+#clinical = c("ltalteru", "ltbmi", "lcsex","my.diab", "ltsysmm", "ll_hdln", "ll_choln", "my.cigreg", "my.alkkon", "lh_crp")
 
 
 
