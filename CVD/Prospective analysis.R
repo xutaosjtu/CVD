@@ -166,6 +166,7 @@ ltmata
 ltantihy
 my.alkkon
 my.hyper
+lthyact
 
 F4.feature = scan(what = character())
 utalteru
@@ -187,6 +188,7 @@ utmata
 utantihy
 my.alkkon
 my.hyper
+uthyact
 
 #F4 = preprocess(F4, F4_valid_measures)
 require(nlme)

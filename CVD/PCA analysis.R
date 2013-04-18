@@ -4,9 +4,14 @@
 ###############################################################################
 
 
-data = S4[which(S4$lthyact==2),c(valid_measures,S4.feature)]
+data = S4[which(S4$lthyact==2),c(valid_measures,S4.feature,"lthyact","uthyact")]
 adj = c("ltalteru", "lcsex", "ltbmi", "my.cigreg", "my.alkkon", "my.diab", "ll_chola", "ll_hdla")
-residue(data, valid_measures, adj, control_group = which(data$lthya))
+data.resid=residue(data, valid_measures, adj, control_group = which(data$lthyact==2&data$uthyact==2))
 
-prcomp.hyper=prcomp( log(S4[which(S4$uthyact==1&S4$lthyact==2),c(valid_measures)]))
+data.resid = preprocess(data.resid, Metabolites = colnames(data.resid))
+prcomp.hyper=prcomp(data.resid[which(data$lthyact==2&data$uthyact==1),])
 
+tmp = as.matrix(data.resid[which(data$lthyact==2&data$uthyact==1),])
+heatmap(tmp)
+dim(tmp)
+tmp = apply(tmp,2,scale)
