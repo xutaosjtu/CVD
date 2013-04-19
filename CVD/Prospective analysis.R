@@ -260,18 +260,18 @@ for (m in valid_measures){
 	metabolite = log(S4[, m])
 	model = glm(as.factor(2-lthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) ## model 1
-#					+ scale(ltbmi)
-#					+ as.factor(my.cigreg) + as.factor(my.alkkon)
-#					+ my.diab
-#					+ scale(ll_chola) + scale(ll_hdla)
-#					+ scale(log(lh_crp))##model 4
-			,subset = which(S4$ltantihy == 2),
+					+ scale(ltbmi)
+					+ as.factor(my.cigreg) + as.factor(my.alkkon)
+					+ my.diab
+					+ scale(ll_chola) + scale(ll_hdla)
+					+ scale(log(lh_crp))##model 4
+			,#subset = which(S4$ltantihy == 2),
 			S4, family = binomial(link = "logit"))
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = valid_measures
-write.csv(rst, file = "Hypertension cross-sectional analysis_S4_crude model.csv")
+write.csv(rst, file = "Hypertension cross-sectional_S4_include hyper(med)_full model.csv")
 
 rst = NULL
 for (m in valid_measures){
@@ -283,13 +283,13 @@ for (m in valid_measures){
 #					+ my.diab
 #					+ scale(ul_chola) + scale(ul_hdla)
 #					+ scale(log(uh_crp))##model 4
-			,subset = which(F4$utantihy == 2),
+			,#subset = which(F4$utantihy == 2),
 			F4, family = binomial(link = "logit"))
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = valid_measures
-write.csv(rst, file = "Hypertension cross-sectional analysis_F4_crude model.csv")
+write.csv(rst, file = "Hypertension cross-sectional_F4_include hyper(med)_crude model.csv")
 
 #mixed effect estimate
 rst=NULL
