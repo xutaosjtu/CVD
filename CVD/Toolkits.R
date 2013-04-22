@@ -256,3 +256,14 @@ ggd.qqplot = function(pvector, main=NULL, ...) {
 			xlim=c(0,max(e)), ylim=c(0,max(o)))
 	lines(e,e,col="red")
 }
+
+#pair-wise ratios among the data 
+concen2ratio = function(data){
+	rst = NULL;
+	for(i in 1:dim(data)[2]){
+		tmp =  t(apply(data, 1, function(x) x[i]/x[-i]))
+		colnames(tmp) = paste(colnames(data)[i], colnames(data)[-i], sep = ".")
+		rst = cbind(rst, tmp)
+	}
+	return(rst)
+}
