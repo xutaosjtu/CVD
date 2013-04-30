@@ -50,7 +50,7 @@ my.hyper
 uthyact
 
 print("medication in the population at baseline and follow-up")
-table(S4[Cohort$zz_nr_s4[subset],"ltantihy"],F4[Cohort$zz_nr_f4[subset],"utantihy"], S4[Cohort$zz_nr_s4[subset],"lthyact"], F4[Cohort$zz_nr_f4[subset],"uthyact"])
+table(S4[Cohort$zz_nr_s4,"ltantihy"],F4[Cohort$zz_nr_f4,"utantihy"], S4[Cohort$zz_nr_s4,"lthyact"], F4[Cohort$zz_nr_f4,"uthyact"])
 
 ## Prediction of future hypertension
 print("hypertension status at baseline and follow-up")
@@ -58,7 +58,7 @@ table('S4' = S4$lthyact, 'F4' = S4$uthyact, useNA='ifany')
 rst = NULL;
 for (m in valid_measures){
 	## fixed effect estimation
-	metabolite = log(S4[, m])
+	metabolite = scale(log(S4[, m]))
 	model = glm(as.factor(2-uthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) # crude model
 					+ scale(ltsysmm) # multivariate model
@@ -85,7 +85,6 @@ for (m in valid_measures){
 #			na.action=na.exclude, family = binomial,
 #			data[sub,])
 #	rst = rbind(rst, summary(mixed.dum)@coefs[2,])
-
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = valid_measures
@@ -96,39 +95,39 @@ write.csv(rst, file = "Hypertension survival analysis_mixed effect_full model.cs
 # fixed effect model: logistic regression
 rst = NULL # association in S4 
 for (m in valid_measures){
-	metabolite = log(S4[, m])
+	metabolite = scale(log(S4[, m]))
 	model = glm(as.factor(2-lthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) # basic model
-					+ scale(ltbmi) # multivariate model
-					+ as.factor(my.cigreg) + as.factor(my.alkkon)
-					+ my.diab
-					+ scale(ll_chola) + scale(ll_hdla)
-					+ scale(log(lh_crp))
+#					+ scale(ltbmi) # multivariate model
+#					+ as.factor(my.cigreg) + as.factor(my.alkkon)
+#					+ my.diab
+#					+ scale(ll_chola) + scale(ll_hdla)
+#					+ scale(log(lh_crp))
 			,#subset = which(S4$ltantihy == 2), # antihypertensive medication 
 			S4, family = binomial(link = "logit"))
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = valid_measures
-write.csv(rst, file = "Hypertension cross-sectional_S4_include hyper(med)_full model.csv")
+write.csv(rst, file = "Hypertension cross-sectional_S4_include hyper(med)_crude model_normed.csv")
 
 rst = NULL # association in F4
 for (m in valid_measures){
-	metabolite = log(F4[, m])
+	metabolite = scale(log(F4[, m]))
 	model = glm(as.factor(2-uthyact) ~  metabolite +
 					utalteru + as.factor(ucsex) ## model 1
-#					+ scale(utbmi) # multivariate model
-#					+ as.factor(my.cigreg) + as.factor(my.alkkon)
-#					+ my.diab
-#					+ scale(ul_chola) + scale(ul_hdla)
-#					+ scale(log(uh_crp))
+					+ scale(utbmi) # multivariate model
+					+ as.factor(my.cigreg) + as.factor(my.alkkon)
+					+ my.diab
+					+ scale(ul_chola) + scale(ul_hdla)
+					+ scale(log(uh_crp))
 			,#subset = which(F4$utantihy == 2), # antihypertensive medication
 			F4, family = binomial(link = "logit"))
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
 rownames(rst) = valid_measures
-write.csv(rst, file = "Hypertension cross-sectional_F4_include hyper(med)_crude model.csv")
+write.csv(rst, file = "Hypertension cross-sectional_F4_include hyper(med)_full model.csv")
 
 # mixed effect model: linear mixed model
 require(nlme)
@@ -187,17 +186,18 @@ write.csv(rst, file = "Hypertension associated metabolites_without medication_fu
 plot(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1]))
 abline(lm(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1])))
 
-rst=NULL # General estimate equation
+require(gee)# General estimate equation
+rst=NULL 
 for(i in valid_measures){
-	data$m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
+	data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))
 	#data$m = scale(data$m)
 	model <- gee( disease ~ m+
 					#ltdiamm + ltantihy +
 					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
 					#platform +
 					ltalteru + as.factor(lcsex) ## model 1
-					#+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
-			,id = interaction(platform,participants),# na.action=na.exclude, 
+					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
+			,id = participants,# na.action=na.exclude, 
 			data=data,subset = which(!is.na(data$disease)),
 			corstr = "exchangeable",
 			family = binomial)
@@ -209,7 +209,7 @@ rst=data.frame(rst,
 		bonf=p.adjust(rst$pvalue, method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "Hypertension associated metabolites_crude model_GEE.csv")
+write.csv(rst, file = "Hypertension associated metabolites_full model_GEE_normed.csv")
 
 
 
@@ -273,11 +273,11 @@ SM__OH__C22_2
 H1
 
 pdf(file = "S4 F4 prospective change.pdf", width = 15, height = 27)
-close.screen(all = T)
-split.screen(c(6,3))
+#close.screen(all = T)
+par(mfrow = c(6,3))
 k = 1
 for(i in metabo.selected){
-	screen(k)
+	#screen(k)
 	data = data.frame("m" = c(S4.residue[,i], F4.residue[,i]),  
 			"group" = rep(interaction(as.factor(S4[Cohort$zz_nr_s4, "lthyact"]),as.factor(F4[Cohort$zz_nr_f4, "uthyact"])),2),
 			"t" = c(rep(1, dim(S4.residue)[1]),rep(2, dim(S4.residue)[1]))
