@@ -267,3 +267,10 @@ concen2ratio = function(data){
 	}
 	return(rst)
 }
+
+#detect outliers
+outlier = function(x){
+	Mean = mean(x, na.rm = T)
+	SD = sd(x,na.rm =T)
+	which(x>Mean+5*SD|x<Mean-5*SD)	
+}
