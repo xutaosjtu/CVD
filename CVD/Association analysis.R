@@ -192,6 +192,7 @@ require(gee)# General estimate equation
 rst=NULL 
 for(i in valid_measures){
 	data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
+	tmp = data[order(data$participants), ]
 	model <- gee(disease ~ m +
 					#ltdiamm + ltantihy +
 					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
@@ -199,8 +200,8 @@ for(i in valid_measures){
 					ltalteru + as.factor(lcsex) ## model 1
 					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
 			,id = participants,# na.action=na.exclude, 
-			data=data[order(data$participants), ],
-			subset = which(!is.na(data$disease)&data$ltantihy!=1),
+			data= tmp,
+			subset = which(!is.na(tmp$disease)),#&tmp$ltantihy!=1
 			corstr = "exchangeable",
 			family = binomial)
 	rst = rbind(rst, summary(model)$coef[2,])
@@ -211,7 +212,7 @@ rst=data.frame(rst,
 		bonf=p.adjust(rst$pvalue, method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "Hypertension associated metabolites_full model_GEE_normed (without med).csv")
+write.csv(rst, file = "Hypertension associated metabolites_full model_GEE_normed.csv")
 
 
 
