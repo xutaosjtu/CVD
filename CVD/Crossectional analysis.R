@@ -152,21 +152,6 @@ rst = logisticRegression(F4, F4$CVD, F4_valid_measures, feature.cont, feature.di
 write.csv(rst, file = "CVD combined_Model SCORE_F4.csv")
 
 #################	Ratio analysis
-concen2ratio = function(data){
-	
-	rst = NULL
-	
-	for(i in 1:dim(data)[2]){
-		tmp =  t(apply(data, 1, function(x) x[i]/x[-i]))
-		colnames(tmp) = paste(colnames(data)[i], colnames(data)[-i], sep = ".")
-		rst = cbind(rst, tmp)
-	
-	}
-	
-	return(rst)
-
-}
-
 substr(feature.cont, 1, 2) <- "l"
 substr(feature.disc, 1, 2) <- "l"
 S4_ratio = concen2ratio(S4[, S4_valid_measures[c(1:21)]])

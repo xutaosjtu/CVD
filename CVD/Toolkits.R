@@ -172,6 +172,20 @@ Comparison.prospective<- function(baseline, feature, metabo, adj, subset){
 	
 }
 
+## concentration to ratios
+concen2ratio = function(data)
+{
+	rst = NULL
+	for(i in 1:dim(data)[2])
+	{
+		tmp =  t(apply(data, 1, function(x) x[i]/x[-i]))
+		colnames(tmp) = paste(colnames(data)[i], colnames(data)[-i], sep = ".")
+		rst = cbind(rst, tmp)
+	}	
+	return(rst)
+}
+
+
 ###############	cross validation for cox regression	################
 theta.fit <- function(x, y, ...) 
 {

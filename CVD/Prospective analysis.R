@@ -31,205 +31,6 @@ medication<-function(index){
 index = which(S4[as.character(Cohort$zz_nr_s4),"ltjnc7"]<2&F4[as.character(Cohort$zz_nr_f4),"utjnc7"]>2)
 
 
-###	new developped Myocardial Infarction
-tmps4 = as.factor(S4[Cohort$zz_nr_s4, diseases.s4[i]])
-tmpf4 = as.factor(F4[Cohort$zz_nr_f4, diseases.f4[i]])
-f = interaction(tmpf4, tmps4)
-
-CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = which(f %in% c("2.1", "2.2")), data)
-
-
-#index = which(F4[as.character(Cohort$zz_nr_f4),"CVD"])
-#data.newCVD = data.frame(S4[as.character(Cohort$zz_nr_s4)[index], c("CVD", "ltalteru") ] , F4[as.character(Cohort$zz_nr_f4)[index],c("CVD","utmialt","utschalt","utalter")])
-#write.csv(data.newCVD, file = "newly developped CVDs.csv")
-#
-#index2 = which(S4[as.character(Cohort$zz_nr_s4),"CVD"])
-#data.newCVD = data.frame(S4[as.character(Cohort$zz_nr_s4)[index2], c("CVD", "ltalteru") ] , F4[as.character(Cohort$zz_nr_f4)[index2],c("CVD","utmialt","utschalt","utalter")])
-#write.csv(data.newCVD, file = "CVDs in S4.csv")
-#
-#table(F4[as.character(Cohort$zz_nr_f4)[-c(index, index2)],"CVD"])
-#table(S4[as.character(Cohort$zz_nr_s4)[-c(index, index2)],"CVD"])
-#
-## assessing the biomarkers for prediction of CVD (on 26 cases!!!) 
-#index = which(!(S4[as.character(Cohort$zz_nr_s4),"CVD"]))
-#substr(feature.cont, 1, 2) <- "l"
-#substr(feature.disc, 1, 2) <- "l"
-#rst = NULL;
-#for (m in S4_valid_measures){
-#	data = data.frame(
-#			CVD = F4[as.character(Cohort$zz_nr_f4), "CVD"],
-#			
-#			CVDS4 = S4[as.character(Cohort$zz_nr_s4), "CVD"], 
-#			
-#			S4[as.character(Cohort$zz_nr_s4), m],
-#			
-#			S4[as.character(Cohort$zz_nr_s4),feature.cont],
-#			
-#			S4[as.character(Cohort$zz_nr_s4),feature.disc], 
-#			
-#			t_time = apply(F4[as.character(Cohort$zz_nr_f4), c("utmialt","utschalt", "utalteru")], 1, min, na.rm = T)-S4[as.character(Cohort$zz_nr_s4),"ltalteru"]
-#	)
-#	
-#	data = na.omit(data)
-	
-#	index = which(!data$CVDS4 & data$t_time>0)
-#	
-#	colnames(data) = c("CVD" , "CVDS4" , "metabolite", "ltalteru" , "ltsysmm" , "ll_hdln" , "ll_choln" , "lp_diab_who06" , "lcsex" , "t_time")
-#	
-#	CVD.cox = coxph(Surv(t_time, CVD) ~  log(metabolite) + ltalteru + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) , subset = index , data)
-#	
-#	rst = rbind(rst , summary(CVD.cox)$coefficients[1,])
-#}
-#rownames(rst) = S4_valid_measures
-
-
-###############################separate CVDs#######################################
-# model: age, sex, bmi, alcohol consumption
-#
-#
-diseases.s4 = scan(what = character())
-ltjnc7
-ltschl
-ltmi
-lc044f_1
-
-#names(diseases) = c("Hypertension","Stroke","Myocardio","Heart failure")
-#
-#
-diseases.f4 = scan(what = character())
-utjnc7
-utschl
-utmi
-us_c04a
-
-#names(diseases) = c("Hypertension","Stroke","Myocardio","Heart failure")
-#
-
-table(S4[Cohort$zz_nr_s4, "CVD"], F4[Cohort$zz_nr_f4, "CVD"])
-table(tmps4 = S4[Cohort$zz_nr_s4, "ltjnc7"], tmpf4 = F4[Cohort$zz_nr_f4, "utjnc7"])
-table(tmps4 = S4[Cohort$zz_nr_s4, "ltschl"], tmpf4 = F4[Cohort$zz_nr_f4, "utschl"], useNA = "always")
-table(tmps4 = S4[Cohort$zz_nr_s4, "ltmi"], tmpf4 = F4[Cohort$zz_nr_f4, "utmi"])
-table(tmps4 = S4[Cohort$zz_nr_s4, "lc044f_1"], tmpf4 = F4[Cohort$zz_nr_f4, "us_c04a"])
-
-
-
-for(i in 2:4){
-	
-	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
-	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
-	feature = data.frame(tmps4, tmpf4)
-	subset = intersect (which(feature[,1] == 2), which(feature[,2] !=3 ))
-	rst = Comparison.prospective(S4[ Cohort$zz_nr_s4, ], feature, metabo = S4_valid_measures, subset = subset, adj = model3[[i]])
-	write.csv(rst, file = paste(names(diseases.f4)[i], "prospective at S4 baseline_model3.csv"))
-}
-
-#	tmps4 = S4[Cohort$zz_nr_s4, diseases.s4[i]]
-#	tmpf4 = F4[Cohort$zz_nr_f4, diseases.f4[i]]
-##	pheno = interaction(tmps4, tmpf4)
-##	pheno = which(pheno == )
-#	rst = NULL
-#	for(j in 1:length(S4_valid_measures)){		
-#		data = data.frame(log(S4[Cohort$zz_nr_s4,S4_valid_measures[j]]), 
-#						S4[Cohort$zz_nr_s4, c("ltalter", "lcsex", "ltbmi" , "ltalkkon")], tmps4, tmpf4 )
-#		data = data[which(data$tmps4 == 2),]
-#		data = data[which(data$tmpf4 != 3),]
-##		data = data[which(data$tmps4),]
-#		model = glm(interaction(tmps4, tmpf4) ~ ., data, family = binomial(link = "logit"))
-#		rst = rbind(rst, summary(model)$coefficients[2,])
-#	}
-#	rownames(rst) = S4_valid_measures
-#	
-#	rst = apply(
-#			S4[Cohort$zz_nr_s4, S4_valid_measures],
-#			2,
-#			function(x) tapply(x, INDEX = interaction(tmps4, tmpf4), mean)
-#	)
-
-#########################	hypertension	################################
-#Prediction of future hypertension
-#table(S4$lthyact, S4$uthyact)
-#rst = NULL;
-#for (m in S4_valid_measures){
-#	metabolite = S4[, m]
-#	model = glm(as.factor(uthyact) ~  metabolite +
-#					ltalteru + as.factor(lcsex) + ltbmi## model 1
-#					+ ltsysmm + ltdiamm ##model 2
-#			#+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-#			#+log(ll_chola)+log(ll_hdla)+ total2HDL##model 3
-#			#+ as.factor(ltcigreg) + ltalkkon ##model 4
-#			
-#			#+ltmbbl + ltmace + ltmata #model 6 medication
-#			,subset = which(S4$lthyact == 2),
-#			S4, family = binomial(link = "logit"))
-#	rst = rbind(rst, summary(model)$coefficients[2,])
-#}
-#rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
-#rownames(rst) = S4_valid_measures
-#write.csv(rst, file = "Hypertension survival analysis_model2.csv")
-#
-##Association with current hypertension
-#S4.feature = scan(what = character())
-#ltalteru
-#lcsex
-#ltbmi
-#lp_diab_who06
-#ll_chola
-#ll_hdla
-#total2HDL
-#ltcigreg
-#ltalkkon
-#ltsysmm
-#ltdiamm
-#ltmbbl
-#ltmace
-#ltmata
-#my.alkkon
-#
-#F4.feature = scan(what = character())
-#utalteru
-#ucsex
-#utbmi
-#uk_diab_who06
-#ul_choln
-#ul_hdln
-#total2HDL
-#utcigreg
-#utalkkon
-#utsysmm
-#utdiamm
-#utmbbl
-#utmace
-#utmata
-#my.alkkon
-#
-#F4 = preprocess(F4, F4_valid_measures)
-#require(nlme)
-#valid_measures = intersect(S4_valid_measures, F4_valid_measures)
-#participants=rep(1:1009,2)
-#data=data.frame(
-#		participants, 
-#		disease =  as.factor(c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
-#		rbind(as.matrix(S4[ Cohort$zz_nr_s4, S4.feature]), as.matrix(F4[ Cohort$zz_nr_f4, F4.feature]))
-#)
-#rst=NULL
-#for(i in valid_measures){
-#	m = c(log(S4[Cohort$zz_nr_s4, i]), log(F4[Cohort$zz_nr_f4, i]))
-#	mixed.dum <- lme( log(m) ~ disease +
-#					#ltmbbl + ltmace + ltmata + #model 6 medication
-#					ltalteru + as.factor(lcsex) + ltbmi## model 1
-#					+ as.factor(ltcigreg) + as.factor(my.alkkon) ##model 2
-#					+ (lp_diab_who06==4|lp_diab_who06==5)  ##model 3
-#					+ log(ll_chola)+log(ll_hdla)+ total2HDL##model 4
-#					#+ log(ltsysmm) + log(ltdiamm) ##model 5
-#			,random = ~  1 | participants, na.action=na.exclude, data=data)
-#	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
-#}
-#rst=data.frame(rst,
-#		fdr=p.adjust(rst[, 5], method="fdr"),
-#		bonf=p.adjust(rst[, 5], method="bonferroni")
-#)
-#rownames( rst )=valid_measures
-#write.csv(rst, file = "hypertension associated metabolites_model4.csv")
 
 ############	calculate the residues	########
 data = data.frame(log(S4[,valid_measures]),
@@ -382,9 +183,9 @@ plot(
 require(survival)
 rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
-for (m in S4_valid_measures){
-	S4$metabolite = scale(log(S4[, m]))
-	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + as.factor(ltnuecht) +
+for (m in S4_ratios){
+	S4$metabolite = scale((S4[, m]))
+	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + #as.factor(ltnuecht) +
 					scale(ltalteru) + as.factor(lcsex)
 					+ scale(ltbmi)## model 1
 					+ my.diab  ##model 2
@@ -403,7 +204,7 @@ table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
 #rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolites _MI survival analysis_model1.2.csv")
+write.csv(rst, file = "metabolites ratios_MI survival analysis_full model.csv")
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 

@@ -57,9 +57,6 @@ model = lm(lh_crp ~ .,
 		data = data[, c( clinical, "ltmstati")])
 write.csv(summary(model)$coef, file = "metabolite association with C reactive protein2.csv")
 
-
-
-
 plot(lysoPC_a_C17_0 ~ log(lh_crp), data = S4, subset = which(S4$prev_mi==0))
 
 require(grid)
