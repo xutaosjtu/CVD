@@ -1,25 +1,15 @@
 Title Prospective analysis of metabolite associations with future myocardial infarction.
 ========================================================
 
+```r
+load("D:/Users/tao.xu/Dropbox/Cardiovascular disease/data_hypertension_2.RData")
+```
+
+
+
 The aim of the prospective analysis is trying to find better predictors other than the conventional biomarkers of Myocardial infarction (MI).  
 We first find all metabolites association with future myocardial infarction using __COX proportional hazards model__, and followed by a variable selection method (cox regression with regularization and stepwise regression) to select a best subset for prediction of furture MI.  
-Participants were collected for baseline serum samples at S4 study and followed up till 2009 for the first MI event. We excluded the samples which were taken in non-fasting status (_N_ = 215), as the food intaking would largely influence the metabolite profiles. In the remaining 1395 fasting participants, 
-
-```
-
-Error in which(S4$prev_mi == 1) : object 'S4' not found
-
-```
-
- had no MI at baseline, and 
-
-```
-
-Error in which(S4$inz_mi == 1) : object 'S4' not found
-
-```
-
- of them developped MI during follow up.
+Participants were collected for baseline serum samples at S4 study and followed up till 2009 for the first MI event. We excluded the samples which were taken in non-fasting status (_N_ = 215), as the food intaking would largely influence the metabolite profiles. In the remaining 1395 fasting participants, 51 had no MI at baseline, and 68 of them developped MI during follow up.
 
 
 ```r
