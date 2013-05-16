@@ -7,10 +7,34 @@ load('D:/Users/tao.xu/Dropbox/Cardiovascular disease/data_hypertension_2.RData')
 
 The aim of the prospective analysis is trying to find better predictors other than the conventional biomarkers of Myocardial infarction (MI).  
 We first find all metabolites association with future myocardial infarction using __COX proportional hazards model__, and followed by a variable selection method (cox regression with regularization and stepwise regression) to select a best subset for prediction of furture MI.  
-Participants were collected for baseline serum samples at S4 study and followed up till 2009 for the first MI event. We excluded the samples which were taken in non-fasting status (_N_ = 215), as the food intaking would largely influence the metabolite profiles. In the remaining 1395 fasting participants, `r length(which(S4$prev_mi==1))` had no MI at baseline, and `r length(which(S4$inz_mi==1))` of them developped MI during follow up.
+Participants were collected for baseline serum samples at S4 study and followed up till 2009 for the first MI event. We excluded the samples which were taken in non-fasting status (_N_ = 215), as the food intaking would largely influence the metabolite profiles. In the remaining 1395 fasting participants, `r length(which(S4$prev_mi==1))` had no MI at baseline, and `r length(which(S4$inz_mi==1))` of them developped MI during follow up with an average time to event of `r sum(S4$mi_time[which(S4$inz_mi==1)])/(365*length(which(S4$inz_mi==1)))`.  
 
+1. Metabolite associated with myocardial infarction
+We analyzed the association in two models:  
+a. Crude model: $age + sex$
+b. Multivariate model: $Crude model+ BMI + Diabetes status + systolic blood pressure + Smoking + alcohol consumption + total cholesterol + HDL + C-reactive protein$ 
 ```{r}
-#summary(cars)
+require(survival)
+rst = NULL; 
+#rst1 = NULL;rst2 = NULL; rst3 = NULL
+for (m in S4_valid_measures){
+  S4$metabolite = scale(log(S4[, m]))
+	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + 
+          #as.factor(ltnuecht) +
+					scale(ltalteru) + as.factor(lcsex)
+					+ scale(ltbmi)## model 1
+					+ my.diab  ##model 2
+					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3
+	 				+ scale(lh_crp)  ##model 4
+					,subset = which(S4$prev_mi==0),
+					data = S4)
+	rst = rbind(rst, summary(model)$coefficients[1,])
+
+}
+#table(model$y[,2])
+rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rownames(rst) = S4_valid_measures
+rst[,-4]
 ```
 
 You can also embed plots, for example:
