@@ -187,8 +187,8 @@ write.csv(rst, file = "Hypertension associated metabolites_without medication_fu
 plot(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1]))
 abline(lm(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1])))
 
-
-require(gee)# General estimate equation
+# General estimate equation
+require(gee)
 #require(geepack)
 rst=NULL 
 for(i in valid_measures){
