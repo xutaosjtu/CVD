@@ -188,7 +188,7 @@ plot(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residual
 abline(lm(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$residuals[,1])))
 
 # General estimate equation
-require(gee)
+require(gee) 
 #require(geepack)
 rst=NULL 
 for(i in valid_measures){
@@ -215,13 +215,14 @@ rst=data.frame(rst,
 rownames(rst)=valid_measures
 write.csv(rst, file = "Hypertension associated metabolites_crude model_GEE (without med).csv")
 
-rst=NULL; ##association of blood pressure with metabolite concentrations
+## Association of blood pressure with metabolite concentrations
+rst=NULL; #linear mixed model
 for(i in valid_measures){
-	data$m = c((log(S4[Cohort$zz_nr_s4, i])), (log(F4[Cohort$zz_nr_f4, i])))
+	data$m = c(scale(S4[Cohort$zz_nr_s4, i]), (scale(F4[Cohort$zz_nr_f4, i])))
 	mixed.dum <- lme( ltdiamm ~ m + #linear mixed model
 					#ltdiamm + ltantihy +
 					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model medication	
-					platform +
+					#platform +
 					ltalteru + as.factor(lcsex) # crude model
 					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) # multivariate model
 			,random = ~  1 | participants, na.action=na.exclude, # multivariate model 
@@ -234,8 +235,31 @@ rst=data.frame(rst,
 		bonf=p.adjust(rst[, 5], method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "DiastolicBP associated metabolites_without medication_full model_unnorm.csv")
+write.csv(rst, file = "DiastolicBP associated metabolites_without medication_full model_unnorm_lme.csv")
 
+rst=NULL; #GEE model
+for(i in valid_measures){
+  data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
+  tmp = data[order(data$participants), ]
+  model <- gee(ltsysmm ~ m +
+                 #ltdiamm + ltantihy +
+                 #as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
+                 #platform +
+                 ltalteru + as.factor(lcsex) ## model 1
+               + ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
+               ,id = participants,# na.action=na.exclude, 
+               data= tmp,
+               subset = which(!is.na(tmp$disease)&tmp$ltantihy!=1),#
+               corstr = "exchangeable")
+  rst = rbind(rst, summary(model)$coef[2,])
+}
+rst = data.frame(rst, pvalue = 2*pnorm(-abs(rst[,5])))
+rst=data.frame(rst,
+               fdr=p.adjust(rst$pvalue, method="fdr"),
+               bonf=p.adjust(rst$pvalue, method="bonferroni")
+)
+rownames(rst)=valid_measures
+write.csv(rst, file = "DiastolicBP associated metabolites_without medication_full model_unnorm_GEE.csv")
 
 
 ############	calculate the residues	########

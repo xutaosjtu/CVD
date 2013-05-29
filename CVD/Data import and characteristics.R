@@ -143,20 +143,22 @@ F4$waist2hip = F4$uttumf/F4$uthumf
 #	4.us_c07a: parameter describing the cardiac arrhythmias in the last 12 months
 feature.cont = scan(what = character())
 utalteru
+utbmi
+utalkkon
 ul_chola
 ul_hdla
-utsysmm
 ul_ldla
+total2HDL
+utdiamm
+utsysmm
 ul_hgb
 ul_hbav
 ul_tria
 uh_crp
 uttumf
 uthumf
-utdiamm
 waist2hip
-utbmi
-utalkkon
+
 
 feature.disc = scan(what = character())
 utcigreg
@@ -203,25 +205,15 @@ remove(H); remove(S)
 #S4
 source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
 	
-tmps4 = as.factor(S4$prev_mi)[subset]
-tmpf4 = as.factor(S4$inz_mi)[subset]
-	
-chars = characteristics(S4[subset, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
-write.csv(t(chars), file = "stroke S4 prospective_female.csv")
-#	chars = apply(
-#			S4[Cohort$zz_nr_s4,feature.cont], 2, 
-#			function(x) {
-#				m = tapply(x, INDEX = interaction(tmpf4, tmps4), mean, na.rm = T)
-#				s = tapply(x, INDEX = interaction(tmpf4, tmps4), sd, na.rm = T)
-#				m = round(m, digits = 1)
-#				s = round(s, digits = 1)
-#				return(paste(m, "(", s, ")", sep = ""))
-#			} 
-#	)
+tmps4 = as.factor(S4[Cohort$zz_nr_s4[subset], "lthyact"])
+tmpf4 = as.factor(S4[Cohort$zz_nr_s4[subset], "uthyact"])
+
+chars = characteristics(F4[Cohort$zz_nr_f4[subset], feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+write.csv(t(chars), file = "Hypertension prospective_F4_no medication.csv")
 
 
 subset = Cohort$zz_nr_f4
-tapply(F4[subset, "my.alkkon"], INDEX = interaction(tmpf4, tmps4), function(a) table(a)/length(a))
+tapply(F4[subset, "my.cigrette"], INDEX = interaction(tmpf4, tmps4), function(a) table(a)/length(a))
 
 
 for(i in 1:3){
