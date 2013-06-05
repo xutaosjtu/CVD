@@ -1,5 +1,6 @@
 Title Population characteristics
 ========================================================
+<link href="custom.css" rel="stylesheet">
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **MD** toolbar button for help on Markdown).
 
@@ -165,14 +166,16 @@ source("D:/Users/tao.xu/Documents/R-studio git/CVD/CVD/Toolkits.R")
 ```
 
 Here we would like to investigate the population characteristics of people participated in both baseline and follow-up studies with no antihypertensive medications.
-```{r}
+```{r table, results='asis'}
 subset = which(S4[Cohort$zz_nr_s4,"ltantihy"]==2&F4[Cohort$zz_nr_f4,"utantihy"]==2)
 tmps4 = as.factor(S4[Cohort$zz_nr_s4[subset], "lthyact"])
 tmpf4 = as.factor(S4[Cohort$zz_nr_s4[subset], "uthyact"])
 
 chars = characteristics(S4[Cohort$zz_nr_s4[subset], s4.feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
 rownames(chars) = levels(interaction(tmpf4, tmps4))
-print(t (chars))
+
+require(xtable)
+print(xtable(t(chars)), type = "html")
 #write.csv(t(chars), file = "Hypertension prospective_F4_no medication.csv")
 ```
 
