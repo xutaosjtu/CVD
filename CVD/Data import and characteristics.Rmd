@@ -1,0 +1,205 @@
+Title Population characteristics
+========================================================
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **MD** toolbar button for help on Markdown).
+
+When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease/")
+###data read-in
+S4 = read.csv("data/K9512_Wang_Sattler_S4_tra300712.csv", sep = ";")
+F4 = read.csv("data/K9512_Wang_Sattler_F4_tra300712.csv", sep = ",")
+S4_F4_map = read.csv("data/K9512_Wang_S_S4_F4trans300712.csv", sep = ";")
+S4.add = read.csv("data/S4 addition.csv")
+F4.add = read.csv("data/F4 addition.csv")
+S4 = merge(S4, S4.add)
+F4 = merge(F4, F4.add)
+rm(S4.add,F4.add)
+
+####  additional data
+add = read.csv("data/sas data/pv95_12_add.csv", colClass = "character")
+add = apply(add, 2, as.numeric)
+S4 = merge(S4, add, by.x = "ZZ_nr", by.y = "ZZ_nr")
+rm(add)
+
+##F4 batch adjustment data
+load("data/F4.RData")
+colnames(F4.adj) = sapply(colnames(F4.adj),function(x) gsub(".", "_", x, fixed = T)) 
+F4 = merge(F4[,c(-34:-184)], F4.adj) # use the first 4 parameters to match
+duplicate = names(which(table(F4$ZZ_nr)==2))
+if(length(duplicate)!=0){
+  F4 = F4[-which(F4$ZZ_nr %in% duplicate),]
+}
+rownames(F4) = F4$ZZ_nr
+rm(F4.adj)
+
+rownames(S4) = S4$ZZ_nr
+rownames(F4) = F4$ZZ_nr
+
+#valid measures
+load("data/F4_valid_measures.RData")
+load("data/S4_valid_measures.RData")
+```
+
+Non-fasting status may cause great variation in the metabolite profiles, so we need to remove the samples that were taken in non-fasting status. In S4`r length(which(S4$ltnuecht==2))` were non-fasting, and `r length(which(F4$utnuecht==2))` in F4.
+```{r}
+S4 = subset(S4, subset = (ltnuecht==1))
+F4 = subset(F4, subset = (utnuecht==1))
+```
+
+
+Now we look at which samples have missing values in important variables, including smoking status, age, BMI, hip, waist, systolic/diastolic blood pressure, total cholesteral, triglycerides 
+```{r}
+#missing values
+missing_value = apply(S4[,1:31], 2, function(x) length(which (is.na(x))))
+#samples with missing values
+sample_available = apply(S4[,c(1:4, 6:31)], 1, function(x) length(which(is.na(x))))
+```
+
+Several features in the data need to be reclassified or calculated, such as hip-waist ratio, alcohol consumption, smoking, diabetes, physical activity, and hypertension status.
+```{r}
+## total to HDL cholesteral
+S4$total2HDL = S4$ll_chola/S4$ll_hdla
+F4$total2HDL = F4$ul_chola/F4$ul_hdla
+
+## Hip-to-waist ratio
+S4$waist2hip = S4$lttumf / S4$lthumf
+F4$waist2hip = F4$uttumf / F4$uthumf
+
+## alcohol consumption
+S4$my.alkkon = rep(0, dim(S4)[1])
+S4$my.alkkon[which(S4$ltalkkon >=40 & S4$lcsex==1 )] = 1
+S4$my.alkkon[which(S4$ltalkkon >=20 & S4$lcsex==2 )] = 1
+
+F4$my.alkkon = rep(0, dim(F4)[1])
+F4$my.alkkon[which(F4$utalkkon >=40 & F4$ucsex==1 )] = 1
+F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
+
+## smoking
+S4$my.cigreg = S4$ltcigreg
+S4$my.cigreg[which(S4$ltcigreg==1)]=2
+S4$my.cigreg = 4-S4$my.cigreg
+
+F4$my.cigreg = F4$utcigreg
+F4$my.cigreg[which(F4$utcigreg==1)]=2
+F4$my.cigreg = 4-F4$my.cigreg
+F4$my.cigreg = as.factor(F4$my.cigreg)
+
+## diabetes
+S4$my.diab=S4$lp_diab_who06
+S4$my.diab[which(S4$lp_diab_who06>10)]=NA
+S4$my.diab[which(S4$lp_diab_who06==4|S4$lp_diab_who06==5)]=1
+S4$my.diab[which(S4$lp_diab_who06<4)]=0
+
+F4$my.diab=F4$uk_diab_who06
+F4$my.diab[which(F4$uk_diab_who06>10)]=NA
+F4$my.diab[which(F4$uk_diab_who06==4|F4$uk_diab_who06==5)]=1
+F4$my.diab[which(F4$uk_diab_who06<4)]=0
+F4$my.diab = as.factor(F4$my.diab)
+
+## physical activity
+S4$my.physical = S4$ltphact
+S4$my.physical[which(S4$ltphact<=2)]=1
+S4$my.physical[which(S4$ltphact>2)]=0
+
+F4$my.physical = F4$utphact
+F4$my.physical[which(F4$utphact<=2)]=1
+F4$my.physical[which(F4$utphact>2)]=0
+
+## Hypertension status
+S4$my.hyper = S4$lthyact
+S4$my.hyper[which(S4$lthyact==2)] = 0
+S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==1)]=1
+S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==2)]=2
+S4$my.hyper = as.factor(S4$my.hyper)
+
+F4$my.hyper = F4$uthyact
+F4$my.hyper[which(F4$uthyact==2)] = 0
+F4$my.hyper[which(F4$uthyact==1&F4$utantihy==1)]=1
+F4$my.hyper[which(F4$uthyact==1&F4$utantihy==2)]=2
+F4$my.hyper = as.factor(F4$my.hyper)
+```
+
+__Poplation Characteristics__
+```{r}
+#S4 features and diseases
+s4.feature.cont = c("ltalteru", "ltbmi", "ltalkkon", "ll_chola", "ll_hdla", "ll_ldla", "total2HDL", "ltdiamm", "ltsysmm", "ll_hgb", "ll_hbav","ll_tria","lh_crp", "lttumf","lthumf","waist2hip")
+
+
+################# F4 #################
+###additional features of F4:
+#	1.utmsidfup: defintion of Metabolic Syndrom by International Diabetes Federation 2009, which be use as a indicator of high risk for CVD events
+#	2.utmialt and utschalt: age at which first diagenosed for Myocardial infarction and stroke, respectively.
+#	3.utsmkreg: parameter describing smoking behavior. differed from utcigreg that classified former smoker by their smoking habits (regular/occasional)
+#	4.us_c07a: parameter describing the cardiac arrhythmias in the last 12 months
+f4.feature.cont = c("utalteru","utbmi","utalkkon","ul_chola","ul_hdla","ul_ldla","total2HDL","utdiamm","utsysmm","ul_hgb","ul_hbav","ul_tria","uh_crp","uttumf","uthumf","waist2hip")
+```
+
+To find the prospective data set, we need the S4_F4_map information
+```{r}
+#####################	S4 F4 mapping	######################
+index.prospect = apply(S4_F4_map, 1, function(x) !is.na(x[3])&!is.na(x[6]) ) 
+Cohort= S4_F4_map[index.prospect, c("zz_nr_s4","zz_nr_f4")]
+Cohort = Cohort[which(Cohort$zz_nr_s4 %in% rownames(S4)),]
+Cohort = Cohort[which(Cohort$zz_nr_f4 %in% rownames(F4)),]
+Cohort$zz_nr_f4 = as.character(Cohort$zz_nr_f4)
+Cohort$zz_nr_s4 = as.character(Cohort$zz_nr_s4)
+
+rm(index.prospect)
+```
+And we can check whether the mapping was correct by calculating the age differences between baseline and follow-up. The follow-up F4 study was conducted around 7 years after the baseline S4. Then, if the age differences between the follow-up data and baseline data were around 8, the matching would be correct.
+To check whether the matches were correct or not, we looked at the age differences.
+```{r}
+# age check
+tmp = data.frame ( S4 = S4 [as.character(Cohort[,1]),"ltalteru"], F4 = F4[as.character(Cohort[,2]),"utalteru"])
+tmp[,2]-tmp[,1]
+```
+
+
+Import some of the predefined functions.
+```{r}
+######################	population characteristics of prospective data	#####################
+#S4
+source("D:/Users/tao.xu/Documents/R-studio git/CVD/CVD/Toolkits.R")
+```
+
+Here we would like to investigate the population characteristics of people participated in both baseline and follow-up studies with no antihypertensive medications.
+```{r}
+subset = which(S4[Cohort$zz_nr_s4,"ltantihy"]==2&F4[Cohort$zz_nr_f4,"utantihy"]==2)
+tmps4 = as.factor(S4[Cohort$zz_nr_s4[subset], "lthyact"])
+tmpf4 = as.factor(S4[Cohort$zz_nr_s4[subset], "uthyact"])
+
+chars = characteristics(S4[Cohort$zz_nr_s4[subset], s4.feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+rownames(chars) = levels(interaction(tmpf4, tmps4))
+print(t (chars))
+#write.csv(t(chars), file = "Hypertension prospective_F4_no medication.csv")
+```
+
+```{r}
+percent <- function(x,digits=2){
+  paste(round(x*100,digits),"%", sep = "")
+}
+```
+
+Percentage of male and females
+```{r}
+tapply(S4[Cohort$zz_nr_s4[subset], "lcsex"], INDEX = interaction(tmpf4, tmps4), function(a) percent(table(a)[1]/length(a), 2))
+```
+
+Percentage of diabetes:
+```{r}
+tapply(S4[Cohort$zz_nr_s4[subset], "my.diab"], INDEX = interaction(tmpf4, tmps4), function(a) percent(table(a)[2]/length(a),2))
+```
+
+Percentage of smokers, former smokers and never smokers.
+```{r}
+tapply(S4[Cohort$zz_nr_s4[subset], "my.cigreg"], INDEX = interaction(tmpf4, tmps4), function(a) percent(table(a)/length(a),2))
+```
+
+Percentage of alcohol drinkers:
+```{r}
+tapply(S4[Cohort$zz_nr_s4[subset], "my.alkkon"], INDEX = interaction(tmpf4, tmps4), function(a) percent(table(a)/length(a),2))
+```
+
+
