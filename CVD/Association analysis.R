@@ -131,7 +131,7 @@ write.csv(rst, file = "Hypertension cross-sectional_F4_include hyper(med)_full m
 
 
 valid_measures = intersect(S4_valid_measures, F4_valid_measures)
-participants=rep(1:1009,2)
+participants=rep(1:length(Cohort$zz_nr_s4),2)
 tmpF4 = F4[Cohort$zz_nr_f4,F4.feature]
 colnames(tmpF4) = S4.feature
 data=data.frame(
@@ -139,7 +139,7 @@ data=data.frame(
 		disease =  as.factor(2-c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
 		rbind(S4[Cohort$zz_nr_s4, S4.feature], tmpF4)
 )
-data$platform = rep(1:2, each = 1009)
+data$platform = rep(1:2, each = length(Cohort$zz_nr_s4))
 data$ltantihy = 2-data$ltantihy
 
 #sub = which(S4[Cohort$zz_nr_s4,"ltantihy"]==F4[Cohort$zz_nr_f4,"utantihy"])
@@ -162,7 +162,7 @@ for(i in valid_measures){
 					ltalteru + as.factor(lcsex) # crude model
 					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) # multivariate model
 			,random = ~  1 | participants, na.action=na.exclude, 
-			#subset = which(data$ltantihy!=1),
+			subset = which(data$ltantihy!=1),
 			data=data[order(data$participants),])
 	rst = rbind(rst, summary(mixed.dum)$tTable[2,])
 #	mixed.dum <- glmer(disease ~ m + # logisitic mixed model
@@ -192,17 +192,17 @@ require(gee)
 #require(geepack)
 rst=NULL 
 for(i in valid_measures){
-	data$m = c((log(S4[Cohort$zz_nr_s4, i])), (log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
+	data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
 	tmp = data[order(data$participants), ]
 	model <- gee(disease ~ m +
 					#ltdiamm + ltantihy +
 					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
 					#platform +
 					ltalteru + as.factor(lcsex) ## model 1
-					#+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
+					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
 			,id = participants,# na.action=na.exclude, 
 			data= tmp,
-			subset = which(!is.na(tmp$disease)&tmp$ltantihy!=1),#
+			subset = which(!is.na(tmp$disease)),#
 			corstr = "exchangeable",
 			family = binomial)
 	rst = rbind(rst, summary(model)$coef[2,])
@@ -241,7 +241,7 @@ rst=NULL; #GEE model
 for(i in valid_measures){
   data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
   tmp = data[order(data$participants), ]
-  model <- gee(ltsysmm ~ m +
+  model <- gee(ltdiamm ~ m +
                  #ltdiamm + ltantihy +
                  #as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
                  #platform +
@@ -259,7 +259,7 @@ rst=data.frame(rst,
                bonf=p.adjust(rst$pvalue, method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "DiastolicBP associated metabolites_without medication_full model_unnorm_GEE.csv")
+write.csv(rst, file = "DiastolicBP associated metabolites_without medication_crude model_norm_GEE.csv")
 
 
 ############	calculate the residues	########
