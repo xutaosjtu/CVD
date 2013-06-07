@@ -207,7 +207,7 @@ colnames(data)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 #men
-subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)
+subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) ), na.index) #& S4$lcsex ==1
 pred = crossval.cox(x = data[subset, c(metabo.selected3,clinical[-3])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] = 1- 0.5676883 ^ pred$cv.fit
 #women
@@ -245,7 +245,7 @@ data = data.frame(
 		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		scale(S4$lh_crp), ##model 4,
 		'ltmstati'=as.factor(S4$ltmstati), ##adding statin as a covariate
-		scale(log(S4[, metabo.asso])), scale(S4[,metabo.ratio.asso])
+		scale(log(S4[, S4_valid_measures]))#, scale(S4[,metabo.ratio.asso])
 )
 clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
 colnames(data)[3:12] = clinical#, "total2HDL"

@@ -91,7 +91,7 @@ num2coord=function(num,ncol, nrow=ncol){
 	return(c(x,y))
 }
 #	Differential correxpression
-#	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. “Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.BMC Bioinformatics 10, no. 1 (2009): 109.
+#	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. ?Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.BMC Bioinformatics 10, no. 1 (2009): 109.
 #	Description of parameters:
 #	cor1, cor2: two pearson correlation values
 #	N1, N2: the number of samples used for the calculation of cor1 and cor2
@@ -187,6 +187,64 @@ concen2ratio = function(data)
 
 
 ###############	cross validation for cox regression	################
+selectCox <- function(formula, data, rule = "aic") {
+  require("rms")
+  require("prodlim")
+  fit <- cph(formula, data, surv = TRUE)
+  bwfit <- fastbw(fit, rule = rule)
+  if (length(bwfit$names.kept) == 0) {
+    newform <- reformulate("1", formula[[2]])
+    newfit <- prodlim(newform, data = data)
+  } else{
+    newform <- reformulate(bwfit$names.kept, formula[[2]])
+    newfit <- cph(newform, data, surv = TRUE)
+  }
+  out <- list(fit = newfit,In = bwfit$names.kept)
+  out$call <- match.call()
+  class(out) <- "selectCox"
+  out
+}
+
+for(m in S4_valid_measures)
+{
+  #tmp = data.frame(y, x[,c(m,clinical)])
+  model = coxph(y~. , data = x)
+  rst.sig = cbind(rst.sig,summary(model)$coefficients[1,])
+}
+metabo.asso = rownames(rst.sig)[which(rst.sig[,5]<0.05)]
+
+theta.fit2 <- function(x, y, ...)
+{
+  clinical = colnames(x)[which(!(colnames(x) %in% S4_valid_measures))]
+  metabo.asso = colnames(x)[which(colnames(x) %in% S4_valid_measures)] 
+  #rst.sig = NULL
+  
+  print("Start feature selection:")
+  
+  ## regularization
+  model.penal.opt =optL1(
+    y, 
+    penalized = x[,c(metabo.asso)],
+    unpenalized = ~ age +ltbmi + sex + diabetes + ltsysmm + ll_hdla + ll_chola + smoking + alkkon +lh_crp ,
+    data = x,
+    fold = 10,	
+    minlambda1 = 0.5, maxlambda1 = 10, 
+    standardize = T
+  )
+  metabo.selected = intersect(names(coef(model.penal.opt$fullfit)), metabo.asso)
+  
+  ## setpwise selection
+  model.selectCOx = selectCox(
+    formula = y ~  .,
+    data = x[,c(metabo.selected)],
+    rule = "aic"
+  )
+  
+  metabo.selected = model.selectCOx$In
+  
+}
+
+
 theta.fit <- function(x, y, ...) 
 {
 	#d = data.frame(y, x)

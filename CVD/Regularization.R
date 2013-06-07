@@ -35,7 +35,8 @@ tmp = data.frame(
 		scale(S4$ltsysmm), S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		scale(S4$lh_crp),
 		as.factor(S4$ltmstati),
-		scale(log(S4[, metabo.asso])), scale(S4[, metabo.ratio.asso])
+		scale(log(S4[, S4_valid_measures]))
+    #scale(log(S4[, metabo.asso])), scale(S4[, metabo.ratio.asso])
 )
 clinical = c("age", "ltbmi", "sex", "diabetes", "smoking", "alkkon","ltsysmm", "ll_hdla", "ll_chola", "lh_crp", "ltmstati")
 colnames(tmp)[3:13] = clinical#, "total2HDL"
@@ -60,11 +61,11 @@ require(globaltest)##pretesting by global test
 gt(Surv(tmp$time[subset], tmp$event[subset]), tmp[subset, c(11:19)])
 
 model.penal = cvl(
-		Surv(time, event)~., data = tmp[subset,c("event", "time", metabo.selected3)], 
+		Surv(time, event)~., data = tmp[subset,c("event", "time", S4_valid_measures)], 
 		standardize = T, ##centralize the covariates 
 		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
 		#positive = T, ## positive restriction to all regression coefficients
-		fold = model.penal$fold, ## k-fold cross-validation
+		fold = 10, ## k-fold cross-validation
 		lambda1 = 2, lambda2= 0#penalization parameter
 )
 
@@ -88,7 +89,7 @@ cat("~",paste(metabo.asso, collapse = "+"))
 tmp2=tmp[subset,]
 model.penal.opt =optL1(
 		Surv(time, event), 
-		penalized = tmp2[,c(metabo.ratio.asso)],
+		penalized = tmp2[,c(metabo.asso)],
 		unpenalized = ~ age +ltbmi + sex + diabetes + ltsysmm + ll_hdla + ll_chola + smoking + alkkon +lh_crp ,
 		data = tmp2,
 		fold = 10,	
@@ -202,9 +203,9 @@ selectCox <- function(formula, data, rule = "aic") {
 	out
 }
 
-selectCox(
+model.selecCOx = selectCox(
 		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(tmp[,c(metabo.selected3)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
+		data = data.frame(tmp[,c(metabo.asso)], mi_time = S4$mi_time, inz_mi = S4$inz_mi)[subset, ],
 		rule = "aic")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
