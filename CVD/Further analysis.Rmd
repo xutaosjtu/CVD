@@ -6,21 +6,42 @@ setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease")
 load("data_hypertension_new.RData")
 ```
 
-Variables in the dataset:
+Some important Variables included in the dataset:
 
 a. BP_associat: Blood pressure associated metabolites in the prospective analysis, including `r colnames(BP_associat)`.
-
+b. cs_asso: Hypertension associated metabolites in cross sectional analysis, including `r colnames(cs_asso)`.
 
 1. Are the hypertension associated metabolites predictive of furture hypertension
+```{r}
+require(pROC)
+metabo.asso = names(which(apply(cs_asso[,c(2,4,6)],1,function(x) sum(x!=0))==3))
+clinical = c("ltalteru", "lcsex", "ltsysmm", "ltbmi", "my.alkkon", "my.cigreg", "my.diab", "ll_hdla", "ll_chola", "lh_crp")
+
+model = glm( my.uthyact~., data = S4[, c(metabo.asso, clinical, "my.uthyact")], subset = which(S4$lthyact==2))
+model.cv = cv.glm(data = S4[which(S4$lthyact==2), c(metabo.asso, clinical, "my.uthyact")], model)
+pred = predict(model, type = "response")
+roc.all = roc(model$y, pred)
+
+model = glm( my.uthyact~., data = S4[, c(metabo.asso, "my.uthyact")], subset = which(S4$lthyact==2))
+cv.glm
+pred = predict(model, type = "response")
+roc.metabo = roc(model$y, pred)
+
+model = glm( my.uthyact~., data = S4[, c(clinical, "my.uthyact")], subset = which(S4$lthyact==2))
+pred = predict(model, type = "response")
+roc.clinical = roc(model$y, pred)
+
+plot(roc.all)
+plot(roc.metabo, add =T)
+plot(roc.clinical, add =T)
+
+
+```
 
 
 
 2. Subgroup the metabolites and plan further analysis strategies.
 
-
-```{r}
-summary(cars)
-```
 
 Some other things shoud be put on Todo list:
 3. Different medication information could be applied from Margert Heir, who is repsponsible for coding of the medications.
