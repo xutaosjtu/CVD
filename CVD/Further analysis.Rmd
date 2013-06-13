@@ -1,0 +1,26 @@
+Title Further analysis plan of hypertension
+========================================================
+
+```{r}
+setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease")
+load("data_hypertension_new.RData")
+```
+
+Variables in the dataset:
+
+a. BP_associat: Blood pressure associated metabolites in the prospective analysis, including `r colnames(BP_associat)`.
+
+
+1. Are the hypertension associated metabolites predictive of furture hypertension
+
+
+
+2. Subgroup the metabolites and plan further analysis strategies.
+
+
+```{r}
+summary(cars)
+```
+
+Some other things shoud be put on Todo list:
+3. Different medication information could be applied from Margert Heir, who is repsponsible for coding of the medications.
