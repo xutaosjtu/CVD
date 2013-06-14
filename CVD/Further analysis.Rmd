@@ -2,8 +2,10 @@ Title Further analysis plan of hypertension
 ========================================================
 
 ```{r}
+source("D:/Users/tao.xu/Documents/R-studio git/CVD/CVD/Toolkits.R")
 setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease")
 load("data_hypertension_new.RData")
+
 ```
 
 Some important Variables included in the dataset:
@@ -12,35 +14,85 @@ a. BP_associat: Blood pressure associated metabolites in the prospective analysi
 b. cs_asso: Hypertension associated metabolites in cross sectional analysis, including `r colnames(cs_asso)`.
 
 1. Are the hypertension associated metabolites predictive of furture hypertension
-```{r}
+```{r fig.width=3, fig.height=3}
 require(pROC)
 metabo.asso = names(which(apply(cs_asso[,c(2,4,6)],1,function(x) sum(x!=0))==3))
+metabo.diaBPasso = names(which(apply(BP_associat[,c(1,3)],1,function(x) sum(x!=0))==2))
+metabo.sysBPasso = names(which(apply(BP_associat[,c(2,4)],1,function(x) sum(x!=0))==2))
 clinical = c("ltalteru", "lcsex", "ltsysmm", "ltbmi", "my.alkkon", "my.cigreg", "my.diab", "ll_hdla", "ll_chola", "lh_crp")
 
-model = glm( my.uthyact~., data = S4[, c(metabo.asso, clinical, "my.uthyact")], subset = which(S4$lthyact==2))
-model.cv = cv.glm(data = S4[which(S4$lthyact==2), c(metabo.asso, clinical, "my.uthyact")], model)
-pred = predict(model, type = "response")
-roc.all = roc(model$y, pred)
+##generate cross-validation set
+cv_set = f_K_fold(length(which(S4$lthyact==2)), 10)
 
-model = glm( my.uthyact~., data = S4[, c(metabo.asso, "my.uthyact")], subset = which(S4$lthyact==2))
-cv.glm
-pred = predict(model, type = "response")
-roc.metabo = roc(model$y, pred)
+## glm extension for model evaluation by cross validation 
+glm.cv = function(x, f, data, outcome, variable, subset){
+  #print(x)
+  s = subset[x[[1]]]
+  #print(s)
+  if(!is.formula(f)){
+    stop("It is not a formula!")
+  }
+  model = glm(f, data = data[s,c(outcome, variable)], family = binomial)
+  pred = predict(model ,data[subset[x[[2]]], c(outcome,variable)], type = "response")
+  return(pred)
+}
 
-model = glm( my.uthyact~., data = S4[, c(clinical, "my.uthyact")], subset = which(S4$lthyact==2))
-pred = predict(model, type = "response")
-roc.clinical = roc(model$y, pred)
+pred = lapply(cv_set, glm.cv, f = formula(my.uthyact~.), data = S4, outcome = "my.uthyact", variable = c(metabo.asso, clinical), subset = which(S4$lthyact==2))
+pred = unlist(pred)
+pred = pred[rownames(S4)[which(S4$lthyact==2)]]
+roc.all = roc(S4$my.uthyact[which(S4$lthyact==2)], pred)
 
-plot(roc.all)
-plot(roc.metabo, add =T)
-plot(roc.clinical, add =T)
 
+pred = lapply(cv_set, glm.cv, f = formula(my.uthyact~.), data = S4, outcome = "my.uthyact", variable = c(metabo.asso), subset = which(S4$lthyact==2))
+pred = unlist(pred)
+pred = pred[rownames(S4)[which(S4$lthyact==2)]]
+roc.metab = roc(S4$my.uthyact[which(S4$lthyact==2)], pred)
+
+pred = lapply(cv_set, glm.cv, f = formula(my.uthyact~.), data = S4, outcome = "my.uthyact", variable = c(clinical), subset = which(S4$lthyact==2))
+pred = unlist(pred)
+pred = pred[rownames(S4)[which(S4$lthyact==2)]]
+roc.clinical = roc(S4$my.uthyact[which(S4$lthyact==2)], pred, ci = TRUE)
+
+
+plot(roc.all, print.auc = TRUE, grid=TRUE, print.auc.y=ifelse(roc.all$percent, 50, .5))
+plot(roc.metabo, add =T,print.auc = TRUE, grid=TRUE, print.auc.y=ifelse(roc.metabo$percent, 60, .6), col = "green")
+plot(roc.clinical, add =T,print.auc = TRUE, grid=TRUE, print.auc.y=ifelse(roc.clinical$percent, 70, .7), col = "blue")
+
+```
+Using some variable selection methods:
+```{r}
+require(caret)
+data = S4[which(S4$lthyact==2), c(metabo.asso, clinical, "my.uthyact")]
+data = na.omit(data)
+
+inTraining = createDataPartition(data$my.uthyact, times =1, p = 0.66, list=T)
+training <- data[inTraining[[1]], ]
+testing <-data[-inTraining[[1]],]
+
+fitcontrol = trainControl(method = "repeatedcv", number = 10, repeats=10)
+#glmFit1 = train(x = training[, c(metabo.asso, clinical)], y = as.factor(training$my.uthyact), method = "glm", family = binomial, trControl=fitcontrol)
+#predict(glmFit1$finalModel, testing, type = "response")
+
+##using boosting for variable selection
+glmFit1 = train(x = training[, c(metabo.asso, clinical)], y = as.factor(training$my.uthyact), method = "glmboost", family = Binomial(link="logit"), trControl=fitcontrol)
+pred = predict(glmFit1$finalModel, as.matrix(testing[,c(metabo.asso, clinical)]), type = "response")
+roc.all = roc(testing$my.uthyact,pred)
+
+glmFit1 = train(x = training[, c(metabo.asso)], y = as.factor(training$my.uthyact), method = "glmboost", family = Binomial(link="logit"), trControl=fitcontrol)
+pred = predict(glmFit1$finalModel, as.matrix(testing[,c(metabo.asso)]), type = "response")
+roc.metabo = roc(testing$my.uthyact,pred)
+
+glmFit1 = train(x = training[, c(clinical)], y = as.factor(training$my.uthyact), method = "glmboost", family = Binomial(link="logit"), trControl=fitcontrol)
+pred = predict(glmFit1$finalModel, as.matrix(testing[,c(clinical)]), type = "response")
+roc.clinical = roc(testing$my.uthyact,pred)
 
 ```
 
 
-
 2. Subgroup the metabolites and plan further analysis strategies.
+```{r}
+
+```
 
 
 Some other things shoud be put on Todo list:

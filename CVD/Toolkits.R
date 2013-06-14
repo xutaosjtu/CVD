@@ -99,7 +99,7 @@ num2coord=function(num,ncol, nrow=ncol)
 	return(c(x,y))
 }
 #	Differential correxpression
-#	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. “Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.BMC Bioinformatics 10, no. 1 (2009): 109.
+#	The method was described in Cho, Sung, Jihun Kim, and Ju Kim. ?Identifying Set-wise Differential Co-expression in Gene Expression Microarray Data.BMC Bioinformatics 10, no. 1 (2009): 109.
 #	Description of parameters:
 #	cor1, cor2: two pearson correlation values
 #	N1, N2: the number of samples used for the calculation of cor1 and cor2
@@ -274,3 +274,36 @@ outlier = function(x){
 	SD = sd(x,na.rm =T)
 	which(x>Mean+5*SD|x<Mean-5*SD)	
 }
+
+##Generate sampless for K fold cross validation
+f_K_fold <- function(Nobs,K=5){
+     rs <- runif(Nobs)
+     id <- seq(Nobs)[order(rs)]
+     k <- as.integer(Nobs*seq(1,K-1)/K)
+     k <- matrix(c(0,rep(k,each=2),Nobs),ncol=2,byrow=TRUE)
+     k[,1] <- k[,1]+1
+     l <- lapply(seq.int(K),function(x,k,d) 
+         list(train=d[!(seq(d) %in% seq(k[x,1],k[x,2]))],
+              test=d[seq(k[x,1],k[x,2])]),k=k,d=id)
+     return(l)
+}
+
+## Backward selection for cox model
+selectCox <- function(formula, data, rule = "aic") {
+  require("rms")
+  require("prodlim")
+  fit <- cph(formula, data, surv = TRUE)
+  bwfit <- fastbw(fit, rule = rule)
+  if (length(bwfit$names.kept) == 0) {
+    newform <- reformulate("1", formula[[2]])
+    newfit <- prodlim(newform, data = data)
+  } else{
+    newform <- reformulate(bwfit$names.kept, formula[[2]])
+    newfit <- cph(newform, data, surv = TRUE)
+  }
+  out <- list(fit = newfit,In = bwfit$names.kept)
+  out$call <- match.call()
+  class(out) <- "selectCox"
+  out
+}
+
