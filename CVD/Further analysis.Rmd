@@ -13,7 +13,73 @@ Some important Variables included in the dataset:
 a. BP_associat: Blood pressure associated metabolites in the prospective analysis, including `r colnames(BP_associat)`.
 b. cs_asso: Hypertension associated metabolites in cross sectional analysis, including `r colnames(cs_asso)`.
 
-1. Are the hypertension associated metabolites predictive of furture hypertension
+1. Subgroup the metabolites and plan further analysis strategies.
+We tried here two criterias to determin wheter one metabolite is associated with hypertension or blood press.
+i. _The relaxed criteria_: metabolites significantly associated with hypertension or diastolic/systolic- blood pressure in at least two analysis, either cross-sectional or prospective.
+ii. _The stringent criteria_: metabolites significantly associated with hypertension or diastolic/systolic- blood pressure in both cross-sectional analysis and prospective analysis.
+```{r}
+asso.hyer=apply(cs_asso[,grep("_nom", colnames(cs_asso))], 1, function(x) sum(x!=0))
+metabo.asso.hyper.strin=names(which(asso.hyer==3))
+metabo.asso.hyper.relax=names(which(asso.hyer>=2))
+
+indx.all=grep("_nom", colnames(BP_associat))
+indx.medi=grep("_all", colnames(BP_associat))
+
+asso.dia=apply(cs_asso[,grep("dia", colnames(BP_associat)[indx.all])], 1, function(x) sum(x!=0))
+metabo.asso.dia.strin=names(which(asso.dia==3))
+metabo.asso.dia.relax=names(which(asso.dia>=2))
+
+asso.sys=apply(cs_asso[,grep("sys", colnames(BP_associat)[indx.all])], 1, function(x) sum(x!=0))
+metabo.asso.sys.strin=names(which(asso.sys==3))
+metabo.asso.sys.relax=names(which(asso.sys>=2))
+````
+Among these metabolites, `r intersect(metabo.asso.hyper.strin, metabo.asso.dia.strin)` are associated with both hypertension  and diastolic blood pressure; `r  intersect(metabo.asso.hyper.strin, metabo.asso.sys.strin)` are associated with both hypertension and systolic blood pressure.
+
+
+a. As metioned in the [literature][1], PCA could be used to reduce the redundent information in the metabolite profile. We applied the same method in our analysis, a) involve the the principle components have eigen values greater than 1, b)metabolite with a factor load __>0.4__ were reported as composing  a factor. Principle component factor scorre were calculated for each participants.
+```{r}
+##S4
+tmp=scale(log(S4[,metabo.asso.hyper.relax]))
+pc.S4=prcomp(tmp)
+index.pcs=which(pc.S4$sdev^2>1)
+apply(pc.S4$rotation[, index.pcs], 2, function(x) which(abs(x)>=0.3))
+
+##F4
+tmp=scale(log(F4[,metabo.asso.hyper.relax]))
+tmp=na.omit(tmp)
+pc.F4=prcomp(tmp)
+index.pcs=which(pc.F4$sdev^2>1)
+apply(pc.F4$rotation[, index.pcs], 2, function(x) which(abs(x)>=0.3))
+
+##pooled
+tmp=rbind(scale(log(F4[,valid_measures])), scale(log(S4[,valid_measures])))
+tmp=na.omit(tmp)
+pc.all=prcomp(tmp)
+index.pcs=which(pc.all$sdev^2>1)
+apply(pc.all$rotation[, index.pcs], 2, function(x) which(x>=0.2))
+```
+
+However, as the results showed, no PC passed the criteria. The reason for the unsuccessful usage of the method in the analysis could be attributed to the high variation between the two groups, while in the [literature][1] the method was applied on a matched case-control dataset, which had less variation within groups.
+
+b.As suggested by Annette, we tried fator analysis to find the hidden factors influencing the metabolites that associated with hypertension. 
+```{r}
+tmp=S4[,c(metabo.asso.hyper.relax)]
+tmp=na.omit(tmp)
+factanal(tmp, 4, rotation="varimax")
+```
+By this kind of factor analysis, we can only find the classes of hypertension or blood pressure associated metabolites. But in this metabolite panel, it is quite easy to distinguish classes of metabolites, so we think it will not help much in the analysis.
+
+c.how is the relatioship between blood pressure with the metabolites associated with hypertension. As we mentioned above, `r intersect(metabo.asso.hyper.strin, metabo.asso.dia.strin)` are associated with both hypertension and diastolic blood pressure under the stringent criteria; `r intersect(metabo.asso.hyper.relax, metabo.asso.dia.relax)` are asspciated both under relaxed criteria.
+```{r}
+metabo.dif = setdiff(metabo.asso.hyper.strin, metabo.asso.sys.strin)
+function(x){
+  quintile
+}
+
+
+```
+
+2. Are the hypertension associated metabolites predictive of furture hypertension
 ```{r fig.width=3, fig.height=3}
 require(pROC)
 metabo.asso = names(which(apply(cs_asso[,c(2,4,6)],1,function(x) sum(x!=0))==3))
@@ -59,6 +125,7 @@ plot(roc.metabo, add =T,print.auc = TRUE, grid=TRUE, print.auc.y=ifelse(roc.meta
 plot(roc.clinical, add =T,print.auc = TRUE, grid=TRUE, print.auc.y=ifelse(roc.clinical$percent, 70, .7), col = "blue")
 
 ```
+
 Using some variable selection methods:
 ```{r}
 require(caret)
@@ -89,11 +156,8 @@ roc.clinical = roc(testing$my.uthyact,pred)
 ```
 
 
-2. Subgroup the metabolites and plan further analysis strategies.
-```{r}
-
-```
-
-
 Some other things shoud be put on Todo list:
 3. Different medication information could be applied from Margert Heir, who is repsponsible for coding of the medications.
+
+
+[1]: http://circgenetics.ahajournals.org/content/3/2/207.long "Association of a Peripheral Blood Metabolic Profile With Coronary Artery Disease and Risk of Subsequent Cardiovascular Events"
