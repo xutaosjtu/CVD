@@ -6,7 +6,12 @@ source("D:/Users/tao.xu/Documents/R-studio git/CVD/CVD/Toolkits.R")
 setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease")
 load("data_hypertension_new.RData")
 
+##remove outliers
+S4[,valid_measures] = apply(S4[,valid_measures], 2, function(x) {x[outlier(x)]=NA;return(x)})
+F4[,valid_measures] = apply(F4[,valid_measures], 2, function(x) {x[outlier(x)]=NA;return(x)})
 ```
+
+
 
 Some important Variables included in the dataset:
 
