@@ -22,14 +22,16 @@ asso.hyer=apply(cs_asso[,grep("_nom", colnames(cs_asso))], 1, function(x) sum(x!
 metabo.asso.hyper.strin=names(which(asso.hyer==3))
 metabo.asso.hyper.relax=names(which(asso.hyer>=2))
 
-indx.all=grep("_nom", colnames(BP_associat))
-indx.medi=grep("_all", colnames(BP_associat))
+indx.all=grep("_all", colnames(BP_associat))
+indx.medi=grep("_nom", colnames(BP_associat))
+indx.sys=grep("sys", colnames(BP_associat))
+indx.dia=grep("dia", colnames(BP_associat))
 
-asso.dia=apply(cs_asso[,grep("dia", colnames(BP_associat)[indx.all])], 1, function(x) sum(x!=0))
+asso.dia=apply(BP_associat[,intersect(indx.all, indx.dia)], 1, function(x) sum(x!=0))
 metabo.asso.dia.strin=names(which(asso.dia==3))
 metabo.asso.dia.relax=names(which(asso.dia>=2))
 
-asso.sys=apply(cs_asso[,grep("sys", colnames(BP_associat)[indx.all])], 1, function(x) sum(x!=0))
+asso.sys=apply(BP_associat[,intersect(indx.all, indx.sys)], 1, function(x) sum(x!=0))
 metabo.asso.sys.strin=names(which(asso.sys==3))
 metabo.asso.sys.relax=names(which(asso.sys>=2))
 ````
@@ -72,10 +74,12 @@ By this kind of factor analysis, we can only find the classes of hypertension or
 c.how is the relatioship between blood pressure with the metabolites associated with hypertension. As we mentioned above, `r intersect(metabo.asso.hyper.strin, metabo.asso.dia.strin)` are associated with both hypertension and diastolic blood pressure under the stringent criteria; `r intersect(metabo.asso.hyper.relax, metabo.asso.dia.relax)` are asspciated both under relaxed criteria.
 ```{r}
 metabo.dif = setdiff(metabo.asso.hyper.strin, metabo.asso.sys.strin)
-function(x){
-  quintile
-}
 
+sysbp.quintile = cut(S4$ltsysmm, breaks = quantile(S4$ltsysmm, probs = seq(0, 1, 0.2),na.rm = TRUE), include.lowest = T,ordered_result = F)
+plotmeans(S4$Met~sysbp.quintile)
+
+sysbp.quintile = cut(F4$utsysmm, breaks = quantile(F4$utsysmm, probs = seq(0, 1, 0.2),na.rm = TRUE), include.lowest = T,ordered_result = F)
+plotmeans(F4$Tyr~sysbp.quintile)
 
 ```
 

@@ -287,11 +287,11 @@ for (m in valid_measures){
   metabolite = scale(log(F4[, m]))
   model = lm(utsysmm ~  metabolite +
                 utalteru + as.factor(ucsex) ## model 1
-              + scale(utbmi) # multivariate model
-              + as.factor(my.cigreg) + as.factor(my.alkkon)
-              + my.diab
-              + scale(ul_chola) + scale(ul_hdla)
-              + scale(log(uh_crp))
+              #+ scale(utbmi) # multivariate model
+              #+ as.factor(my.cigreg) + as.factor(my.alkkon)
+              #+ my.diab
+              #+ scale(ul_chola) + scale(ul_hdla)
+             # + scale(log(uh_crp))
               ,#subset = which(F4$utantihy == 2), # antihypertensive medication
               F4, family = binomial(link = "logit"))
   rst = rbind(rst, summary(model)$coefficients[2,])
