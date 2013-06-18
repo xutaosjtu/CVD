@@ -98,12 +98,12 @@ for (m in valid_measures){
 	metabolite = scale(log(S4[, m]))
 	model = glm(as.factor(2-lthyact) ~  metabolite +
 					ltalteru + as.factor(lcsex) # basic model
-#					+ scale(ltbmi) # multivariate model
-#					+ as.factor(my.cigreg) + as.factor(my.alkkon)
-#					+ my.diab
-#					+ scale(ll_chola) + scale(ll_hdla)
-#					+ scale(log(lh_crp))
-			,#subset = which(S4$ltantihy == 2), # antihypertensive medication 
+					+ scale(ltbmi) # multivariate model
+					+ as.factor(my.cigreg) + as.factor(my.alkkon)
+					+ my.diab
+					+ scale(ll_chola) + scale(ll_hdla)
+					+ scale(log(lh_crp))
+			,subset = which(S4$ltantihy == 2), # antihypertensive medication 
 			S4, family = binomial(link = "logit"))
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
@@ -202,7 +202,7 @@ for(i in valid_measures){
 					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
 			,id = participants,# na.action=na.exclude, 
 			data= tmp,
-			subset = which(!is.na(tmp$disease)),#
+			subset = which(!is.na(tmp$disease)&tmp$ltantihy!=1),#
 			corstr = "exchangeable",
 			family = binomial)
 	rst = rbind(rst, summary(model)$coef[2,])
@@ -266,7 +266,7 @@ write.csv(rst, file = "DiastolicBP associated metabolites_without medication_cru
 rst = NULL # association in S4 
 for (m in valid_measures){
   metabolite = scale(log(S4[, m]))
-  model = lm(ltsysmm ~  metabolite +
+  model = lm(ltdiamm ~  metabolite +
                 ltalteru + as.factor(lcsex) # basic model
       					+ scale(ltbmi) # multivariate model
       					+ as.factor(my.cigreg) + as.factor(my.alkkon)
@@ -287,13 +287,13 @@ for (m in valid_measures){
   metabolite = scale(log(F4[, m]))
   model = lm(utsysmm ~  metabolite +
                 utalteru + as.factor(ucsex) ## model 1
-              #+ scale(utbmi) # multivariate model
-              #+ as.factor(my.cigreg) + as.factor(my.alkkon)
-              #+ my.diab
-              #+ scale(ul_chola) + scale(ul_hdla)
-             # + scale(log(uh_crp))
+              + scale(utbmi) # multivariate model
+              + as.factor(my.cigreg) + as.factor(my.alkkon)
+              + my.diab
+              + scale(ul_chola) + scale(ul_hdla)
+              + scale(log(uh_crp))
               ,#subset = which(F4$utantihy == 2), # antihypertensive medication
-              F4, family = binomial(link = "logit"))
+              F4)
   rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))

@@ -119,7 +119,8 @@ diffcorr <- function(cor1, cor2, N1, N2)
 #############	residual calculation	##########
 residue<-function(data,Metabolites,adj, control_group)
 {
-	tmp=NULL;
+	#data[,Metabolites]=scale(log(data[,Metabolites]))
+  tmp=NULL;
 	tmp=cbind(data[,adj])
 	adj_f=paste(adj,collapse='+')
 	for(i in 1:length(Metabolites)){
