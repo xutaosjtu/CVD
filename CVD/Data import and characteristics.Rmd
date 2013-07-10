@@ -77,6 +77,7 @@ F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
 S4$my.cigreg = S4$ltcigreg
 S4$my.cigreg[which(S4$ltcigreg==1)]=2
 S4$my.cigreg = 4-S4$my.cigreg
+S4$my.cigreg = as.factor(S4$my.cigreg)
 
 F4$my.cigreg = F4$utcigreg
 F4$my.cigreg[which(F4$utcigreg==1)]=2
@@ -88,6 +89,7 @@ S4$my.diab=S4$lp_diab_who06
 S4$my.diab[which(S4$lp_diab_who06>10)]=NA
 S4$my.diab[which(S4$lp_diab_who06==4|S4$lp_diab_who06==5)]=1
 S4$my.diab[which(S4$lp_diab_who06<4)]=0
+S4$my.diab = as.factor(S4$my.diab)
 
 F4$my.diab=F4$uk_diab_who06
 F4$my.diab[which(F4$uk_diab_who06>10)]=NA
@@ -105,15 +107,17 @@ F4$my.physical[which(F4$utphact<=2)]=1
 F4$my.physical[which(F4$utphact>2)]=0
 
 ## Hypertension status
-S4$my.hyper = S4$lthyact
+S4$my.hyper = rep(NA, nrow(S4))
 S4$my.hyper[which(S4$lthyact==2)] = 0
-S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==1)]=1
+S4$my.hyper[which(S4$lthyact==1 & S4$ltantihy==1)]=1
+#S4$my.hyper[which(S4$lthyact==1 & S4$ltsysmm<140 & S4$ltdiamm<90)]=1
 S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==2)]=2
 S4$my.hyper = as.factor(S4$my.hyper)
 
-F4$my.hyper = F4$uthyact
+F4$my.hyper = rep(NA, nrow(F4))
 F4$my.hyper[which(F4$uthyact==2)] = 0
 F4$my.hyper[which(F4$uthyact==1&F4$utantihy==1)]=1
+#F4$my.hyper[which(S4$lthyact==1 & S4$ltsysmm<140 & S4$ltdiamm<90)]=1
 F4$my.hyper[which(F4$uthyact==1&F4$utantihy==2)]=2
 F4$my.hyper = as.factor(F4$my.hyper)
 ```

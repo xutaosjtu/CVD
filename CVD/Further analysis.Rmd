@@ -83,7 +83,7 @@ factanal(tmp, 4, rotation="varimax")
 By this kind of factor analysis, it enables find hidden factors that influence the hypertension or blood pressure associated metabolites and would potentially reveal pathways or moduels. But in this metabolite panel, it is quite easy to distinguish classes of metabolites, so we think it helped not so much in the analysis.
 
 __c.__ Metabolite classification
-First, which metabolite set should be considered for further analysis. Although we set two criteria to select the most convicining metabolites that associated with hypertension, we still have the question how medication influence should be involved in the analysis. We can prove that there truely exist strong medication effect on the metabolite. So we considered here excluding participants taking antihypertensive medication would generate more consitent results.
+First question, which metabolite set should be considered for further analysis? Although we set two criteria to select the most convicining metabolites that associated with hypertension, we still have the question how medication influence should be involved in the analysis. We can prove that there truely exist strong medication effect on the metabolite. So we considered here excluding participants taking antihypertensive medication would generate more consitent results.
 
 __We could also find from the venn diagramm that more hypertension associated metabolites overlapped with BP associated metabolites, which was more plausible. Althought the dataset is much smaller, it has less problem of confounding by medication.__
 
@@ -120,18 +120,18 @@ print(metabo.asso.sys.strin)
 ```
 
 Again, these metabolites could be classified as:
-i) Associated with both hypertension and BP
+i) Associated with both hypertension and BP, including `r Reduce(intersect, list(metabo.asso.sys.strin, metabo.asso.dia.strin, metabo.asso.hyper.strin))`
 ii) Metabolites associated with hypertension but non-linearly with blood pressure (we will test in following part whether it is just non-linearly associated with BP)
-iii) Associated with BP but not with hypertension. (We suspected that it also suffers from non-linearity in the high blood pressure subgroup, we will test them by both plot and regression in subgroups)
+iii) Associated with BP but not with hypertension, including `r setdiff(c(metabo.asso.sys.strin, metabo.asso.dia.strin),metabo.asso.hyper.strin)`. (We suspected that it also suffers from non-linearity in the high blood pressure subgroup, we will test them by both plot and regression in subgroups)
 
 However, we will focus on the first two groups, whci are all hypertension associated. 
 We first check the metabolite concentration in each category of blood pressure. Participants were categorized every 10mmHg of disatolic or systolic blood pressure, starting from 60mmHg adn 90mmHg repectively.
 
 ```{r}
 S4$sysbp.quintile = cut(S4$ltsysmm, breaks = c(90,seq(5)*10+100,300), include.lowest = T,ordered_result = F, right=F)
-S4$diabp.quintile=cut(S4$ltdiamm, breaks = c(60,seq(4)*10+60), include.lowest = T,ordered_result = F, right=F)
+S4$diabp.quintile=cut(S4$ltdiamm, breaks = c(60,seq(4)*10+60,300), include.lowest = T,ordered_result = F, right=F)
 F4$sysbp.quintile = cut(F4$utsysmm, breaks = c(90,seq(5)*10+100,300), include.lowest = T,ordered_result = F, right=F)
-F4$diabp.quintile = cut(F4$utdiamm, breaks = c(60,seq(4)*10+60), include.lowest = T,ordered_result = F, right=F)
+F4$diabp.quintile = cut(F4$utdiamm, breaks = c(60,seq(4)*10+60,300), include.lowest = T,ordered_result = F, right=F)
 ```
 
 We first set our working dataset to one data set includes only participants taking no medication. The full datasets of S4 and F4 were store in another two variables
@@ -149,11 +149,20 @@ Then we make the plots of metabolite concentration residue after adjustment of o
 require(gplots)
 #metabo.dif = setdiff(metabo.asso.hyper.strin, metabo.asso.sys.strin)
 
-tmp=residue(data=S4, Metabolites=metabo.asso.hyper.strin, adj=clinical.s4, control_group=which(S4$lthyact==2))
-tmp2=residue(data=F4, Metabolites=metabo.asso.hyper.strin, adj=clinical.f4, control_group=which(F4$uthyact==2))
-pdf("sysBP association with hyper associated metabolites_nomedi.pdf", width=10, height=8)
+meta = setdiff(metabo.asso.sys.strin, metabo.asso.hyper.strin)
+tmp=residue(data=S4
+            , Metabolites=meta
+            , adj=clinical.s4
+            , control_group=which(S4$lthyact==2)
+            )
+tmp2=residue(data=F4
+             , Metabolites=meta
+             , adj=clinical.f4
+             , control_group=which(F4$uthyact==2)
+             )
+pdf("sysBP associated metabolites_nomedi.pdf", width=10, height=8)
 par(mfrow = c(3,3))
-for(m in metabo.asso.hyper.strin){
+for(m in meta){
   S4$m <- tmp[,m]
   plotmeans(m~sysbp.quintile, data=S4, main=m, ylab="residue", xlab="systolicBP", col="grey", barcol="grey")
   #i1=which(F4$utantihy==2)
