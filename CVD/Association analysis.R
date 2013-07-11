@@ -207,17 +207,14 @@ rst=NULL
 for(i in valid_measures){
 	data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
 	tmp = data[order(data$participants), ]
-	model <- gee(disease ~ m +
-					#ltdiamm + ltantihy +
-					#as.factor(ltantihy) + #+as.factor(ltmbbl) #model 5 medication	
-					#platform +
-					ltalteru + as.factor(lcsex) ## model 1
+	model <- gee(disease ~ m
+					+ ltalteru + as.factor(lcsex) ## model 1
 					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
-			,id = participants# na.action=na.exclude, 
-			,data= tmp
-			,subset = which(!is.na(tmp$disease) & tmp$ltantihy!=1)
-			,corstr = "exchangeable"
-			,family = binomial
+			    ,id = participants# na.action=na.exclude, 
+			    ,data= tmp
+			    ,subset = which(tmp$my.hyper!=2)
+			    ,corstr = "exchangeable"
+			    ,family = binomial
                )
 	rst = rbind(rst, summary(model)$coef[2,])
 }
@@ -227,7 +224,7 @@ rst=data.frame(rst,
 		bonf=p.adjust(rst$pvalue, method="bonferroni")
 )
 rownames(rst)=valid_measures
-write.csv(rst, file = "Hypertension associated metabolites_full model_GEE without med).csv")
+write.csv(rst, file = "Hypertension associated metabolites_full model_GEE with med.csv")
 
 ########################################################################################
 ####    Association of blood pressure with metabolite concentrations

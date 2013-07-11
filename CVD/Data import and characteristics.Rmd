@@ -2,7 +2,7 @@ Title Population characteristics
 ========================================================
 <link href="custom.css" rel="stylesheet">
 
-```{r}
+```{r, warning=FALSE}
 setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease/")
 ###data read-in
 S4 = read.csv("data/K9512_Wang_Sattler_S4_tra300712.csv", sep = ";")
@@ -127,13 +127,6 @@ __Poplation Characteristics__
 #S4 features and diseases
 s4.feature.cont = c("ltalteru", "ltbmi", "ltalkkon", "ll_chola", "ll_hdla", "ll_ldla", "total2HDL", "ltdiamm", "ltsysmm", "ll_hgb", "ll_hbav","ll_tria","lh_crp", "lttumf","lthumf","waist2hip")
 
-
-################# F4 #################
-###additional features of F4:
-#	1.utmsidfup: defintion of Metabolic Syndrom by International Diabetes Federation 2009, which be use as a indicator of high risk for CVD events
-#	2.utmialt and utschalt: age at which first diagenosed for Myocardial infarction and stroke, respectively.
-#	3.utsmkreg: parameter describing smoking behavior. differed from utcigreg that classified former smoker by their smoking habits (regular/occasional)
-#	4.us_c07a: parameter describing the cardiac arrhythmias in the last 12 months
 f4.feature.cont = c("utalteru","utbmi","utalkkon","ul_chola","ul_hdla","ul_ldla","total2HDL","utdiamm","utsysmm","ul_hgb","ul_hbav","ul_tria","uh_crp","uttumf","uthumf","waist2hip")
 ```
 
