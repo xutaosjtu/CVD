@@ -204,15 +204,15 @@ abline(lm(res~fit,data=data.frame(fit = mixed.dum$fitted[,1],res = mixed.dum$res
 require(gee) 
 #require(geepack)
 rst=NULL 
-for(i in valid_measures){
+for(i in meta){
 	data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
 	tmp = data[order(data$participants), ]
-	model <- gee(disease ~ m
+	model <- gee(ltantihy ~ m
 					+ ltalteru + as.factor(lcsex) ## model 1
 					+ ltbmi+ my.cigreg + my.alkkon + my.diab + ll_chola+ll_hdla +log(lh_crp) ##model 4
 			    ,id = participants# na.action=na.exclude, 
 			    ,data= tmp
-			    ,subset = which(tmp$my.hyper!=2)
+			    ,subset = which(tmp$my.hyper!=0)
 			    ,corstr = "exchangeable"
 			    ,family = binomial
                )

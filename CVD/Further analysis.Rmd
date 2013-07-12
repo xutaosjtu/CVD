@@ -435,6 +435,101 @@ for(m in metabo.dif){
 rownames(rst)=metabo.dif
 ```
 
+Association of the four metabolite (Met, Tyr, PC aa C36:3, PC aa C38:3) with antihypertensive drugs
+```{r}
+meta = c("Met","Tyr","PC_aa_C36_3", "PC_aa_C38_3")
+rst = NULL; rst2=NULL; rst3 = NULL
+for(i in meta){
+  data$m = c(scale(log(S4[Cohort$zz_nr_s4, i])), scale(log(F4[Cohort$zz_nr_f4, i])))#normalize to comparable value
+  tmp = data[order(data$participants), ]
+  tmp = tmp[!is.na(tmp$ltmata),]
+  model <- gee( m ~ as.factor(2-ltmbbl)
+                + as.factor(2-ltmace)
+                + as.factor(2-ltmata)
+                #+ as.factor(ltantihy)
+               + ltalteru + as.factor(lcsex) ## model 1
+               + scale(ltbmi) # multivariate model
+               + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.diab) 
+               + scale(ll_chola) + scale(ll_hdla) + scale(log(lh_crp))
+               ,id = participants
+               ,data= tmp
+               ,subset = which(tmp$disease==1) #& (tmp$ltantihy==2 | tmp$ltmata ==1 | tmp$ltmace==1 | tmp$ltmbbl==1))
+               ,corstr = "exchangeable"
+               #, family=binomial
+              )
+  model.coef = summary(model)$coef
+  rst = rbind(rst, model.coef[2,])
+  rst2 = rbind(rst2, model.coef[3,])
+  rst3 = rbind(rst3, model.coef[4,])
+}
+rst = data.frame(rst, pvalue = 2*pnorm(-abs(rst[,5])))
+rst2 = data.frame(rst2, pvalue = 2*pnorm(-abs(rst2[,5])))
+rst3 = data.frame(rst3, pvalue = 2*pnorm(-abs(rst3[,5])))
+rst=data.frame(rst,
+               fdr=p.adjust(rst$pvalue, method="fdr"),
+               bonf=p.adjust(rst$pvalue, method="bonferroni")
+)
+rst2=data.frame(rst2,
+               fdr=p.adjust(rst2$pvalue, method="fdr"),
+               bonf=p.adjust(rst2$pvalue, method="bonferroni")
+)
+rst3=data.frame(rst3,
+               fdr=p.adjust(rst3$pvalue, method="fdr"),
+               bonf=p.adjust(rst3$pvalue, method="bonferroni")
+)
+rst = data.frame(rst, rst2, rst3)
+rownames(rst) = meta
+```
+
+Cross sectionally:
+in the S4 participants, 237 took beta-blocker, 143 participants took ACE-Hemmer, 53 took Angiostensin-AT1-Antagonisten, 
+```{r}
+##
+rst = NULL
+for(m in meta){
+  S4$m = scale(log(S4[,m]))
+  model = glm( m ~ as.factor(2-ltmbbl)
+                + as.factor(2-ltmace)
+                + as.factor(2-ltmata)
+               #+ as.factor(2-ltantihy)
+            + ltalteru + as.factor(lcsex) # basic model
+        	  + scale(ltbmi) # multivariate model
+					  + as.factor(my.cigreg) + as.factor(my.alkkon)
+				  	+ my.diab
+					  + scale(ll_chola) + scale(ll_hdla)
+					  + scale(log(lh_crp)) 
+            , data=S4
+            , subset=which(S4$lthyact==1)#& (S4$ltantihy==2 | S4$ltmata==1 )) #&| S4$ltmace==1 | S4$ltmata==1
+              #, family = binomial
+        )
+  model.coef = summary(model)$coef
+  rst = rbind(rst, c(model.coef[2,], model.coef[3,], model.coef[4,], model.coef[5,]))
+}
+rownames(rst)=meta
+
+
+rst = NULL
+for(m in meta){
+  F4$m = scale(log(F4[,m]))
+  model = glm( m ~ as.factor(2-utmbbl) 
+                + as.factor(2-utmace)
+                + as.factor(2-utmata)
+              # + as.factor(2-utantihy)
+            + utalteru + as.factor(ucsex) # basic model
+            + scale(utbmi) # multivariate model
+					  + as.factor(my.cigreg) + as.factor(my.alkkon)
+				  	+ my.diab
+					  + scale(ul_chola) + scale(ul_hdla)
+					  + scale(log(uh_crp)) 
+            , data=F4
+            , subset=which(F4$uthyact==1) # & (F4$utantihy==2 | F4$utmace==1 )| F4$utmace==1|F4$utmata==1
+               #, family = binomial
+        )
+  model.coef = summary(model)$coef
+  rst = rbind(rst, c(model.coef[2,], model.coef[3,], model.coef[4,], model.coef[5,]))
+}
+rownames(rst)=meta
+```
 
 
 2. Are the hypertension associated metabolites predictive of furture hypertension
