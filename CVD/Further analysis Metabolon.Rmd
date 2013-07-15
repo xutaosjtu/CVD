@@ -1,0 +1,55 @@
+Title Association in metabolon data
+========================================================
+<link href="custom.css" rel="stylesheet">
+
+```{r}
+require(xtable)
+```
+
+Import the metabolon data
+```{r}
+setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease")
+load("data_hypertension_new 2.RData")
+load("data/S4 metabolon valid.RData")
+load("data/S4 metabolon.RData")
+S4.metabolon = S4.metabolon[,1:500]
+
+metabolon.annotate = read.csv("data/Metabolon_annotation.csv")
+rownames(metabolon.annotate) = metabolon.annotate[,1]
+```
+
+merge the biocrates data with the metabolon data
+```{r}
+S4.metabolon = merge(S4, S4.metabolon)
+```
+
+Prediction of future hypertension
+
+```{r results='asis'}
+print("hypertension status at baseline and follow-up")
+table('S4' = S4.metabolon$lthyact, 'F4' = S4.metabolon$uthyact, useNA='ifany')
+rst = NULL;
+for (m in S4.metabolon.valid){
+  ## fixed effect estimation
+	S4.metabolon$m = scale((S4.metabolon[, m]))
+	model = glm(as.factor(2-uthyact) ~  m 
+              + ltalteru + as.factor(lcsex) # crude model
+					    + scale(ltbmi)
+					    + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
+					    + as.factor(my.diab)
+	            + scale(ltsysmm)# multivariate model
+					   #+ scale(ll_chola) + scale(ll_hdla)
+				     #+ scale(log(lh_crp))
+			        ,subset = which(S4.metabolon$lthyact == 2)
+              , data = S4.metabolon
+              , family = binomial(link = "logit")
+              )
+	rst = rbind(rst, summary(model)$coefficients[2,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = S4.metabolon.valid
+rst = cbind(rst, metabolon.annotate[S4.metabolon.valid, ])
+print(xtable(rst), type="html")
+#write.csv(rst, file = "Hypertension survival analysis_metabolon_glm_full model plus sysBP.csv")
+```
+
