@@ -52,7 +52,10 @@ uthyact
 print("medication in the population at baseline and follow-up")
 table(S4[Cohort$zz_nr_s4,"ltantihy"],F4[Cohort$zz_nr_f4,"utantihy"], S4[Cohort$zz_nr_s4,"lthyact"], F4[Cohort$zz_nr_f4,"uthyact"])
 
-## Prediction of future hypertension
+########################################################################################
+####    prediction of future hypertension
+####
+########################################################################################
 print("hypertension status at baseline and follow-up")
 table('S4' = S4$lthyact, 'F4' = S4$uthyact, useNA='ifany')
 rst = NULL;
