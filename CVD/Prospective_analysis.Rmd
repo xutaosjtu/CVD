@@ -26,6 +26,7 @@ for (m in S4_valid_measures){
 					+ my.diab  ##model 2
 					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3
 	 				+ scale(lh_crp)  ##model 4
+          #+ scale(ll_tria)
 					,subset = which(S4$prev_mi==0),
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
