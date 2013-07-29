@@ -1,12 +1,10 @@
-setwd("../../../Dropbox/Cardiovascular disease/data/")
-data<-read.csv("K9512_Wang_Sattler_S2.csv")
+setwd("../../../Dropbox/Cardiovascular disease/")
+data<-read.csv("data/K9512_Wang_Sattler_S2.csv")
 
 tmp = grep("X", colnames(data), fixed=T)
 data = data[, -tmp]
 measures = colnames(data)[19:249]
 tmp = sapply(measures, function(x) tapply(data[,x], INDEX = data$Sample.Bar.Code, mean, na.rm=T))
-
-
 
 ###################################################
 # Overall quality of the measurement
@@ -49,7 +47,15 @@ aboveLOD = function(data, measures){
   index.zero = which(data$Sample.Type=="Zero Sample")
   index.sample = grep("30", data$Sample.Identification, fixed=T)
   #index.nurse = sapply(index.nurse, function(x) length(x)!=0)
-  rst.overLOD=apply(data[index.sample,measures],2, function(x) x>3*median(x[index.zero], na.rm=T)
+  #print(head(data))
+  rst.overLOD=sapply(data[,measures], 
+                    function(x) {
+                      medi=median(x[index.zero], na.rm=T)
+                      #print(medi)
+                      if(!is.na(medi)) return(x>3*medi)
+                      else return(rep(NA,length(x)))
+                    }
+                    
   )
   return(rst.overLOD)
 }
