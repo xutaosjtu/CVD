@@ -27,7 +27,7 @@ for (i in measures){
   rst = cbind(rst,rsti)
 }
 colnames(rst) = measures
-write.csv(t(rst), file = "CV of each metabolites across all paltes.csv")
+write.csv(t(rst), file = "CV of each metabolites across all paltes S2.csv")
 
 ## between plate differences of refsamples 
 pdf("reference samples in different plates.pdf", width=15, height=15)
@@ -67,18 +67,24 @@ for(i in names(table(data$Plate.Bar.Code))){
 }
 matrixLOD = data.frame(matrixLOD, 
                        Sample.Identification=data$Sample.Identification)
-matrixLOD = merge(matrixLOD,samples, by.x = "Sample.Identification", by.y = "Proben_ID")
+#matrixLOD = merge(matrixLOD,samples, by.x = "Sample.Identification", by.y = "Proben_ID")
+
+tmp = sapply(matrixLOD[,measures], function(x) tapply(x, INDEX=matrixLOD$Sample.Identification, sum, na.rm=T))
+write.csv(tmp, file = "matrixLOD_S2.csv")
 
 rst=NULL # measurements above LOD in each plate and all plates
 for(i in names(table(data$Plate.Bar.Code))){
   subset = which(data$Plate.Bar.Code == i)
-  tmp = aboveLOD(data[subset,])
-  rst = cbind(rst,apply(tmp,2,sum, na.rm = T))
+  
+  indx.sample = grep("30",data$Sample.Identification[subset],fixed=T)
+  
+  tmp = aboveLOD(data[subset,], measures)
+  rst = cbind(rst,apply(tmp[indx.sample,],2,sum, na.rm = T))
 }
 colnames(rst) = names(table(data$Plate.Bar.Code))
 rst = data.frame(rst, overall = apply(rst,1,sum))
-rst$overall=rst$overall/nrow(samples)
-write.csv(rst, file = "overLOD_nurse.csv")
+rst$overall=rst$overall/(nrow(data)/2)
+write.csv(rst, file = "overLOD_S2.csv")
 
 ## data Normalization
 data.merged = merge(data,samples,by.x="Sample.Identification", by.y="Proben_ID")
