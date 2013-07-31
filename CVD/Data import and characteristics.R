@@ -8,6 +8,7 @@
 S4 = read.csv("data/K9512_Wang_Sattler_S4_tra300712.csv", sep = ";")
 F4 = read.csv("data/K9512_Wang_Sattler_F4_tra300712.csv", sep = ";")
 S4_F4_map = read.csv("data/K9512_Wang_S_S4_F4trans300712.csv", sep = ";")
+S2 = read.csv("data/pv_80_13_daten/S2.csv")
 
 ####	additional data
 S4.add = read.csv("data/S4 addition.csv")
@@ -42,6 +43,10 @@ F4$my.alkkon = rep(0, dim(F4)[1])
 F4$my.alkkon[which(F4$utalkkon >=40 & F4$ucsex==1 )] = 1
 F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
 
+S2$my.alkkon = rep(0, nrow(S2))
+S2$my.alkkon[which(S2$ctalkkon>=40 & S2$ccsex==1)] = 1
+S2$my.alkkon[which(S2$ctalkkon>=20 & S2$ccsex==2)] = 1
+
 ## smoking
 S4$my.cigreg = S4$ltcigreg
 S4$my.cigreg[which(S4$ltcigreg==1)]=2
@@ -50,7 +55,10 @@ S4$my.cigreg = 4-S4$my.cigreg
 F4$my.cigreg = F4$utcigreg
 F4$my.cigreg[which(F4$utcigreg==1)]=2
 F4$my.cigreg = 4-F4$my.cigreg
-F4$my.cigreg = as.factor(F4$my.cigreg)
+
+S2$my.cigreg = S2$ctcigreg
+S2$my.cigreg[which(S2$ctcigreg==1)]=2
+S2$my.cigreg = 4-S2$my.cigreg
 
 ## diabetes
 S4$my.diab=S4$lp_diab_who06
@@ -64,14 +72,21 @@ F4$my.diab[which(F4$uk_diab_who06==4|F4$uk_diab_who06==5)]=1
 F4$my.diab[which(F4$uk_diab_who06<4)]=0
 F4$my.diab = as.factor(F4$my.diab)
 
+S2$my.diab=S2$ctdiabet
+S2$my.diab = 2-S2$ctdiabet
+
 ## physical activity
 S4$my.physical = S4$ltphact
 S4$my.physical[which(S4$ltphact<=2)]=1
 S4$my.physical[which(S4$ltphact>2)]=0
 
-F4$my.physical = F4$ltphact
-F4$my.physical[which(F4$ltphact<=2)]=1
-F4$my.physical[which(F4$ltphact>2)]=0
+F4$my.physical = F4$utphact
+F4$my.physical[which(F4$utphact<=2)]=1
+F4$my.physical[which(F4$utphact>2)]=0
+
+S2$my.physical = S2$ctphact
+S2$my.physical[which(S2$ctphact<=2)]=1
+S2$my.physical[which(S2$ctphact>2)]=0
 
 ##
 S4$my.hyper = S4$lthyact
@@ -80,14 +95,21 @@ S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==1)]=1
 S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==2)]=2
 S4$my.hyper = as.factor(S4$my.hyper)
 
-F4$my.hyper = F4$lthyact
+F4$my.hyper = F4$uthyact
 F4$my.hyper[which(F4$uthyact==2)] = 0
 F4$my.hyper[which(F4$uthyact==1&F4$utantihy==1)]=1
 F4$my.hyper[which(F4$uthyact==1&F4$utantihy==2)]=2
 F4$my.hyper = as.factor(F4$my.hyper)
+
+S2$my.hyper = S2$cthyact
+S2$my.hyper[which(S2$cthyact==2)] = 0
+S2$my.hyper[which(S2$cthyact==1&S2$ctantihy==1)]=1
+S2$my.hyper[which(S2$cthyact==1&S2$ctantihy==2)]=2
+S2$my.hyper = as.factor(S2$my.hyper)
 ## waist hip ratio
 S4$waist2hip = S4$lttumf / S4$lthumf
 F4$waist2hip = F4$uttumf / F4$uthumf
+S2$waist2hip = S2$cttumf / S2$cthumf
 
 
 

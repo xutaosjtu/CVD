@@ -192,6 +192,7 @@ for (m in S4_valid_measures){
 					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
 	 				+ scale(lh_crp)  ##model 4
 					#+ as.factor(ltmstati)& S4$ltmstati !=1
+          + as.factor(ltantihy)
 					,subset = which(S4$prev_mi==0),
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
@@ -205,6 +206,42 @@ rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adj
 rownames(rst) = S4_valid_measures
 #rst = cbind(rst, annotation[rownames(rst),])
 write.csv(rst, file = "metabolites ratios_MI survival analysis_full model.csv")
+
+index=sapply(S2[,S2_valid_measures], function(x) which(abs(x)>mean(x,na.rm=T)+5*sd(x,na.rm=T)|abs(x)<mean(x,na.rm=T)-5*sd(x,na.rm=T))) 
+for(i in S2_valid_measures){
+  S2[index[[i]],i]=NA
+}
+
+S2$Arg.Trp = S2$Arg/S2$Trp
+require(survival)
+rst = NULL;
+for (m in S2_valid_measures){
+  S2$metabolite = scale(log(S2[, m]))
+  model = coxph(Surv(mi_time, inz_mi) ~ metabolite + #as.factor(ltnuecht) +
+                  strata(ctalteru,ccsex)
+                + scale(ctbmi)## model 1
+                + as.factor(my.diab)  ##model 2
+                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3+ total2HDL
+                + scale(cl_crp)  ##model 4
+                #+ as.factor(ctmstati)#& S4$ltmstati !=1
+                + as.factor(ctantihy) * metabolite
+                #+ as.factor(ctmbbl)
+                #+ as.factor(ctmdiu)
+                #+ as.factor(ctmhypot)
+                ,subset = which(S2$prev_mi==0),
+                data = S2)
+  rst = rbind(rst, summary(model)$coefficients[1,])
+  #rst1 = rbind(rst , summary(model)$coefficients[10,])
+  #rst2 = rbind(rst2, summary(model)$coefficients[11,])
+  #rst3 = rbind(rst3, summary(model)$coefficients[12,])
+  #table(model$y[,2]) #number of sample used exactly in the estimation.
+}
+table(model$y[,2])
+rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rownames(rst) = S2_valid_measures
+#rst = cbind(rst, annotation[rownames(rst),])
+write.csv(rst, file = "metabolites_MI survival analysis_model3_replication S2.csv")
+
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
@@ -273,6 +310,8 @@ for(m in candidates[1:16]){
 	abline(h = 1, lty = 2)
 }
 dev.off()
+
+
 
 #test the trend
 rst= NULL;

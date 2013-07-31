@@ -79,10 +79,8 @@ for(i in names(table(data$Plate.Bar.Code))){
 }
 matrixLOD = data.frame(matrixLOD, 
                        Sample.Identification=data$Sample.Identification)
-#matrixLOD = merge(matrixLOD,samples, by.x = "Sample.Identification", by.y = "Proben_ID")
-
-tmp = sapply(matrixLOD[,measures], function(x) tapply(x, INDEX=matrixLOD$Sample.Identification, sum, na.rm=T))
-write.csv(tmp, file = "matrixLOD_S2.csv")
+matrixLOD = sapply(matrixLOD[,measures], function(x) tapply(x, INDEX=matrixLOD$Sample.Identification, sum, na.rm=T))
+write.csv(matrixLOD, file = "matrixLOD_S2.csv")
 
 rst=NULL # measurements above LOD in each plate and all plates
 for(i in names(table(data$Plate.Bar.Code))){
@@ -100,12 +98,6 @@ write.csv(rst, file = "overLOD_S2.csv")
 
 ## data Normalization
 data.merged = merge(data,samples,by.x="Sample.Identification", by.y="Proben_ID")
-
-normalize<-function(data, measures){
-  tmp = apply(data[,measures], 2, function(x) 1000*x/data$Creatinine)
-  data[,measures] = tmp
-  return(data)
-}
 
 data.merged = data.merged[which(matrixLOD$Creatinine==1), ]# exclude abnormal creatinine data
 matrixLOD = matrixLOD[which(matrixLOD$Creatinine==1),]# exclude abnormal creatinine data
