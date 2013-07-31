@@ -6,6 +6,12 @@ data = data[, -tmp]
 measures = colnames(data)[19:249]
 tmp = sapply(measures, function(x) tapply(data[,x], INDEX = data$Sample.Bar.Code, mean, na.rm=T))
 
+index.samples = grep("30", data$Sample.Identification, fixed=T)
+tmp = tmp[as.character((unique(data$Sample.Bar.Code[index.samples]))),]
+m = round(apply(tmp, 2, mean, na.rm = T),2)
+sd = round(apply(tmp, 2, sd, na.rm = T),2)
+sample.meansd = paste(m, sd, sep="±")
+
 ###################################################
 # Overall quality of the measurement
 # 1. Overall CV and within plate CV
@@ -14,6 +20,12 @@ tmp = sapply(measures, function(x) tapply(data[,x], INDEX = data$Sample.Bar.Code
 ###################################################
 index.ref = sapply(data$Sample.Identification, function(x) grep("Ref",x,fixed=T) )
 index.ref = sapply(index.ref, function(x) length(x)!=0)
+
+tmp = data[index.ref,measures]
+tmp = sapply(tmp,function(x) {x[which(x==0)]=NA; return(x)})
+m = round(apply(tmp, 2, mean, na.rm = T),2)
+sd = round(apply(tmp, 2, sd, na.rm = T),2)
+ref.meansd = paste(m, sd, sep="±")
 
 ##over all CV and within plate CV 
 rst=NULL
