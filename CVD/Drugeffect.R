@@ -51,6 +51,14 @@ for(i in 1:length(candidates)){
 }
 rownames(rst) = candidates
 
+#S2
+rst = NULL;
+for(i in c(S2_valid_measures,"Arg.Trp")){
+  S2$metabolite = scale(log(S2[,i]))
+  model = lm(scale(log(lh_crp)) ~ ., data = S2[, c("metabolite", clinical)])
+  rst = rbind(rst, summary(model)$coef[2,])
+}
+rownames(rst) = c(S2_valid_measures,"Arg.Trp")
 
 model = lm(lh_crp ~ ., 
 		#subset = which(S4$ltmstati!=1),
