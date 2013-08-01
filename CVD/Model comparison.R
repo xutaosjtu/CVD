@@ -488,3 +488,56 @@ for (i in 1:4){
 			), 
 			col = c("blue","red"), lty = c(2,1))
 }
+
+
+###
+model.female = coxph(Surv(mi_time, inz_mi) ~ #scale(log(Arg))
+                     #+ as.factor(ltnuecht):scale(log(Trp))
+                     + scale(log(lysoPC_a_C18_1)) 
+                     + scale(log(PC_ae_C38_0)) + 
+               scale(ltalteru) 
+              + scale(ltbmi)## model 1
+              + my.diab  ##model 2
+              + scale(ltsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(ll_chola) + scale(ll_hdla) 
+              + scale(lh_crp)  ##model 4
+                    # + strata(ltnuecht)
+              ,subset = which(S4$prev_mi==0 & S4$lcsex ==2 & S4$ltnuecht==1),
+              data = S4)
+
+model.male = coxph(Surv(mi_time, inz_mi) ~ #scale(log(Arg)) 
+                   #+ as.factor(ltnuecht):scale(log(Trp))
+                   + scale(log(lysoPC_a_C18_1)) 
+                   + scale(log(PC_ae_C38_0)) + 
+                      scale(ltalteru) 
+                     + scale(ltbmi)## model 1
+                     + my.diab  ##model 2
+                     + scale(ltsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(ll_chola) + scale(ll_hdla)
+                     + scale(lh_crp)  ##model 4
+                   #+ strata(ltnuecht)
+                     ,subset = which(S4$prev_mi==0 & S4$lcsex ==1 & S4$ltnuecht==1),
+                     data = S4)
+sort(survfit(model.female)$surv)[1]
+sort(survfit(model.male)$surv)[1]
+
+pred = S4$inz_mi
+fit1 = roc(c(model.male$y[,2], model.female$y[,2]), c((1- 0.6832817^predict(model.male,type="risk")), (1-0.9560963^predict(model.female, type="risk"))), ci =T )
+
+pred = S2$inz_mi;
+male= which(S2$prev_mi==0 & S2$lcsex ==1);
+female=which(S2$prev_mi==0 & S2$lcsex ==2)
+pred[male] = 1- 0.6832817^predict(model.male,newdata=S2[male,],type="risk")
+pred[female] = 1-0.9560963^predict(model.female,newdata=S2[female,], type="risk")
+fit2 = roc(S2$inz_mi[c(male,female)], pred[c(male,female)], ci = T)
+
+newdata=S2[female,],
+
+scale(log(Arg))+ as.factor(ltnuecht):scale(log(Arg))
+#+ as.factor(ltnuecht):scale(log(Trp))
++ scale(log(lysoPC_a_C18_1)) + as.factor(ltnuecht):scale(log(lysoPC_a_C18_1))
++ scale(log(PC_ae_C38_0)) + as.factor(ltnuecht):scale(log(PC_ae_C38_0)) + 
+
+  scale(log(Arg))+ as.factor(ltnuecht):scale(log(Arg))
+#+ as.factor(ltnuecht):scale(log(Trp))
++ scale(log(lysoPC_a_C18_1)) + as.factor(ltnuecht):scale(log(lysoPC_a_C18_1))
++ scale(log(PC_ae_C38_0)) + as.factor(ltnuecht):scale(log(PC_ae_C38_0)) + 
+  

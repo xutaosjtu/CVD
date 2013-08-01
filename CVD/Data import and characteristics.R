@@ -23,7 +23,8 @@ S4$inz_mi[which(S4$inz_mi==".")]=NA
 S4$inz_mi = as.numeric(S4$inz_mi)
 #S4_valid_measure = 
 #F4_valid_measure = 
-load("F:/nicotine/F4_valid_measures.RData")
+load("data/F4_valid_measures.RData")
+load("data/S4_valid_measures.RData")
 
 summary(S4[,1:31])
 #missing values
@@ -233,10 +234,10 @@ remove(H); remove(S)
 source("D:/Users/tao.xu/Documents/GitHub/CVD/CVD/Toolkits.R")
 for(i in 1:length(diseases.s4)){
 	
-	tmps4 = as.factor(S4$prev_mi)[subset]
-	tmpf4 = as.factor(S4$inz_mi)[subset]
+	tmps4 = as.factor(S2$prev_mi)[subset]
+	tmpf4 = as.factor(S2$inz_mi)[subset]
 	
-	chars = characteristics(S4[subset, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
+	chars = characteristics(S2[, feature.cont], factor = interaction(tmpf4, tmps4), d = 2, na.rm = T)
 #	chars = apply(
 #			S4[Cohort$zz_nr_s4,feature.cont], 2, 
 #			function(x) {
@@ -250,19 +251,11 @@ for(i in 1:length(diseases.s4)){
 	write.csv(t(chars), file = "stroke S4 prospective_female.csv")
 }
 
-S4$my.alkkon = rep(0, dim(S4)[1])
-S4$my.alkkon[which(S4$ltalkkon >=40 & S4$lcsex==1 )] = 1
-S4$my.alkkon[which(S4$ltalkkon >=20 & S4$lcsex==2 )] = 1
-
-F4$my.alkkon = rep(0, dim(F4)[1])
-F4$my.alkkon[which(F4$utalkkon >=40 & F4$ucsex==1 )] = 1
-F4$my.alkkon[which(F4$utalkkon >=20 & F4$ucsex==2 )] = 1
-
+table(S2$my.cigreg, S2$inz_mi)
 
 
 for(i in 1:3){
 	print(diseases[i])
-
 	tmps4 = as.factor(S4$prev_mi)[subset]
 	tmpf4 = as.factor(S4$inz_mi)[subset]
 	#which(S4$lthyact==2)
