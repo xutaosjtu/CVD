@@ -1,34 +1,67 @@
 S2$Arg.Trp = S2$Arg/S2$Trp
-tmp = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")]
-tmp = na.omit(tmp)
+
+data.S2 = subset(S2, subcoho==1 | inz_mi==1)
+data.S2 = subset(data.S2, prev_mi==0)
+
+clinical.S2 = c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")
+
+data.S2 = na.omit(data.S2[,c(clinical.S2, S2_valid_measures)])
+
+# tmp = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")]
+# tmp = na.omit(tmp)
 
 require(survival)
 rst = NULL;
 ##using Prentice or Lin Ying's weighting method
-for (m in c(S2_valid_measures,"Arg.Trp")){
-  tmp$metabolite = scale(log(tmp[, m]))
-  model = cch(Surv(mi_time, inz_mi) ~ metabolite + #as.factor(ltnuecht) +
-                scale(ctalteru) #+ as.factor(ccsex)
+for (m in c(S2_valid_measures)){
+  data.S2$metabolite = scale(log(data.S2[, m]))
+  model = cch(Surv(mi_time, inz_mi) ~ metabolite
+              + scale(ctalteru) #+ as.factor(ccsex)
               + scale(ctbmi)## model 1
               + as.factor(my.diab)  ##model 2
               + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3+ total2HDL
               + scale(log(cl_crp))  ##model 4
-              ,data = tmp
-              , subcoh = tmp$subcoho
+              ,data = data.S2
+              , subcoh = ~subcoho
               , id =~zz_nr
               #, stratum= ~ as.factor(ccsex)
               , method = "Prentice"
-              , cohort.size = 3408)
+              , cohort.size = 3244)
   rst = rbind(rst, summary(model)$coefficients[1,])
-  #rst1 = rbind(rst , summary(model)$coefficients[10,])
-  #rst2 = rbind(rst2, summary(model)$coefficients[11,])
-  #rst3 = rbind(rst3, summary(model)$coefficients[12,])
-  #table(model$y[,2]) #number of sample used exactly in the estimation.
 }
-rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = c(S2_valid_measures,"Arg_Trp")
+#rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rownames(rst) = c(S2_valid_measures)
 #rst = cbind(rst, annotation[rownames(rst),])
 write.csv(rst, file = "metabolites_MI survival analysis_full model_plus medication_replication S2.csv")
+
+## analysis using survey package
+require(survey)
+S2$Arg.Trp = S2$Arg/S2$Trp
+S2$eventrec = rep(0, nrow(S2))
+S2.cases = subset(S2, inz_mi==1)
+S2.cases$eventrec<-1
+S2.expd <- rbind(subset(S2, subcoho==1), S2.cases)
+S2.expd$stop <- with(S2.expd, ifelse(inz_mi&!eventrec, mi_time-1, mi_time))
+S2.expd$start <- with(S2.expd, ifelse(inz_mi&eventrec, mi_time-1, 0))
+S2.expd$event <- with(S2.expd, ifelse(inz_mi&eventrec, 1, 0))
+S2.expd$pwts[which(S2.expd$event==1)]=1
+#S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==1)]=1545/443
+#S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==2)]=1699/370
+S2.expd$pwts[which(S2.expd$event==0)]=3244/813
+S2.expd= subset(S2.expd, prev_mi==0)
+
+dBarlow <- svydesign(id=~zz_nr+eventrec, starta=~subcoho+inz_mi, 
+                     data=S2.expd, weigts= S2.expd$pwts, probs = 1/S2.expd$pwts)
+
+svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
+         + scale(ctalteru) + as.factor(ccsex)
+         + scale(ctbmi)## model 1
+         + as.factor(my.diab)  ##model 2
+         + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
+         + scale(log(cl_crp)),
+         design=dBarlow
+)
+
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
@@ -39,7 +72,7 @@ tmp$mi_time.start = 0
 tmp$mi_time.start[which(tmp$inz_mi==1)] = tmp$mi_time[which(tmp$inz_mi==1)]-1
 tmp$mi_time.end = tmp$mi_time
 
-#cases in subcohort
+#cases in subcohort as control
 #tmp$atcontrol = tmp$inz_mi
 subcohort.cases = tmp[which(tmp$subcoho==1&tmp$inz_mi==1),]
 #subcohort.cases$atcontrol = 0
@@ -50,49 +83,55 @@ subcohort.cases$mi_time.end = subcohort.cases$mi_time.end-1
 tmp = rbind(tmp, subcohort.cases)
 
 weight=rep(1,nrow(tmp))
-weight[which(tmp$ccsex==1&tmp$subcoho==1 & tmp$inz_mi==0)]= 1679/306
-weight[which(tmp$ccsex==2&tmp$subcoho==1 & tmp$inz_mi==0)]= 1729/289
+weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==1)]= 1545/443
+weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==2)]= 1699/370
+#weight[which(tmp$subcoho==1 & tmp$inz_mi==0)]= 3244/813
+#weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= 0
 tmp$weight = weight
 
 rst = NULL
 for (m in c(S2_valid_measures,"Arg.Trp")){
   tmp$metabolite = scale(log(tmp[, m]))
-  model = coxph(Surv(mi_time.start, mi_time.end, inz_mi) ~ metabolite + 
-                scale(ctalteru) + as.factor(ccsex)
-              + scale(ctbmi)## model 1
-              + as.factor(my.diab)  ##model 2
-              + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
-              + scale(log(cl_crp))  ##model 
-              + cluster(zz_nr)
+  model = coxph(Surv(mi_time.start, mi_time.end, inz_mi) ~ metabolite  
+              + scale(ctalteru) + as.factor(ccsex)
+              #+ scale(ctbmi)## model 1
+              #+ as.factor(my.diab)  ##model 2
+              #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
+              #+ scale(log(cl_crp))  ##model 
+              #+ cluster(as.factor(zz_nr))
                 ,data = tmp
               ,weights = weight
-                ,ties = "breslow"
+                ,method = "breslow"
               )
   rst = rbind(rst, summary(model)$coefficients[1,])
 }
-rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+#rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = c(S2_valid_measures,"Arg_Trp")
-write.csv(rst, file = "metabolites_MI survival analysis_full model_S2 case cohort.csv")
+write.csv(rst, file = "metabolites_MI survival analysis_crude model_S2 case cohort.csv")
 
 require(gplots)
 pdf("quintile plot of replative risk (ynorm)_full model _decile.pdf", width = 12, height = 12)
 par(mfrow =c(2,2));
 yrange = NULL; RRquin = NULL
-for(m in candidates[1:16]){
+rst= NULL
+for(m in c(S2_valid_measures,"Arg.Trp")){
   m.conc=tmp[, m]
-  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.2)), 
-                        include.lowest = T,ordered_result = F)
+  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.2), na.rm=T), include.lowest = T,ordered_result = F)
   model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
                 + scale(ctbmi)## model 1
                 + as.factor(my.diab)  ##model 2
-                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)+ scale(log(cl_crp))
+                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+                + scale(log(cl_crp))
                 ,data = tmp
                 ,weights = weight
-                ,ties = "breslow"
+                ,method = "breslow"
                 )
-  rst = summary(model1)$coefficients[1:9, ]
-  
+  rst = rbind(rst,summary(model)$coefficients[1:4, ])
+}
+rownames(rst) = rep(c(S2_valid_measures,"Arg.Trp"), each=4)
+write.csv(rst, file = "metabolites categorical_MI survival analysis_full model_robust 2_S2 case cohort.csv")
+
   #	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
   #			round(exp(rst[,1] + 1.96*rst[,3]), 3),
   #			sep = ",")
@@ -130,31 +169,84 @@ for(m in candidates[1:16]){
 }
 dev.off()
 
+#test the trend
+rst= NULL;
+for(m in c(S2_valid_measures,"Arg.Trp")){
+  m.conc=tmp[, m]
+  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.25), na.rm=T), include.lowest = T,ordered_result = F)
 
+  metabo.quintile.value = tapply(scale(log(tmp[, m])), INDEX = metabo.quintile, median, na.rm=T)		
+  tmp.quintilevalue = rep(0, length(metabo.quintile))
+  for (q in levels(metabo.quintile)){
+    tmp.quintilevalue[which(metabo.quintile %in% q)]=metabo.quintile.value[q]
+  }
+  metabo.quintile = tmp.quintilevalue
+  model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+                  scale(ctalteru) + as.factor(ccsex)
+                #+ scale(ctbmi)## model 1
+                #+ as.factor(my.diab)  ##model 2
+                #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+                #+ scale(log(cl_crp))
+                +cluster(as.factor(zz_nr))
+                ,data = tmp
+                ,weights = weight
+                ,method = "breslow"
+  )
+  rst = rbind(rst, summary(model)$coefficients[1, ])
+}
+rownames(rst) = c(S2_valid_measures,"Arg.Trp")
+write.csv(rst, "metabolites categorical_test for trend_robust_crude model_S2 case cohort.csv")
 
-## analysis using survey package
-S2$Arg.Trp = S2$Arg/S2$Trp
-S2$eventrec = rep(0, nrow(S2))
-S2.cases = subset(S2, inz_mi==1)
-S2.cases$eventrec<-1
-S2.expd <- rbind(subset(S2, subcoho==1), S2.cases)
-S2.expd$stop <- with(S2.expd, ifelse(inz_mi&!eventrec, mi_time-1, mi_time))
-S2.expd$start <- with(S2.expd, ifelse(inz_mi&eventrec, mi_time-1, 0))
-S2.expd$event <- with(S2.expd, ifelse(inz_mi&eventrec, 1, 0))
-S2.expd$pwts[which(S2.expd$event==1)]=1
-S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==1)]=1679/443
-S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==2)]=1729/370
-S2.expd= subset(S2.expd, prev_mi==0)
+## By a matched case control study
+data = S2[which(S2$prev_mi==0),c("ctalteru", "ccsex", "ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola", "cl_hdla", "cl_ldla", "cl_crp", "inz_mi", "mi_time", S2_valid_measures)]
+data = na.omit(data)
+data$my.cigreg = as.numeric(data$my.cigreg)
+data$my.diab = as.numeric(data$my.diab)
+data$Arg_Trp = data$Arg/data$Trp
 
-dBarlow <- svydesign(id=~zz_nr+eventrec, starta=~subcoho+inz_mi, 
-                     data=S2.expd, weigts= S2.expd$pwts)
+require(Matching)
+tr = data$inz_mi
+x = data[,c("ctalteru", "ccsex", "ctbmi", "cl_hdla","cl_chola")]
+rst.match = Match(Tr = tr, X =x, exact = F, M = 4, ties = T, replace=F, distance.tolerance = 0.5)
 
-svycoxph(Surv(start, stop, event) ~ scale(log(PC_ae_C40_1))
-         + scale(ctalteru) + as.factor(ccsex)
-         + scale(ctbmi)## model 1
-         + as.factor(my.diab)  ##model 2
-         + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
-         + scale(log(cl_crp)),
-         design=dBarlow
-         )
+#rst.balance = MatchBalance(inz_mi ~ scale(ltalteru) + as.factor(lcsex) + scale(ltbmi)## model 1
+#+ my.diab  ##model 2
+#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_ldla) ##model 3+ total2HDL
+#+ scale(lh_crp)  ##model 4
+#, data, match = rst.match, nboots = 10)
 
+data = data[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+#data$ID = rep(1:table(data$inz_mi)[1], 2)
+data$ID = c(rst.match$index.treated,unique(rst.match$index.treated))
+#data$weight = c(rst.match$weights, rep(1, length(unique(rst.match$index.treated))))
+require(survival)
+rst = NULL
+for(m in S2_valid_measures){
+  data$m = scale(log(data[,m]))
+  model = clogit(inz_mi ~ m 
+                 #+ scale(ctbmi)## model 1
+                 + scale(ctsysmm) #+ scale(cl_chola) + scale(cl_hdla) ##model 3
+                 + as.factor(my.diab)+ as.factor(my.cigreg)+as.factor(my.alkkon)
+                 + scale(cl_crp)  ##model 4
+                 + strata(ID)
+                 #, weights = data$weight
+                 ,data)
+  rst = rbind(rst, summary(model)$coef[1,])
+}
+rownames(rst) = S2_valid_measures
+
+### association with CRP
+rst = NULL
+for(i in S2_valid_measures){
+  S2$metabolite = scale(log(S2[,i]))
+  model = lm(scale(log(cl_crp)) ~ metabolite 
+             #+ scale(ctalteru) + as.factor(ccsex)
+             #+ scale(ctbmi)## model 1
+             #+ as.factor(my.diab)  ##model 2
+             #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+             , data = S2[which((S2$prev_mi==0&S2$subcoho==1)|S2$inz_mi==1),]
+             )
+  rst = rbind(rst, summary(model)$coef[2,])
+}
+rownames(rst) = S2_valid_measures
+write.csv(rst, "association with CRP_unadjsted_S2_case cohort.csv")
