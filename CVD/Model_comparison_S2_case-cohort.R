@@ -7,12 +7,31 @@ S2$Arg.Trp = S2$Arg/S2$Trp
 
 data.S2 = subset(S2, subcoho==1 | inz_mi==1)
 data.S2 = subset(data.S2, prev_mi==0)
+data.S2 = data.S2[which(data.S2$prev_mi!=1),]
+data.S2$mi_time.start = 0
+data.S2$mi_time.start[which(data.S2$inz_mi==1)] = data.S2$mi_time[which(data.S2$inz_mi==1)]-1
+data.S2$mi_time.end = data.S2$mi_time
+
+#cases in subcohort as control
+subcohort.cases = data.S2[which(data.S2$subcoho==1&data.S2$inz_mi==1),]
+#subcohort.cases$atcontrol = 0
+subcohort.cases$inz_mi=0
+subcohort.cases$mi_time.start = 0
+subcohort.cases$mi_time.end = subcohort.cases$mi_time.end-1
+
+data.S2 = rbind(data.S2, subcohort.cases)
+
+weight=rep(1,nrow(data.S2))
+weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==1)]= 1545/443
+weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==2)]= 1699/370
+data.S2$weight = weight
+
 #data.S2 = na.omit(data.S2[,c(clinical.S2, S2_valid_measures)])
 
 clinical.S2 = c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")
 
 #################  Framingham score	##########################
-framingham<-function(x){
+framingham<-function(x, method="linear"){
   #print(x["lcsex"])
   if(x["ccsex"] == 1){ beta = c(3.06117, 1.12370, -0.93263, 1.99881, 1.93303, 0.65451, 0.57367, 23.9802); S0 = 0.88936}
   else {beta = c(2.32888, 1.20904, -0.70833, 2.76157, 2.82263, 0.52873, 0.69154, 26.1931); S0 = 0.95012}
@@ -25,32 +44,36 @@ framingham<-function(x){
   else  X[4] = beta[5]*log(x$ctsysmm) #systolic blood pressure if treated
   X[5] = beta[6]* as.numeric(x$ctcigreg==1|x$ctcigreg==2)#smoking
   X[6] = beta[7] * (as.numeric(x$my.diab))
-  #risk = 1-S0^exp(sum(X) - beta[8]);
-  risk = sum(X) - beta[8]
-  return(risk)
+  if(method=="score") return(1-S0^exp(sum(X) - beta[8]))
+  else if(method == "linear") return(sum(X) - beta[8])
 }
 
 for(i in 1:nrow(data.S2)){
-  data.S2$framingham.linear[i] = framingham(data.S2[i,]) 
+  data.S2$framingham.score[i] = framingham(data.S2[i,], method="score") 
 }
 
 ###	men and women separated, using the framingham score
 data = data.frame(
-  time = data.S2$mi_time, event = data.S2$inz_mi,  # time and events
+  start = data.S2$mi_time.start, end = data.S2$mi_time.end,
+  event = data.S2$inz_mi,  # time and events
   framingham.linear = data.S2$framingham.linear,
-  scale(log(as.matrix(data.S2[, S2_valid_measures])))
+  scale(log(as.matrix(data.S2[, S2_valid_measures]))),
+  weight = data.S2$weight
 )
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 # loglik = 0
-# for (i in 1:2){
-#   model = coxph(Surv(time, event) ~ .,
-#                 subset = which(data.S2$ccsex ==i),
-#                 data[ ,c( "time", "event", metabo.selected, "framingham.linear")])
-#   print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
-#   prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-#   loglik = model$loglik[2] + loglik
-# }
+for (i in 1:2){
+  model = coxph(Surv(time, event) ~ .,
+                #subset = which(data.S2$ccsex ==i),
+                data[ ,c( "time", "event", "framingham.linear")])
+  print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
+  prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+  loglik = model$loglik[2] + loglik
+}
+
+
+
 # 
 # ##likelihood ratio test
 # logliks = list()
@@ -58,12 +81,12 @@ na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 # logliks[[2]] = loglik
 # pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1) 
 
-theta.fit <- function(x, y, ...) 
+theta.fit <- function(x, y, weight,...) 
 {
   #d = data.frame(y, x)
   #print(dim(d))
   #print(colnames(d))
-  coxph(y ~  ., data=x)
+  coxph(y ~  ., weights = weight, data=x)
 }
 theta.predict <- function(fit, x)
 {
@@ -71,21 +94,63 @@ theta.predict <- function(fit, x)
   #dim(x)
   #print(colnames(x))
   value=predict(fit,newdata= as.data.frame(x) , type="risk")
-  S0=sort(survfit(fit)$surv)[1]
+  S0=min(survfit(fit)$surv)
   value = 1- S0^value
   return(value)
+}
+crossval.cox = function (x, y, theta.fit, theta.predict, weight, ..., ngroup = n) 
+{
+  call <- match.call()
+  #x <- as.matrix(x)
+  n = dim(x)[1]
+  ngroup <- trunc(ngroup)
+  if (ngroup < 2) {
+    stop("ngroup should be greater than or equal to 2")
+  }
+  if (ngroup > n) {
+    stop("ngroup should be less than or equal to the number of observations")
+  }
+  if (ngroup == n) {
+    groups <- 1:n
+    leave.out <- 1
+  }
+  if (ngroup < n) {
+    leave.out <- trunc(n/ngroup)
+    o <- sample(1:n)
+    groups <- vector("list", ngroup)
+    for (j in 1:(ngroup - 1)) {
+      jj <- (1 + (j - 1) * leave.out)
+      groups[[j]] <- (o[jj:(jj + leave.out - 1)])
+    }
+    groups[[ngroup]] <- o[(1 + (ngroup - 1) * leave.out):n]
+  }
+  u <- NULL
+  cv.fit <- rep(NA, n)
+  for (j in 1:ngroup) {
+    u <- theta.fit(x[-groups[[j]], ], y[-groups[[j]],], weight[-groups[[j]]])
+    cv.fit[groups[[j]]] <- theta.predict(u, x[groups[[j]],])
+  }
+  if (leave.out == 1) 
+    groups <- NULL
+  return(list(cv.fit = cv.fit, ngroup = ngroup, leave.out = leave.out, 
+              groups = groups, call = call))
 }
 
 
 prediction = rep(NA, nrow(data))
 names(prediction) = rownames(data)
+## combine men and women
+subset = setdiff(which(!is.na(data.S2$ccsex)), na.index)# & S4$ltmstati==2, "framingham.linear"
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected,"framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
+prediction[subset] = pred.cv$cv.fit 
+
 ##men
 subset = setdiff(which(data.S2$ccsex ==1), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c("framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
 prediction[subset] = pred.cv$cv.fit 
 ##women
-subset = setdiff(which(data.S2$ccsex ==2), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+subset = setdiff(which(data.S2$ccsex ==2), na.index)# & S4$ltmstati==2, "framingham.linear"
+pred.cv = crossval.cox(x = data[subset, c("framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
 prediction[subset] = pred.cv$cv.fit 
 
 fits = list()
@@ -162,7 +227,7 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(metabo.selected, ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
   prediction[subset] = pred$cv.fit
   fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
