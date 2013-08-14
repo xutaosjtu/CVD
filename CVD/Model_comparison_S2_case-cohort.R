@@ -49,7 +49,7 @@ framingham<-function(x, method="linear"){
 }
 
 for(i in 1:nrow(data.S2)){
-  data.S2$framingham.score[i] = framingham(data.S2[i,], method="score") 
+  data.S2$framingham.linear[i] = framingham(data.S2[i,], method="linear") 
 }
 
 ###	men and women separated, using the framingham score
@@ -63,14 +63,16 @@ data = data.frame(
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 # loglik = 0
-for (i in 1:2){
-  model = coxph(Surv(time, event) ~ .,
+model = coxph(Surv(start, end, event) ~ .,
+              weights = data$weight,
                 #subset = which(data.S2$ccsex ==i),
-                data[ ,c( "time", "event", "framingham.linear")])
-  print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
-  prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
-  loglik = model$loglik[2] + loglik
-}
+                data[ ,c( "start", "end", "event", metabo.selected[1:3],"framingham.linear")])
+prediction = predict(model, type="risk")
+fits[[2]] = roc(model$y[,3],prediction)
+#  print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
+#  prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
+#  loglik = model$loglik[2] + loglik
+
 
 
 
@@ -141,7 +143,7 @@ prediction = rep(NA, nrow(data))
 names(prediction) = rownames(data)
 ## combine men and women
 subset = setdiff(which(!is.na(data.S2$ccsex)), na.index)# & S4$ltmstati==2, "framingham.linear"
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected,"framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected[1:3],"framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
 prediction[subset] = pred.cv$cv.fit 
 
 ##men
@@ -155,8 +157,8 @@ prediction[subset] = pred.cv$cv.fit
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
-#fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
-fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.score[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.linear[which(!is.na(prediction))], ci = T)
+#fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.score[which(!is.na(prediction))], ci = T)
 
 
 #calculate delta AUC
@@ -185,17 +187,18 @@ legend(0.8, 0.2,
 ######  combined men and women, using reference model 4 #######
 ###############################################################
 data = data.frame(
-  time = data.S2$mi_time, event = data.S2$inz_mi,  # time and events
+  start = data.S2$mi_time.start, end = data.S2$mi_time.end, event = data.S2$inz_mi,  # time and events
   scale(data.S2$ctalteru),  as.factor(data.S2$ccsex), ##model 1
   scale(data.S2$ctbmi),as.factor(data.S2$my.diab), ##model 2
   scale(data.S2$ctsysmm),  as.factor(data.S2$my.cigreg), as.factor(data.S2$my.alkkon), scale(data.S2$cl_hdla), scale(data.S2$cl_chola), ##model 3
   scale(data.S2$cl_crp), ##model 4,
-  scale(log(as.matrix(data.S2[, S2_valid_measures])))
+  scale(log(as.matrix(data.S2[, S2_valid_measures]))),
+  weight=data.S2$weight
 )
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 clinical = c("ctalteru",  "ccsex", "ctbmi", "my.diab", "ctsysmm", "my.cigreg", "my.alkkon", "cl_hdla", "cl_chola", "cl_crp")
-colnames(data)[3:12] = clinical
+colnames(data)[4:13] = clinical
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 ref = list()
@@ -227,7 +230,7 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(metabo.selected, ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(metabo.selected, ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
   prediction[subset] = pred$cv.fit
   fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
@@ -250,7 +253,7 @@ for(i in 1:4){
 require(PredictABEL)
 for(i in 1:4){
   print(paste("Evaluation of model", i))
-  reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.ref[[i]]$predictor, fits.full[[i]]$predictor, cutoff = c(0, 0.1, 0.2, 1))
+  reclassification(data[which(!is.na(prediction)), ], cOutcome =3, fits.ref[[i]]$predictor, fits.full[[i]]$predictor, cutoff = c(0, 0.1, 0.2, 1))
 }
 
 ##plots

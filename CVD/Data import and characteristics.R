@@ -113,7 +113,6 @@ F4$waist2hip = F4$uttumf / F4$uthumf
 S2$waist2hip = S2$cttumf / S2$cthumf
 
 
-
 #S4 features and diseases
 feature.cont = scan(what = character())
 ltalteru

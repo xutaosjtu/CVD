@@ -227,8 +227,8 @@ for(m in S2_valid_measures){
                  #+ scale(ctbmi)## model 1
                  + scale(ctsysmm) #+ scale(cl_chola) + scale(cl_hdla) ##model 3
                  + as.factor(my.diab)+ as.factor(my.cigreg)+as.factor(my.alkkon)
-                 + scale(cl_crp)  ##model 4
-                 + strata(ID)
+                 #+ scale(cl_crp)  ##model 4
+                 #+ strata(ID)
                  #, weights = data$weight
                  ,data)
   rst = rbind(rst, summary(model)$coef[1,])
