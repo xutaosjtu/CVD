@@ -86,7 +86,8 @@ weight=rep(1,nrow(tmp))
 weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==1)]= 1545/443
 weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==2)]= 1699/370
 #weight[which(tmp$subcoho==1 & tmp$inz_mi==0)]= 3244/813
-#weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= 0
+weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
+weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 92/59
 tmp$weight = weight
 
 rst = NULL
@@ -94,10 +95,10 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
   tmp$metabolite = scale(log(tmp[, m]))
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi) ~ metabolite  
               + scale(ctalteru) + as.factor(ccsex)
-              #+ scale(ctbmi)## model 1
-              #+ as.factor(my.diab)  ##model 2
-              #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
-              #+ scale(log(cl_crp))  ##model 
+              + scale(ctbmi)## model 1
+              + as.factor(my.diab)  ##model 2
+              + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
+              + scale(log(cl_crp))  ##model 
               #+ cluster(as.factor(zz_nr))
                 ,data = tmp
               ,weights = weight
@@ -107,7 +108,7 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
 }
 #rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = c(S2_valid_measures,"Arg_Trp")
-write.csv(rst, file = "metabolites_MI survival analysis_crude model_S2 case cohort.csv")
+write.csv(rst, file = "metabolites_MI survival analysis_case weighted_full model_S2 case cohort.csv")
 
 require(gplots)
 pdf("quintile plot of replative risk (ynorm)_full model _decile.pdf", width = 12, height = 12)
@@ -208,20 +209,22 @@ require(Matching)
 tr = data$inz_mi
 x = data[,c("ctalteru", "ccsex", "ctbmi", "cl_hdla","cl_chola")]# +ctbmi+cl_hdla+cl_chola
 glm1 <- glm(inz_mi~ctalteru+ccsex, family=binomial, data)
-rst.match = Match(Tr = tr, X =glm1$fitted.values, M = 1, ties = T, replace=F, distance.tolerance = 0.5)
+rst.match = Match(Tr = tr, X =glm1$fitted.values, M =1, ties = T, replace=F, distance.tolerance = 0.5)
 
 data = data[c(rst.match$index.control, unique(rst.match$index.treated)), ]
 data$ID = c(rst.match$index.treated,unique(rst.match$index.treated))
+
+t.test(log(data$Arg[which(data$inz_mi==1)]), log(data$Arg[which(data$inz_mi==0)]), paired=T)
 
 require(survival)
 rst = NULL
 for(m in S2_valid_measures){
   data$m = scale(log(data[,m]))
   model = clogit(inz_mi ~ m #+ ctalteru
-                 + scale(ctbmi)## model 1
-                 + scale(ctsysmm) + scale(cl_chola) + scale(cl_hdla) ##model 3
-                 + as.factor(my.diab)+ as.factor(my.cigreg)+as.factor(my.alkkon)
-                 + scale(cl_crp)  ##model 4
+                 #+ scale(ctbmi)## model 1
+                 #+ scale(ctsysmm) #+ scale(cl_chola) + scale(cl_hdla) ##model 3
+                 #+ as.factor(my.diab)+ as.factor(my.cigreg)+as.factor(my.alkkon)
+                 #+ scale(cl_crp)  ##model 4
                  + strata(ID)
                  #, weights = data$weight
                  ,data)

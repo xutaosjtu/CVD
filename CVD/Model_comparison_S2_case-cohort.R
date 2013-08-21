@@ -1,4 +1,4 @@
-require(surivival)
+require(survival)
 require(PredictABEL)
 require(pROC)
 require(boot)
@@ -24,6 +24,8 @@ data.S2 = rbind(data.S2, subcohort.cases)
 weight=rep(1,nrow(data.S2))
 weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==1)]= 1545/443
 weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==2)]= 1699/370
+weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
+weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 92/59
 data.S2$weight = weight
 
 #data.S2 = na.omit(data.S2[,c(clinical.S2, S2_valid_measures)])
@@ -49,7 +51,7 @@ framingham<-function(x, method="linear"){
 }
 
 for(i in 1:nrow(data.S2)){
-  data.S2$framingham.linear[i] = framingham(data.S2[i,], method="linear") 
+  data.S2$framingham.score[i] = framingham(data.S2[i,], method="score") 
 }
 
 ###	men and women separated, using the framingham score
@@ -66,7 +68,7 @@ na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 model = coxph(Surv(start, end, event) ~ .,
               weights = data$weight,
                 #subset = which(data.S2$ccsex ==i),
-                data[ ,c( "start", "end", "event", metabo.selected[1:3],"framingham.linear")])
+                data[ ,c( "start", "end", "event", metabo.selected,"framingham.linear")])
 prediction = predict(model, type="risk")
 fits[[2]] = roc(model$y[,3],prediction)
 #  print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
@@ -88,7 +90,7 @@ theta.fit <- function(x, y, weight,...)
   #d = data.frame(y, x)
   #print(dim(d))
   #print(colnames(d))
-  coxph(y ~  ., weights = weight, data=x)
+  coxph(y ~  ., weights = weight, data = as.data.frame(x))
 }
 theta.predict <- function(fit, x)
 {
@@ -104,7 +106,8 @@ crossval.cox = function (x, y, theta.fit, theta.predict, weight, ..., ngroup = n
 {
   call <- match.call()
   #x <- as.matrix(x)
-  n = dim(x)[1]
+  if(mode(x)=="numeric")  n = length(x)
+  else n = nrow(x)
   ngroup <- trunc(ngroup)
   if (ngroup < 2) {
     stop("ngroup should be greater than or equal to 2")
@@ -129,8 +132,9 @@ crossval.cox = function (x, y, theta.fit, theta.predict, weight, ..., ngroup = n
   u <- NULL
   cv.fit <- rep(NA, n)
   for (j in 1:ngroup) {
-    u <- theta.fit(x[-groups[[j]], ], y[-groups[[j]],], weight[-groups[[j]]])
-    cv.fit[groups[[j]]] <- theta.predict(u, x[groups[[j]],])
+    s = rep(T, n); s[groups[[j]]]=F
+    u <- theta.fit(subset(x, subset = s), y[-groups[[j]],], weight[-groups[[j]]])
+    cv.fit[groups[[j]]] <- theta.predict(u, subset(x, subset = !s))
   }
   if (leave.out == 1) 
     groups <- NULL
@@ -143,7 +147,7 @@ prediction = rep(NA, nrow(data))
 names(prediction) = rownames(data)
 ## combine men and women
 subset = setdiff(which(!is.na(data.S2$ccsex)), na.index)# & S4$ltmstati==2, "framingham.linear"
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected[1:3],"framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected,"framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
 prediction[subset] = pred.cv$cv.fit 
 
 ##men
@@ -157,7 +161,7 @@ prediction[subset] = pred.cv$cv.fit
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
-fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.linear[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.score[which(!is.na(prediction))], ci = T)
 #fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.score[which(!is.na(prediction))], ci = T)
 
 
@@ -171,7 +175,7 @@ deltaAUC <- function(fits.test){
 deltaAUC(fits.test)
 
 #calculate NRI and IDI
-reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.10, 0.2, 1))
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 3, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.10, 0.2, 1))
 
 ##plot
 plot(fits[[2]], main = "Framingham Score", lty=2,legacy.axes=T)
@@ -230,7 +234,7 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(metabo.selected, ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
   prediction[subset] = pred$cv.fit
   fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }

@@ -205,7 +205,7 @@ selectCox <- function(formula, data, rule = "aic") {
 
 model.selecCOx = selectCox(
 		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(log(S2[,c(metabo.asso)]), mi_time = S2$mi_time, inz_mi = S2$inz_mi)[subset, ],
+		data = data.frame(tmp[,c(metabo.asso)], mi_time = tmp$time, inz_mi = tmp$event)[subset, ],
 		rule = "aic")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)

@@ -51,7 +51,7 @@ loglik = 0
 for (i in 1:2){
 	model = coxph(Surv(time, event) ~ .,
 			subset = which(S4$prev_mi == 0&S4$lcsex ==i),#$ltmstati==2
-			data[ ,c( "time", "event", metabo.selected3[3], "framingham.linear")])
+			data[ ,c( "time", "event", metabo.selected3, "framingham.linear")])
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
 	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 	loglik = model$loglik[2] + loglik
@@ -65,12 +65,12 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 
 ##men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected3[3], "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] = 1-0.6506087^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] = 1-0.6742013^ pred.cv$cv.fit 
 ##women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected3[3], "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] =1- 0.9769533 ^ pred.cv$cv.fit 
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+prediction[subset] =1- 0.9846102 ^ pred.cv$cv.fit 
 
 fits = list()
 fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
@@ -88,7 +88,7 @@ deltaAUC <- function(fits.test){
 deltaAUC(fits.test)
 
 #calculate NRI and IDI
-fits.recl = reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
+fits.recl = reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
 
 
 ###	men and women separated, using the framingham model
@@ -155,7 +155,7 @@ deltaAUC <- function(fits.test){
 deltaAUC(fits.test)
 
 #calculate NRI and IDI
-reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.2, 1))
 
 ##########################	reference model used to selecte metabolites	########################
 ###	men and women separated, using reference model 4
@@ -240,19 +240,19 @@ names(prediction) = rownames(data)
 loglik = 0
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
-		scale(S4$ltalteru), scale(S4$ltbmi), as.factor(S4$lcsex), ##model 1
+		scale(S4$ltalteru),  as.factor(S4$lcsex), scale(S4$ltbmi),##model 1
 		S4$my.diab, ##model 2
 		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		scale(S4$lh_crp), ##model 4,
 		'ltmstati'=as.factor(S4$ltmstati), ##adding statin as a covariate
 		scale(log(S4[, S4_valid_measures]))#, scale(S4[,metabo.ratio.asso])
 )
-clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
+clinical = c("age", "sex", "ltbmi", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
 colnames(data)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 ref = list()
-ref[[1]] = clinical[1:3]
+ref[[1]] = clinical[1:2]
 ref[[2]] = clinical[1:4]
 ref[[3]] = clinical[1:9]
 ref[[4]] = clinical
@@ -277,7 +277,7 @@ for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(ref[[i]], metabo.selected3, "ltmstati")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
 	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
@@ -300,7 +300,7 @@ for(i in 1:4){
 require(PredictABEL)
 for(i in 1:4){
 	print(paste("Evaluation of model", i))
-	reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[i]]$predictor, fits.dif_full[[i]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
+	reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[i]]$predictor, fits.dif_full[[i]]$predictor, cutoff = c(0, 0.1, 0.2, 1))
 }
 
 ## adding sigle metabolite(ratio) into the model
