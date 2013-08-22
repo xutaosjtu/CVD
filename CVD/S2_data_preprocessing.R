@@ -1,6 +1,7 @@
 setwd("../../../Dropbox/Cardiovascular disease/")
 data<-read.csv("data/K9512_Wang_Sattler_S2.csv")
 
+
 tmp = grep("X", colnames(data), fixed=T)
 data = data[, -tmp]
 measures = colnames(data)[19:249]
@@ -112,3 +113,17 @@ index=apply(data.merged[,measures],2, function(x) which(abs(x)>mean(x,na.rm=T)+5
 for(i in measures){
   data.merged[index[[i]],i]=NA
 }
+
+
+### Select the subset of incident cases in 2002
+data.S2 = subset(S2, subcoho==1 | inz_mi==1)
+data.S2 = subset(data.S2, prev_mi==0)
+data.S2$inz_mi[which(data.S2$mi_time>365*12 & data.S2$subcoho==1)] = 0
+data.S2$mi_time[which(data.S2$mi_time>365*12 & data.S2$subcoho==1)] = 365*12
+data.S2 = data.S2[-which(data.S2$mi_time>365*12 & data.S2$subcoho==0),]
+
+data.addition = read.sas7bdat("data/pv_80_13_daten/2002/pv_80_13_add.sas7bdat")
+dim(data.addition)
+dim(S2)
+colnames(data.addition)
+S2 = merge(S2, data.addition)

@@ -52,7 +52,7 @@ model.penal = penalized(
 		standardize = T, ##centralize the covariates 
 		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
 		#positive = T, ## positive restriction to all regression coefficients
-		lambda1 = 2, lambda2= 0 #penalization parameter 
+		lambda1 = 1, lambda2= 0 #penalization parameter 
 )
 plotpath(model.penal, log = "x")
 #plot(coefficients(model.penal,"all"),main = "lasso", col="red",xlab = "probes",ylab = "coefficients",type="l")##plot the coefficients
@@ -205,8 +205,8 @@ selectCox <- function(formula, data, rule = "aic") {
 
 model.selecCOx = selectCox(
 		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(tmp[,c(metabo.asso)], mi_time = tmp$time, inz_mi = tmp$event)[subset, ],
-		rule = "aic")
+		data = data.frame(tmp[,c(metabo.asso2,clinical)], mi_time = tmp$time, inz_mi = tmp$event)[subset, ],
+		rule = "p")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
 

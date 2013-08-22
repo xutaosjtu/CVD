@@ -196,13 +196,13 @@ logliks[[2]] = loglik
 ###with cross validation
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
-		S4$ltalteru, S4$ltbmi, as.factor(S4$lcsex), ##model 1
+		S4$ltalteru, as.factor(S4$lcsex), S4$ltbmi, ##model 1
 		S4$my.diab, ##model 2
 		S4$ltsysmm, S4$ll_hdla, S4$ll_chola, S4$my.cigreg, S4$my.alkkon,##model 3
 		S4$lh_crp, ##model 4
 		log(as.matrix(S4[, metabo.asso]))
 )
-clinical = c("age", "ltbmi", "sex", "diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
+clinical = c("age",  "sex", "ltbmi","diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
 colnames(data)[3:12] = clinical#, "total2HDL"
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
@@ -277,7 +277,7 @@ for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	pred = crossval.cox(x = data[subset, c(metabo.selected3,ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
 	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }

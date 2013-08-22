@@ -44,9 +44,9 @@ rownames(rst) = candidates
 write.csv(rst, file = "Statine effect on metabolites and ratios.csv")
 
 #############	association with c-reactive protein	#############
-rst = NULL; candidates = c(metabo.asso, metabo.ratio.asso)
+rst = NULL; candidates = c(metabo.asso)
 for(i in 1:length(candidates)){
-	model = lm(lh_crp ~ ., data = data[, c(candidates[i], clinical)])
+	model = lm(lh_crp ~ ., data = data[, c(candidates[i], "lh_crp")])
 	rst = rbind(rst, summary(model)$coef[2,])
 }
 rownames(rst) = candidates

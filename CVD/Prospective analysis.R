@@ -105,65 +105,6 @@ for(i in metabo.selected){
 }
 dev.off()
 
-###########################	Stroke	########################################
-require(survival)
-rst = NULL;
-for (m in S4_valid_measures){
-	metabolite = S4[, m]
-	model = coxph(Surv(apo_time, inz_apo) ~  log(metabolite) +
-					ltalteru + as.factor(lcsex) + ltbmi## model 1
-			+(lp_diab_who06==4|lp_diab_who06==5)  ##model 2
-			+log(ll_choln)+log(ll_hdln)+log(ltsysmm)+ as.factor(ltcigreg) + ltalkkon ##model 3
-	 		#+ log(lh_crp) + total2HDL ##model 4
-			#+ltdiamm ## model 5
-			,subset = which(S4$prev_apo == 0&!(S4$apo_typ %in% c(5,1,2,9))),#
-			S4)
-	rst = rbind(rst, summary(model)$coefficients[1,])
-}
-rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = S4_valid_measures
-write.csv(rst, file = "Stroke survival analysis_model3.csv")
-
-table(S4$inz_apo==1, S4$apo_typ)
-S4$my.apo_typ = S4$apo_typ
-S4$my.apo_typ[which(S4$apo_typ == 0)] = 0
-S4$my.apo_typ[which(S4$apo_typ == 2)] = 1
-S4$my.apo_typ[which(S4$apo_typ == 3)] = 2
-S4$my.apo_typ[which(S4$apo_typ == 4)] = 2
-S4$my.apo_typ[which(S4$apo_typ == 5)] = 3
-S4$my.apo_typ[which(S4$apo_typ == 9)] = 4
-
-require(caret)
-require(pls)
-require(gplots)
-index = which((S4$my.apo_typ == 1|S4$my.apo_typ == 2)&S4$prev_apo==0)#
-S4pls<-plsr(S4$my.apo_typ[index] ~ . , data=log2(S4[index, c(S4_valid_measures)]),  validation = "CV")
-S4pls<-plsda(x=log2(S4[index, c(S4_valid_measures)]), y = as.factor(S4$my.apo_typ[index]))
-#S4pls<-plsda(x=data.normalized, COPD.data$COPD, ncomp = 10)
-
-color = greenred(24)[c(c(4:1)*2,c(18,20, 22, 24)) ]
-plot(S4pls$scores[,c(1,2)],col = color[c(1,8)][S4$my.apo_typ[index]], pch=c(17, 19)[S4$my.apo_typ[index]])
-legend(1, -3, 
-		legend = c("Ischemic","Hemorrhagic"), 
-		col = c(1:8), pch = c(17,19)
-)
-
-S4pca = prcomp(log(S4[index, S4_valid_measures]) )
-S4pca = pcr(S4$my.apo_typ[index] ~ ., data = log2(S4[index, c(S4_valid_measures)]))
-plot(S4pca$scores,col = color[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]], pch=c(17, 19)[S4$my.apo_typ[which(S4$my.apo_typ == 1|S4$my.apo_typ == 2)]])
-
-difference = scan(what = character())
-PC_aa_C28_1
-PC_ae_C38_1
-SM__OH__C22_1
-SM_C16_0
-SM_C24_0
-C0
-C10_2
-Pro
-Taurine
-PC_ae_C40_4
-
 
 ###################	Myocardial infarction ##############################
 S4$my.cigreg = S4$ltcigreg
@@ -185,14 +126,14 @@ rst = NULL; rst1 = NULL
 rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
 	S4$metabolite = scale(log(S4[, m]))
-	model = coxph(Surv(mi_time, inz_mi) ~ metabolite + as.factor(ltnuecht)*metabolite 
-					+ scale(ltalteru) + as.factor(lcsex)
-					+ scale(ltbmi)## model 1
-					+ my.diab  ##model 2
-					+ scale(ltsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				+ scale(lh_crp)  ##model 4
+	model = coxph(Surv(mi_time, inz_mi) ~ metabolite 
+					#+ scale(ltalteru) + as.factor(lcsex)
+					#+ scale(ltbmi)## model 1
+					#+ as.factor(my.diab)  ##model 2
+					#+ scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+	 				#+ scale(lh_crp)  ##model 4
 					#+ as.factor(ltmstati)& S4$ltmstati !=1
-          + as.factor(ltantihy)
+          #+ as.factor(ltantihy)
 					,subset = which(S4$prev_mi==0),
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
@@ -205,7 +146,7 @@ table(model$y[,2])
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4_valid_measures
 #rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolites_MI survival analysis_S4_full model_with nonfasting.csv")
+write.csv(rst, file = "metabolites_MI survival analysis_S4_unadj.csv")
 rst2 = data.frame(rst2, FDR = p.adjust(rst2[,5], method = "BH"), bonferroni = p.adjust(rst2[,5], method = "bonferroni"))
 rownames(rst2) = S4_valid_measures
 write.csv(rst2, file = "metabolites fasting interaction_MI survival analysis_S4_full model_with nonfasting.csv")
@@ -355,7 +296,9 @@ metabo.asso = scan(what = character())
 Arg
 Trp
 lysoPC_a_C16_0
+lysoPC_a_C16_1
 lysoPC_a_C17_0
+lysoPC_a_C18_0
 lysoPC_a_C18_1
 lysoPC_a_C18_2
 PC_aa_C28_1
@@ -364,10 +307,12 @@ PC_aa_C34_2
 PC_aa_C34_3
 PC_aa_C36_2
 PC_aa_C36_3
+PC_ae_C36_1
 PC_ae_C36_2
 PC_ae_C38_0
-PC_ae_C38_2
 PC_ae_C40_1
+SM_C24_1
+
 
 
 

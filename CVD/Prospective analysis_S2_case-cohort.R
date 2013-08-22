@@ -65,39 +65,39 @@ svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-tmp = S2[which(S2$subcoho==1|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi","ctantihy")]
+tmp = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy")]
 #tmp = na.omit(tmp)
-tmp = tmp[which(tmp$prev_mi!=1),]
+tmp = tmp[which(tmp$prev_mi02!=1),]
 tmp$mi_time.start = 0
-tmp$mi_time.start[which(tmp$inz_mi==1)] = tmp$mi_time[which(tmp$inz_mi==1)]-1
-tmp$mi_time.end = tmp$mi_time
+tmp$mi_time.start[which(tmp$inz_mi02==1)] = tmp$mi_time02[which(tmp$inz_mi02==1)]-1
+tmp$mi_time.end = tmp$mi_time02
 
 #cases in subcohort as control
 #tmp$atcontrol = tmp$inz_mi
-subcohort.cases = tmp[which(tmp$subcoho==1&tmp$inz_mi==1),]
+subcohort.cases = tmp[which(tmp$subcoho==1&tmp$inz_mi02==1),]
 #subcohort.cases$atcontrol = 0
-subcohort.cases$inz_mi=0
+subcohort.cases$inz_mi02=0
 subcohort.cases$mi_time.start = 0
 subcohort.cases$mi_time.end = subcohort.cases$mi_time.end-1
 
 tmp = rbind(tmp, subcohort.cases)
 
 weight=rep(1,nrow(tmp))
-weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==1)]= 1545/443
-weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==2)]= 1699/370
+weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==1)]= 1545/306
+weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==2)]= 1699/289
 #weight[which(tmp$subcoho==1 & tmp$inz_mi==0)]= 3244/813
-weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
-weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 92/59
+#weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
+#weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 47/31
 tmp$weight = weight
 
 rst = NULL
 for (m in c(S2_valid_measures,"Arg.Trp")){
   tmp$metabolite = scale(log(tmp[, m]))
-  model = coxph(Surv(mi_time.start, mi_time.end, inz_mi) ~ metabolite  
+  model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
               + scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi)## model 1
               + as.factor(my.diab)  ##model 2
-              + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
+              + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
               + scale(log(cl_crp))  ##model 
               #+ cluster(as.factor(zz_nr))
                 ,data = tmp
@@ -108,7 +108,7 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
 }
 #rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = c(S2_valid_measures,"Arg_Trp")
-write.csv(rst, file = "metabolites_MI survival analysis_case weighted_full model_S2 case cohort.csv")
+write.csv(rst, file = "metabolites_MI survival analysis_crude model_2002 S2 case cohort2.csv")
 
 require(gplots)
 pdf("quintile plot of replative risk (ynorm)_full model _decile.pdf", width = 12, height = 12)
