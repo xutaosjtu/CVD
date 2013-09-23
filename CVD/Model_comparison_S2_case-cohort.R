@@ -5,9 +5,16 @@ require(boot)
 
 S2$Arg.Trp = S2$Arg/S2$Trp
 
-data.S2 = subset(S2, subcoho==1 | inz_mi==1)
-data.S2 = subset(data.S2, prev_mi==0)
-data.S2 = data.S2[which(data.S2$prev_mi!=1),]
+data.S2 = subset(S2, subcoho==1 | inz_mi02==1)
+data.S2 = subset(data.S2, prev_mi02==0)
+data.S2 = data.S2[which(data.S2$prev_mi02!=1),]
+
+#
+data.S2$prev_mi = data.S2$prev_mi02
+data.S2$inz_mi = data.S2$inz_mi02
+data.S2$mi_time = data.S2$mi_time02
+#
+
 data.S2$mi_time.start = 0
 data.S2$mi_time.start[which(data.S2$inz_mi==1)] = data.S2$mi_time[which(data.S2$inz_mi==1)]-1
 data.S2$mi_time.end = data.S2$mi_time
@@ -22,10 +29,10 @@ subcohort.cases$mi_time.end = subcohort.cases$mi_time.end-1
 data.S2 = rbind(data.S2, subcohort.cases)
 
 weight=rep(1,nrow(data.S2))
-weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==1)]= 1545/443
-weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==2)]= 1699/370
-weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
-weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 92/59
+weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==1)]= 1545/306
+weight[which(data.S2$subcoho==1&data.S2$inz_mi==0&data.S2$ccsex==2)]= 1699/289
+#weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
+#weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 92/59
 data.S2$weight = weight
 
 #data.S2 = na.omit(data.S2[,c(clinical.S2, S2_valid_measures)])
@@ -51,7 +58,7 @@ framingham<-function(x, method="linear"){
 }
 
 for(i in 1:nrow(data.S2)){
-  data.S2$framingham.score[i] = framingham(data.S2[i,], method="score") 
+  data.S2$framingham.linear[i] = framingham(data.S2[i,], method="linear") 
 }
 
 ###	men and women separated, using the framingham score
@@ -147,8 +154,10 @@ prediction = rep(NA, nrow(data))
 names(prediction) = rownames(data)
 ## combine men and women
 subset = setdiff(which(!is.na(data.S2$ccsex)), na.index)# & S4$ltmstati==2, "framingham.linear"
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected,"framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c("framingham.linear")], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit,theta.predict, weight=data$weight[subset], ngroup = length(subset))
 prediction[subset] = pred.cv$cv.fit 
+
+metabo.selected,
 
 ##men
 subset = setdiff(which(data.S2$ccsex ==1), na.index)# & S4$ltmstati==2
@@ -234,7 +243,7 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(metabo.selected, ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
   prediction[subset] = pred$cv.fit
   fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
