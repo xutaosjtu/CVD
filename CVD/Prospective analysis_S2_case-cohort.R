@@ -90,6 +90,27 @@ weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==2)]= 1699/289
 #weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 47/31
 tmp$weight = weight
 
+##estimates of the confounders
+model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ 
+                scale(log(Arg)) + 
+                #scale(log(lysoPC_a_C17_0)) + 
+                scale(log(Trp)) + 
+                #scale(log(PC_aa_C32_2))+
+                scale(log(PC_aa_C36_3))+
+                scale(log(lysoPC_a_C18_2)) + 
+                scale(log(SM_C24_1))+
+              scale(ctalteru) + as.factor(ccsex)
+              + scale(ctbmi) + as.factor(my.diab)  ##model 2
+              + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
+              + scale((cl_crp))  ##model 
+              #+ cluster(as.factor(zz_nr))
+              ,data = tmp
+              ,weights = weight
+              ,method = "breslow"
+)
+write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confounders plus original four metabolites in S2_model 4.csv")
+##
+
 rst = NULL
 for (m in c(S2_valid_measures,"Arg.Trp")){
   tmp$metabolite = scale(log(tmp[, m]))
@@ -111,27 +132,26 @@ rownames(rst) = c(S2_valid_measures,"Arg_Trp")
 write.csv(rst, file = "metabolites_MI survival analysis_crude model_2002 S2 case cohort2.csv")
 
 require(gplots)
-pdf("quintile plot of replative risk (ynorm)_full model _decile.pdf", width = 12, height = 12)
+pdf("quintile plot of relative risk (ynorm)_model 1.pdf", width = 12, height = 12)
 par(mfrow =c(2,2));
 yrange = NULL; RRquin = NULL
 rst= NULL
-for(m in c(S2_valid_measures,"Arg.Trp")){
+for(m in S2_valid_measures){
   m.conc=tmp[, m]
   metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.2), na.rm=T), include.lowest = T,ordered_result = F)
-  model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+  model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
-                + scale(ctbmi)## model 1
-                + as.factor(my.diab)  ##model 2
-                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
-                + scale(log(cl_crp))
+               # + scale(ctbmi) + as.factor(my.diab)  ##model 2
+               # + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+               # + scale(log(cl_crp))
                 ,data = tmp
                 ,weights = weight
                 ,method = "breslow"
                 )
-  rst = rbind(rst,summary(model)$coefficients[1:4, ])
-}
-rownames(rst) = rep(c(S2_valid_measures,"Arg.Trp"), each=4)
-write.csv(rst, file = "metabolites categorical_MI survival analysis_full model_robust 2_S2 case cohort.csv")
+  rst = summary(model)$coefficients[1:4, ]
+#}
+#rownames(rst) = rep(c(S2_valid_measures), each=4)
+#write.csv(rst, file = "metabolites categorical_MI survival analysis_model 1_S2 case cohort.csv")
 
   #	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
   #			round(exp(rst[,1] + 1.96*rst[,3]), 3),
@@ -147,23 +167,15 @@ write.csv(rst, file = "metabolites categorical_MI survival analysis_full model_r
     yrange = c( min(rst[, 2]-upper), 1)
   }
   x= tapply(m.conc, INDEX = metabo.quintile, median)
-  plotCI(x = x[2:10], y = rst[, 2], uiw = upper, liw = lower, main = m, 
+  plotCI(x = x[2:5], y = rst[, 2], uiw = upper, liw = lower, main = m, 
          xlim = range(x), 
          ylim = yrange, 
          #xaxt = "n",
-         #log="y",
+         log="y",
          pch=22,cex=3,pt.bg="black",
          #labels = levels(metabo.quintile), 
          ylab = "relative risk", xlab = "quintiles of metabolites (ratios)" )
-  plotCI(x=x[1], y=1, uiw = 0, add=T, pch=22, cex=3, pt.bg="black")
-  plotCI(x = x[2:10], y = rst2[, 2], uiw = upper, liw = lower, main = m, 
-         xlim = range(x), 
-         ylim = yrange, 
-         #xaxt = "n",
-         #log="y",
-         pch=21,cex=3,pt.bg="grey",
-  )
-  plotCI(x=x[1], y=1, uiw = 0, add=T, pch=21, cex=3, pt.bg="grey")
+  plotCI(x=x[1], y=1, uiw = 0, add=T, pch=21, cex=3, pt.bg="black")
   #axis(1, at = x, labels = levels(metabo.quintile), col.axis = "blue")
   lines(lowess(x, c(1, rst[,2]), f = 0.8), col = "red")
   abline(h = 1, lty = 2)
@@ -172,9 +184,9 @@ dev.off()
 
 #test the trend
 rst= NULL;
-for(m in c(S2_valid_measures,"Arg.Trp")){
+for(m in c(S2_valid_measures)){
   m.conc=tmp[, m]
-  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.25), na.rm=T), include.lowest = T,ordered_result = F)
+  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.20), na.rm=T), include.lowest = T,ordered_result = F)
 
   metabo.quintile.value = tapply(scale(log(tmp[, m])), INDEX = metabo.quintile, median, na.rm=T)		
   tmp.quintilevalue = rep(0, length(metabo.quintile))
@@ -182,12 +194,11 @@ for(m in c(S2_valid_measures,"Arg.Trp")){
     tmp.quintilevalue[which(metabo.quintile %in% q)]=metabo.quintile.value[q]
   }
   metabo.quintile = tmp.quintilevalue
-  model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
+  model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
-                #+ scale(ctbmi)## model 1
-                #+ as.factor(my.diab)  ##model 2
-                #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
-                #+ scale(log(cl_crp))
+                + scale(ctbmi) + as.factor(my.diab)  ##model 2
+                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+                + scale(log(cl_crp))
                 +cluster(as.factor(zz_nr))
                 ,data = tmp
                 ,weights = weight
@@ -195,8 +206,8 @@ for(m in c(S2_valid_measures,"Arg.Trp")){
   )
   rst = rbind(rst, summary(model)$coefficients[1, ])
 }
-rownames(rst) = c(S2_valid_measures,"Arg.Trp")
-write.csv(rst, "metabolites categorical_test for trend_robust_crude model_S2 case cohort.csv")
+rownames(rst) = c(S2_valid_measures)
+write.csv(rst, "metabolites categorical_test for trend_model 4_S2 case cohort.csv")
 
 ## By a matched case control study
 data = S2[which(S2$prev_mi==0),c("ctalteru", "ccsex", "ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola", "cl_hdla", "cl_ldla", "cl_crp", "inz_mi", "mi_time", S2_valid_measures)]
