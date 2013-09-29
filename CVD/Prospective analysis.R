@@ -141,13 +141,14 @@ for (m in S4_valid_measures){
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite 
 					+ scale(ltalteru) + as.factor(lcsex)
 					+ scale(ltbmi)## model 1
-					+ as.factor(my.diab)  ##model 2
+          + as.factor(S4$lp_diab_who06)
+					#+ as.factor(my.diab)  ##model 2
 					+ scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				+ scale(lh_crp)  ##model 4
-	              + as.factor(ltmstati)
-					#+ as.factor(ltmstati)& S4$ltmstati !=1
+	 				#+ scale(lh_crp)  ##model 4
+	        #+ as.factor(ltmstati)
+					#& S4$ltmstati !=1
           #+ as.factor(ltantihy)
-					,subset = which(S4$prev_mi==0),
+					,subset = which(S4$prev_mi==0&S4$my.diab!=1),
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[2,])

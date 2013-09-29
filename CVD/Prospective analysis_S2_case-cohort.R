@@ -117,17 +117,20 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
               + scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi)## model 1
-              + as.factor(my.diab)  ##model 2
+              #+ as.factor(my.diab)  ##model 2
               + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
-              + scale(log(cl_crp))  ##model 
+              #+ scale(log(cl_crp))  ##model 
               #+ cluster(as.factor(zz_nr))
                 ,data = tmp
+                #,subset = tmp$my.diab!=1
               ,weights = weight
                 ,method = "breslow"
               )
   rst = rbind(rst, summary(model)$coefficients[1,])
 }
-#rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rst$lower = exp(rst$coef - 1.96*rst$se.coef.)
+rst$upper = exp(rst$coef+1.96*rst$se.coef.)
 rownames(rst) = c(S2_valid_measures,"Arg_Trp")
 write.csv(rst, file = "metabolites_MI survival analysis_crude model_2002 S2 case cohort2.csv")
 
