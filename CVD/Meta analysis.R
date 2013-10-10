@@ -34,11 +34,11 @@ rst = NULL
 for(i in 1:nrow(S2)){
   tmp = rbind(S2[i,], S4[i,])
   rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., 
-                 #method = "FE",
+                 method = "FE",
                  measure = "RR")
   summary = c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp)
   rst = rbind(rst, summary)
 }
 rownames(rst) = rownames(S2)
 colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
-write.csv(rst, "meta analysis_random_confounders model4.csv")  
+write.csv(rst, "meta analysis_fixed_confounders plus original four metabolites model4.csv")  

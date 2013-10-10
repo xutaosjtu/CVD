@@ -51,19 +51,15 @@ for(i in 1:length(candidates)){
 }
 rownames(rst) = candidates
 
-#S2
-rst = NULL;
-for(i in c(S2_valid_measures,"Arg.Trp")){
-  S2$metabolite = scale(log(S2[,i]))
-  model = lm(scale(log(lh_crp)) ~ ., data = S2[, c("metabolite", clinical)])
-  rst = rbind(rst, summary(model)$coef[2,])
-}
-rownames(rst) = c(S2_valid_measures,"Arg.Trp")
 
-model = lm(lh_crp ~ ., 
-		#subset = which(S4$ltmstati!=1),
-		data = data[, c( clinical, "ltmstati")])
-write.csv(summary(model)$coef, file = "metabolite association with C reactive protein2.csv")
+model = lm(scale(log(lh_crp)) ~ #scale(log(Arg)) + scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) +
+            scale(ltalteru) + as.factor(lcsex)
+           + scale(ltbmi) + as.factor(my.diab)  ##model 2
+           + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3
+           #+ scale(lh_crp)  ##model 4
+           ,subset = which(S4$prev_mi==0),
+           data = S4)
+
 
 plot(lysoPC_a_C17_0 ~ log(lh_crp), data = S4, subset = which(S4$prev_mi==0))
 

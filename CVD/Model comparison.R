@@ -28,20 +28,20 @@ framingham<-function(x){
 	else  X[4] = beta[5]*log(x$ltsysmm) #systolic blood pressure if treated
 	X[5] = beta[6]* as.numeric(x$ltcigreg==1|x$ltcigreg==2)#smoking
 	X[6] = beta[7] * (as.numeric(x$my.diab)-1)
-	#risk = 1-S0^exp(sum(X) - beta[8]);
-	risk = sum(X) - beta[8]
+	risk = 1-S0^exp(sum(X) - beta[8]);
+	#risk = sum(X) - beta[8]
 	return(risk)
 }
 
-for(i in 1:dim(data)[1]){
-	S4$framingham.linear[i] = framingham(S4[i,]) 
+for(i in 1:nrow(S4)){
+	S4$framingham[i] = framingham(S4[i,]) 
 }
 
 ###	men and women separated, using the framingham score
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		framingham.linear = S4$framingham.linear,
-		scale(log(as.matrix(S4[, metabo.asso]))), scale(S4[, metabo.ratio.asso])
+		scale(log(as.matrix(S4[, metabo.asso]))) #, scale(S4[, metabo.ratio.asso])
 )
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 prediction = rep(NA, dim(data)[1])
@@ -102,7 +102,7 @@ data = data.frame(
 		S4$my.sysmm.treat,	#systolic blood pressure treated    
 		as.numeric(S4$ltcigreg==1|S4$ltcigreg==2),	#smoking 
 		(as.numeric(S4$my.diab)-1),	#diabetes
-		scale(log(S4[, metabo.asso])), scale(S4[, metabo.ratio.asso])
+		scale(log(S4[, metabo.asso]))#, scale(S4[, metabo.ratio.asso])
 )
 clinical = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
 colnames(data)[3:10] = c("age", "sex",  "ll_chola", "ll_hdla", "my.sysmm.untreat", "my.sysmm.treat", "smoking", "diabetes")
@@ -277,7 +277,7 @@ for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(metabo.selected3,ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
 	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }

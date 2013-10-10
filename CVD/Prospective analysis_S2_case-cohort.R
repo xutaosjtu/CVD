@@ -65,7 +65,7 @@ svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-tmp = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy")]
+tmp = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati")]
 #tmp = na.omit(tmp)
 tmp = tmp[which(tmp$prev_mi02!=1),]
 tmp$mi_time.start = 0
@@ -104,25 +104,26 @@ model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~
               + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
               + scale((cl_crp))  ##model 
               #+ cluster(as.factor(zz_nr))
-              ,data = tmp
+              ,data = tmp[which(tmp$ctmstati!=1)]
               ,weights = weight
               ,method = "breslow"
 )
-write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confounders plus original four metabolites in S2_model 4.csv")
-##
+write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confounders plus original four metabolites in S2_model 4_remove statine.csv")
 
+##
 rst = NULL
 for (m in c(S2_valid_measures,"Arg.Trp")){
   tmp$metabolite = scale(log(tmp[, m]))
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
               + scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi)## model 1
-              #+ as.factor(my.diab)  ##model 2
+              + as.factor(my.diab)  ##model 2
               + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
-              #+ scale(log(cl_crp))  ##model 
+              #+ scale(log(cl_crp))  ##model 4
+                + as.factor(ctmstati)
               #+ cluster(as.factor(zz_nr))
                 ,data = tmp
-                #,subset = tmp$my.diab!=1
+                #,subset = tmp$ctmstati!=1
               ,weights = weight
                 ,method = "breslow"
               )
@@ -132,7 +133,7 @@ rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adj
 rst$lower = exp(rst$coef - 1.96*rst$se.coef.)
 rst$upper = exp(rst$coef+1.96*rst$se.coef.)
 rownames(rst) = c(S2_valid_measures,"Arg_Trp")
-write.csv(rst, file = "metabolites_MI survival analysis_crude model_2002 S2 case cohort2.csv")
+write.csv(rst, file = "metabolites_MI survival analysis_model 3_2002 S2 case cohort2_adj statines.csv")
 
 require(gplots)
 pdf("quintile plot of relative risk (ynorm)_model 1.pdf", width = 12, height = 12)
@@ -251,16 +252,25 @@ rst = NULL
 for(i in S2_valid_measures){
   S2$metabolite = scale(log(S2[,i]))
   model = lm(scale(log(cl_crp)) ~ metabolite 
-             #+ scale(ctalteru) + as.factor(ccsex)
-             #+ scale(ctbmi)## model 1
-             #+ as.factor(my.diab)  ##model 2
-             #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+             + scale(ctalteru) + as.factor(ccsex)
+             + scale(ctbmi)## model 1
+             + as.factor(my.diab)  ##model 2
+             + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
              , data = S2[which((S2$prev_mi==0&S2$subcoho==1)|S2$inz_mi==1),]
              )
   rst = rbind(rst, summary(model)$coef[2,])
 }
 rownames(rst) = S2_valid_measures
 write.csv(rst, "association with CRP_unadjsted_S2_case cohort.csv")
+
+
+model = lm(scale(log(cl_crp)) ~ scale(log(Arg)) + #scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) + 
+           scale(ctalteru) + as.factor(ccsex)
+           + scale(ctbmi)## model 1
+           + as.factor(my.diab)  ##model 2
+           + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+           , data = S2[which((S2$prev_mi==0&S2$subcoho==1)|S2$inz_mi==1),]
+)
 
 ### association of metabolites with age
 plot(log(Trp)~ctalteru, S2)
