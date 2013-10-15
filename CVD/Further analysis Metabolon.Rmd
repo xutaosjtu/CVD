@@ -14,6 +14,10 @@ load("data/S4 metabolon valid.RData")
 load("data/S4 metabolon.RData")
 S4.metabolon = S4.metabolon[,1:500]
 
+load("data/F4 metabolon valid.RData")
+load("data/F4 metabolon.RData")
+F4.metabolon = F4.metabolon[,1:562]
+
 metabolon.annotate = read.csv("data/Metabolon_annotation.csv")
 rownames(metabolon.annotate) = metabolon.annotate[,1]
 ```
@@ -21,6 +25,7 @@ rownames(metabolon.annotate) = metabolon.annotate[,1]
 merge the biocrates data with the metabolon data
 ```{r}
 S4.metabolon = merge(S4, S4.metabolon)
+F4.metabolon = merge(F4, F4.metabolon)#, by = intersect(colnames(F4.metabolon), colnames(F4))[1:8])
 ```
 
 Prediction of future hypertension
@@ -35,9 +40,9 @@ for (m in S4.metabolon.valid){
 	model = glm(as.factor(2-uthyact) ~  m 
               + ltalteru + as.factor(lcsex) # crude model
 					    + scale(ltbmi)
-					    + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
-					    + as.factor(my.diab)
-	            + scale(ltsysmm)# multivariate model
+					    #+ as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
+					    #+ as.factor(my.diab)
+	            #+ scale(ltsysmm)# multivariate model
 					   #+ scale(ll_chola) + scale(ll_hdla)
 				     #+ scale(log(lh_crp))
 			        ,subset = which(S4.metabolon$lthyact == 2)
@@ -53,3 +58,56 @@ print(xtable(rst), type="html")
 #write.csv(rst, file = "Hypertension survival analysis_metabolon_glm_full model plus sysBP.csv")
 ```
 
+Association with current blood pressure
+
+```{r results='asis'}
+rst = NULL;
+for (m in S4.metabolon.valid){
+  ## fixed effect estimation
+  S4.metabolon$m = scale((S4.metabolon[, m]))
+	model = glm(ltdiamm ~  m 
+              + ltalteru + as.factor(lcsex) # crude model
+					    + scale(ltbmi)
+					    #+ as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
+					    #+ as.factor(my.diab)
+	            #+ scale(ltsysmm)# multivariate model
+					   #+ scale(ll_chola) + scale(ll_hdla)
+				     #+ scale(log(lh_crp))
+			        ,subset = which(S4.metabolon$lthyact == 2)
+              , data = S4.metabolon
+              #, family = binomial(link = "logit")
+              )
+	rst = rbind(rst, summary(model)$coefficients[2,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = S4.metabolon.valid
+rst = cbind(rst, metabolon.annotate[S4.metabolon.valid, ])
+print(xtable(rst), type="html")
+#write.csv(rst, file = "Hypertension survival analysis_metabolon_glm_full model plus sysBP.csv")
+```
+
+Association with current blood pressure in F4
+```{r}
+rst = NULL;
+for (m in F4.metabolon.valid){
+  ## fixed effect estimation
+  F4.metabolon$m = scale((F4.metabolon[, m]))
+  model = glm(utsysmm ~  m 
+              + utalteru + as.factor(ucsex) # crude model
+					    + scale(utbmi)
+					    #+ as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
+					    #+ as.factor(my.diab)
+	            #+ scale(ltsysmm)# multivariate model
+					   #+ scale(ll_chola) + scale(ll_hdla)
+				     #+ scale(log(lh_crp))
+			        ,subset = which(F4.metabolon$uthyact == 2)
+              , data = F4.metabolon
+              #, family = binomial(link = "logit")
+              )
+	rst = rbind(rst, summary(model)$coefficients[2,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = F4.metabolon.valid
+rst = cbind(rst, metabolon.annotate[F4.metabolon.valid, ])
+print(xtable(rst), type="html")
+```
