@@ -61,12 +61,12 @@ require(globaltest)##pretesting by global test
 gt(Surv(tmp$time[subset], tmp$event[subset]), tmp[subset, c(11:19)])
 
 model.penal = cvl(
-		Surv(time, event)~., data = tmp[subset,c("event", "time", S4_valid_measures)], 
+		Surv(time, event)~., data = tmp[subset,c("event", "time", metabo.asso)], 
 		standardize = T, ##centralize the covariates 
 		#steps = "Park", trace = F, ## starting from the largest value of lambda1 untile the specificed lambda1 is reached, the function will return a list of penfit objects, and the chang of coefficients could be visualized by plotpath 
 		#positive = T, ## positive restriction to all regression coefficients
 		fold = 10, ## k-fold cross-validation
-		lambda1 = 2, lambda2= 0#penalization parameter
+		lambda1 = 5, lambda2= 0#penalization parameter
 )
 
 model.penal = profL1(
@@ -205,8 +205,8 @@ selectCox <- function(formula, data, rule = "aic") {
 
 model.selecCOx = selectCox(
 		formula = Surv(mi_time, inz_mi) ~  .,
-		data = data.frame(tmp[,c(metabo.asso2,clinical)], mi_time = tmp$time, inz_mi = tmp$event)[subset, ],
-		rule = "p")
+		data = data.frame(tmp[,c(metabo.asso2)], mi_time = tmp$time, inz_mi = tmp$event)[subset, ],
+		rule = "aic")
 
 + ltalteru + log(ltdiamm) + log(ltsysmm) + log(ll_hdln) + log(ll_choln) + as.factor(lp_diab_who06) + as.factor(lcsex) + as.factor(ltcigreg)
 

@@ -27,14 +27,17 @@ rst[,"fdr"] = p.adjust(rst[,"pvalue"], method = "BH")
 write.csv(rst,"meta analysis/meta_fix_model4.csv")
 
 ## Meta-analysis of CRP effect size in S4 and S2
-S2 = read.csv("estimates of confounders in S2_model 4.csv", row.names = 1)
-S4 = read.csv("estimates of confounders in S4_model 4.csv", row.names = 1)
+S2 = read.csv("Change in CRP effect/estimates of confounders in S2_model 4.csv", row.names = 1)
+S4 = read.csv("Change in CRP effect/estimates of confounders in S4_model 4.csv", row.names = 1)
+
+#S2 = read.csv("Change in CRP effect/estimates of confounders plus original four metabolites in S2_model 4.csv", row.names = 1)
+#S4 = read.csv("Change in CRP effect/estimates of confounders plus original four metabolites in S4_model 4.csv", row.names = 1)
 
 rst = NULL
 for(i in 1:nrow(S2)){
-  tmp = rbind(S2[i,], S4[i,])
+  tmp = rbind(S4[i,], S2[i,])
   rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., 
-                 method = "FE",
+                 #method = "FE",
                  measure = "RR")
   summary = c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp)
   rst = rbind(rst, summary)
@@ -42,3 +45,9 @@ for(i in 1:nrow(S2)){
 rownames(rst) = rownames(S2)
 colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
 write.csv(rst, "meta analysis_fixed_confounders plus original four metabolites model4.csv")  
+
+rma.baseline = rma.test 
+tmp = rbind(S4[nrow(S4),], S2[nrow(S4),1:5])
+rma.plusmetab = rma(yi = tmp$coef, sei = tmp$se.coef., 
+               #method = "FE",
+               measure = "RR")

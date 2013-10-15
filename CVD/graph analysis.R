@@ -33,10 +33,10 @@ lines(density(log(metabolites$degree),adjust=0.9),col="red")
 require(igraph)
 score = 0.7
 
-all=read.csv('F:/Database/meta_enzyme_string_unique.v9.0',head=F, sep = "\t")
+all=read.csv('../Database/meta_enzyme_string_unique.v9.0',head=F, sep = "\t")
 all=all[all[,3] >= score,]
 
-graph=read.graph('F:/Database/meta_enzyme_string_unique.v9.0',format='ncol')
+graph=read.graph('../Database/meta_enzyme_string_unique.v9.0',format='ncol')
 del.edge=E(graph)[E(graph)$weight < score]
 graph=delete.edges(graph, del.edge)
 
@@ -49,7 +49,10 @@ From =scan(what = character())
 Arg-PTC
 Trp-PTC
 PC-aa-C32:2
+lysoPC-a-C18:2
 lysoPC-a-C17:0
+PC-ae-C38:0
+CRP
 
 SM-C24:0
 PC-ae-C38:6
@@ -57,8 +60,8 @@ PC-aa-C32:1
 SM-OH-C22:2
 His-PTC
 
-To=c(unique(as.matrix(read.csv('F:/Cardiovascular disease/Results/SNPs/CAD gene GWAS.csv',head=F))),
-		unique(as.matrix(read.csv('F:/Cardiovascular disease/Results/SNPs/CAD gene FDR.csv', header = F)))
+To=c(unique(as.matrix(read.csv('Results/SNPs/CAD gene GWAS.csv',head=F))),
+		unique(as.matrix(read.csv('Results/SNPs/CAD gene FDR.csv', header = F)))
 )
 
 tmp=unique(c(as.character(all[,1]),as.character(all[,2])))

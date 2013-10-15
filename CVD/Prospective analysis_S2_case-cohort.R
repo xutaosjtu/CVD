@@ -7,8 +7,8 @@ clinical.S2 = c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.
 
 data.S2 = na.omit(data.S2[,c(clinical.S2, S2_valid_measures)])
 
-# tmp = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")]
-# tmp = na.omit(tmp)
+# S2.sub = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")]
+# S2.sub = na.omit(S2.sub)
 
 require(survival)
 rst = NULL;
@@ -65,46 +65,46 @@ svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-tmp = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati")]
-#tmp = na.omit(tmp)
-tmp = tmp[which(tmp$prev_mi02!=1),]
-tmp$mi_time.start = 0
-tmp$mi_time.start[which(tmp$inz_mi02==1)] = tmp$mi_time02[which(tmp$inz_mi02==1)]-1
-tmp$mi_time.end = tmp$mi_time02
+S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati")]
+#S2.sub = na.omit(S2.sub)
+S2.sub = S2.sub[which(S2.sub$prev_mi02!=1),]
+S2.sub$mi_time.start = 0
+S2.sub$mi_time.start[which(S2.sub$inz_mi02==1)] = S2.sub$mi_time02[which(S2.sub$inz_mi02==1)]-1
+S2.sub$mi_time.end = S2.sub$mi_time02
 
 #cases in subcohort as control
-#tmp$atcontrol = tmp$inz_mi
-subcohort.cases = tmp[which(tmp$subcoho==1&tmp$inz_mi02==1),]
+#S2.sub$atcontrol = S2.sub$inz_mi
+subcohort.cases = S2.sub[which(S2.sub$subcoho==1&S2.sub$inz_mi02==1),]
 #subcohort.cases$atcontrol = 0
 subcohort.cases$inz_mi02=0
 subcohort.cases$mi_time.start = 0
 subcohort.cases$mi_time.end = subcohort.cases$mi_time.end-1
 
-tmp = rbind(tmp, subcohort.cases)
+S2.sub = rbind(S2.sub, subcohort.cases)
 
-weight=rep(1,nrow(tmp))
-weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==1)]= 1545/306
-weight[which(tmp$subcoho==1&tmp$inz_mi==0&tmp$ccsex==2)]= 1699/289
-#weight[which(tmp$subcoho==1 & tmp$inz_mi==0)]= 3244/813
-#weight[which(tmp$subcoho==0 & tmp$inz_mi==1)]= (384-92)/87
-#weight[which(tmp$subcoho==1 & tmp$inz_mi==1)] = 47/31
-tmp$weight = weight
+weight=rep(1,nrow(S2.sub))
+weight[which(S2.sub$subcoho==1&S2.sub$inz_mi==0&S2.sub$ccsex==1)]= 1545/306
+weight[which(S2.sub$subcoho==1&S2.sub$inz_mi==0&S2.sub$ccsex==2)]= 1699/289
+#weight[which(S2.sub$subcoho==1 & S2.sub$inz_mi==0)]= 3244/813
+#weight[which(S2.sub$subcoho==0 & S2.sub$inz_mi==1)]= (384-92)/87
+#weight[which(S2.sub$subcoho==1 & S2.sub$inz_mi==1)] = 47/31
+S2.sub$weight = weight
 
 ##estimates of the confounders
 model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ 
-                scale(log(Arg)) + 
-                #scale(log(lysoPC_a_C17_0)) + 
-                scale(log(Trp)) + 
-                #scale(log(PC_aa_C32_2))+
-                scale(log(PC_aa_C36_3))+
-                scale(log(lysoPC_a_C18_2)) + 
-                scale(log(SM_C24_1))+
+#                  scale(log(Arg)) + 
+#                  scale(log(lysoPC_a_C17_0)) + 
+#                  scale(log(Trp)) + 
+#                  scale(log(PC_aa_C32_2))+
+#                 scale(log(PC_aa_C36_3))+
+#                 scale(log(lysoPC_a_C18_2)) + 
+#                 scale(log(SM_C24_1))+
               scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi) + as.factor(my.diab)  ##model 2
               + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
               + scale((cl_crp))  ##model 
               #+ cluster(as.factor(zz_nr))
-              ,data = tmp[which(tmp$ctmstati!=1)]
+              ,data = S2.sub#[which(S2.sub$ctmstati!=1)]
               ,weights = weight
               ,method = "breslow"
 )
@@ -113,7 +113,7 @@ write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confo
 ##
 rst = NULL
 for (m in c(S2_valid_measures,"Arg.Trp")){
-  tmp$metabolite = scale(log(tmp[, m]))
+  S2.sub$metabolite = scale(log(S2.sub[, m]))
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
               + scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi)## model 1
@@ -122,8 +122,8 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
               #+ scale(log(cl_crp))  ##model 4
                 + as.factor(ctmstati)
               #+ cluster(as.factor(zz_nr))
-                ,data = tmp
-                #,subset = tmp$ctmstati!=1
+                ,data = S2.sub
+                #,subset = S2.sub$ctmstati!=1
               ,weights = weight
                 ,method = "breslow"
               )
@@ -141,14 +141,14 @@ par(mfrow =c(2,2));
 yrange = NULL; RRquin = NULL
 rst= NULL
 for(m in S2_valid_measures){
-  m.conc=tmp[, m]
+  m.conc=S2.sub[, m]
   metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.2), na.rm=T), include.lowest = T,ordered_result = F)
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
                # + scale(ctbmi) + as.factor(my.diab)  ##model 2
                # + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
                # + scale(log(cl_crp))
-                ,data = tmp
+                ,data = S2.sub
                 ,weights = weight
                 ,method = "breslow"
                 )
@@ -189,22 +189,22 @@ dev.off()
 #test the trend
 rst= NULL;
 for(m in c(S2_valid_measures)){
-  m.conc=tmp[, m]
+  m.conc=S2.sub[, m]
   metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.20), na.rm=T), include.lowest = T,ordered_result = F)
 
-  metabo.quintile.value = tapply(scale(log(tmp[, m])), INDEX = metabo.quintile, median, na.rm=T)		
-  tmp.quintilevalue = rep(0, length(metabo.quintile))
+  metabo.quintile.value = tapply(scale(log(S2.sub[, m])), INDEX = metabo.quintile, median, na.rm=T)		
+  S2.sub.quintilevalue = rep(0, length(metabo.quintile))
   for (q in levels(metabo.quintile)){
-    tmp.quintilevalue[which(metabo.quintile %in% q)]=metabo.quintile.value[q]
+    S2.sub.quintilevalue[which(metabo.quintile %in% q)]=metabo.quintile.value[q]
   }
-  metabo.quintile = tmp.quintilevalue
+  metabo.quintile = S2.sub.quintilevalue
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
                 + scale(ctbmi) + as.factor(my.diab)  ##model 2
                 + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
                 + scale(log(cl_crp))
                 +cluster(as.factor(zz_nr))
-                ,data = tmp
+                ,data = S2.sub
                 ,weights = weight
                 ,method = "breslow"
   )
@@ -264,7 +264,7 @@ rownames(rst) = S2_valid_measures
 write.csv(rst, "association with CRP_unadjsted_S2_case cohort.csv")
 
 
-model = lm(scale(log(cl_crp)) ~ scale(log(Arg)) + #scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) + 
+model = lm(scale(log(cl_crp)) ~ scale(log(Arg)) + scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) + scale(log(SM_C24_1)) + 
            scale(ctalteru) + as.factor(ccsex)
            + scale(ctbmi)## model 1
            + as.factor(my.diab)  ##model 2
