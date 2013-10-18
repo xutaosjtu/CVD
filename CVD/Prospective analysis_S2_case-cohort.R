@@ -1,7 +1,7 @@
 S2$Arg.Trp = S2$Arg/S2$Trp
 
-data.S2 = subset(S2, subcoho==1 | inz_mi==1)
-data.S2 = subset(data.S2, prev_mi==0)
+data.S2 = subset(S2, subcoho==1 | inz_mi02==1)
+data.S2 = subset(data.S2, prev_mi02==0)
 
 clinical.S2 = c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp","zz_nr","mi_time", "inz_mi","subcoho","prev_mi")
 
@@ -65,7 +65,7 @@ svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati")]
+S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla")]
 #S2.sub = na.omit(S2.sub)
 S2.sub = S2.sub[which(S2.sub$prev_mi02!=1),]
 S2.sub$mi_time.start = 0
@@ -142,20 +142,21 @@ yrange = NULL; RRquin = NULL
 rst= NULL
 for(m in S2_valid_measures){
   m.conc=S2.sub[, m]
-  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.2), na.rm=T), include.lowest = T,ordered_result = F)
+  metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.25), na.rm=T), include.lowest = T,ordered_result = F)
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
-               # + scale(ctbmi) + as.factor(my.diab)  ##model 2
-               # + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
-               # + scale(log(cl_crp))
+                + scale(ctbmi) + as.factor(my.diab)  ##model 2
+                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+                + scale(log(cl_crp))
                 ,data = S2.sub
                 ,weights = weight
                 ,method = "breslow"
                 )
-  rst = summary(model)$coefficients[1:4, ]
-#}
-#rownames(rst) = rep(c(S2_valid_measures), each=4)
-#write.csv(rst, file = "metabolites categorical_MI survival analysis_model 1_S2 case cohort.csv")
+  #rst = summary(model)$coefficients[1:3, ]
+  rst = rbind(rst, summary(model)$coefficients[1:3, ])
+}
+rownames(rst) = rep(c(S2_valid_measures), each=3)
+write.csv(rst, file = "metabolites categorical_MI survival analysis_model 4_S2 case cohort.csv")
 
   #	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
   #			round(exp(rst[,1] + 1.96*rst[,3]), 3),
@@ -200,10 +201,10 @@ for(m in c(S2_valid_measures)){
   metabo.quintile = S2.sub.quintilevalue
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabo.quintile +
                   scale(ctalteru) + as.factor(ccsex)
-                + scale(ctbmi) + as.factor(my.diab)  ##model 2
-                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
-                + scale(log(cl_crp))
-                +cluster(as.factor(zz_nr))
+                #+ scale(ctbmi) + as.factor(my.diab)  ##model 2
+                #+ scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+                #+ scale(log(cl_crp))
+                #+cluster(as.factor(zz_nr))
                 ,data = S2.sub
                 ,weights = weight
                 ,method = "breslow"
@@ -211,7 +212,7 @@ for(m in c(S2_valid_measures)){
   rst = rbind(rst, summary(model)$coefficients[1, ])
 }
 rownames(rst) = c(S2_valid_measures)
-write.csv(rst, "metabolites categorical_test for trend_model 4_S2 case cohort.csv")
+write.csv(rst, "metabolites categorical_test for trend_model 1_S2 case cohort.csv")
 
 ## By a matched case control study
 data = S2[which(S2$prev_mi==0),c("ctalteru", "ccsex", "ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola", "cl_hdla", "cl_ldla", "cl_crp", "inz_mi", "mi_time", S2_valid_measures)]

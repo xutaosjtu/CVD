@@ -64,3 +64,105 @@ pcc=NULL
 for(i in names(rst)){
 	pcc = c(pcc, cor(mean.nfast[,i],mean.fast[,i], use= "p", method ="s"))
 }
+
+
+######## correlation between candidates with CRp
+metabo.asso = scan(what = character())
+Arg
+Trp
+lysoPC_a_C16_0
+lysoPC_a_C16_1
+lysoPC_a_C17_0
+lysoPC_a_C18_0
+lysoPC_a_C18_1
+lysoPC_a_C18_2
+PC_aa_C28_1
+PC_aa_C32_2
+PC_aa_C34_2
+PC_aa_C34_3
+PC_aa_C34_4
+PC_aa_C36_2
+PC_aa_C36_3
+PC_aa_C36_6
+PC_ae_C36_1
+PC_ae_C36_2
+PC_ae_C38_0
+PC_ae_C38_2
+PC_ae_C40_1
+SM_C24_1
+
+##GGM 
+require(corpcor)
+require(corrplot)
+pdf("correlation with conventional biomarkers_S4.pdf")
+tmp = S4[, c(metabo.asso, "lh_crp", "ltbmi",   "ltsysmm","ll_ldla", "ll_hdla")]#"ll_hbav",
+#pdf("correlation with conventional biomarkers_S2.pdf")
+#tmp = data.S2[, c(metabo.asso, "cl_crp", "ctbmi",  "ctsysmm","cl_ldla", "cl_hdla")]
+tmp = log(tmp)
+tmp = cor(tmp, use = "p" )
+#tmp = cor2pcor(tmp)
+rownames(tmp)=c(metabo.asso, "lh_crp", "ltbmi", "ltsysmm","ll_ldla", "ll_hdla")
+#rownames(tmp) = c(metabo.asso,"cl_crp", "ctbmi",  "ctsysmm","cl_ldla", "cl_hdla")
+colnames(tmp)=rownames(tmp)
+diag(tmp) = 0
+col3 <- colorRampPalette(c("blue", "white", "red"))
+corrplot(tmp, col = col3(200), tl.col="black",
+          type = "lower", tl.pos="l")
+dev.off()
+##partial correaltion adjusting for age and sex
+# tmp = S4[, c(metabo.asso, "lh_crp", "ltbmi",  "ll_hbav", "ltsysmm","ll_ldla", "ll_hdla", "ltalteru","lcsex")]
+# tmp = na.omit(tmp)
+# tmp.metab = log(tmp[, c(metabo.asso)])
+# tmp.biom = log(tmp[, c("lh_crp", "ltbmi",  "ll_hbav", "ltsysmm","ll_ldla", "ll_hdla")])
+# tmp.adj = tmp[, c("ltalteru","lcsex")]
+# tmp.adj$lcsex = 2-tmp.adj$lcsex
+
+tmp = data.S2[, c(metabo.asso, "cl_crp", "ctbmi", "ctsysmm","cl_ldla", "cl_hdla", "ctalteru","ccsex")]
+tmp = na.omit(tmp)
+tmp.metab = log(tmp[, c(metabo.asso)])
+tmp.biom = log(tmp[, c("cl_crp", "ctbmi", "ctsysmm","cl_ldla", "cl_hdla")])
+tmp.adj = tmp[, c("ctalteru","ccsex")]
+tmp.adj$ccsex = 2-tmp.adj$ccsex
+tmp = sapply(tmp.biom, 
+       function(x){
+         resid.x = lm(x~., data = data.frame(x,tmp.adj))$residual
+         rst = sapply(tmp.metab, 
+                      function(y){
+                        resid.y=lm(y ~., data = data.frame(y,tmp.adj))$residual
+                        pcc =cor(resid.x,resid.y, use="pair")
+                        #pcc = cor2pcor(pcc)
+                        return(pcc)
+                      }
+                      )
+         #rownames(rst) = c("cor", "upper", "lower", "p-value")
+         return(rst)
+       }
+)
+col3 <- colorRampPalette(c("blue", "white", "red"))
+corrplot(tmp, col = col3(200), tl.col = "black")
+
+require(deal)
+tmp = S4[, c(metabo.selected, "lh_crp", "inz_mi")]
+tmp$inz_mi=as.factor(tmp$inz_mi)
+dim(tmp)
+tmp = na.omit(tmp)
+tmp.nw = network(tmp)
+tmp.j = jointprior(tmp.nw, 12)
+
+tmp.learn = learn(tmp.nw, tmp, tmp.j)
+tmp.nw.learn = getnetwork(tmp.learn)
+
+drawnetwork(tmp.nw, tmp, tmp.j)$nw
+tmp.h<-heuristic(tmp.nw.learn, tmp, tmp.j,
+                 trace = FALSE)
+
+require(bnlearn)
+tmp = S4[, c(metabo.selected, "lh_crp", "inz_mi")]
+tmp = na.omit(tmp)
+res = gs(tmp)
+plot(res)
+res2 = iamb(tmp)
+plot(res2)
+
+res = gs(tmp, debug=TRUE)
+sink(file = "Casual inference/Bayesian network/learning.txt")

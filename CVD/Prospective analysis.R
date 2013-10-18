@@ -224,22 +224,22 @@ par(mfrow =c(2,2));
 yrange = NULL; RRquin = NULL
 rst = NULL
 for(m in S4_valid_measures){
-	m.conc=S4[, m]
-	metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.2), na.rm = T), 
+	m.conc=scale(log(S4[, m]))
+	metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.25), na.rm = T), 
 			include.lowest = T,ordered_result = F)
 	model1 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) 
-         + scale(ltbmi) + my.diab  ##model 2
-				 + scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-				 + scale(lh_crp)  ##model 4&S4$ltmstati !=1
+         #+ scale(ltbmi) + my.diab  ##model 2
+				 #+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+				 #+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
          
 			,subset = which(S4$prev_mi == 0),
 			S4)
 #	rst = summary(model1)$coefficients[1:4, ]
-  rst = rbind(rst, summary(model1)$coefficients[1:4, ])
+  rst = rbind(rst, summary(model1)$coefficients[1:3, ])
 }
-rownames(rst) = rep(c(S4_valid_measures), each=4)
-write.csv(rst, file = "metabolites categorical_MI survival analysis_model 4_S4.csv")
+rownames(rst) = rep(c(S4_valid_measures), each=3)
+write.csv(rst, file = "metabolites categorical_MI survival analysis_model 1_S4.csv")
   
 #	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
 #			round(exp(rst[,1] + 1.96*rst[,3]), 3),
@@ -275,7 +275,7 @@ dev.off()
 #test the trend
 rst= NULL;
 for(m in S4_valid_measures){
-	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2), na.rm = T), include.lowest = T,ordered_result = F)
+	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.25), na.rm = T), include.lowest = T,ordered_result = F)
 	#log(S4[,m])
 	if(m == "Arg.Trp"){
 		metabo.quintile.value = tapply(scale(S4[, m]), INDEX = metabo.quintile, median, na.rm=T)
@@ -290,15 +290,15 @@ for(m in S4_valid_measures){
 	metabo.quintile = tmp
 	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) 
-          + scale(ltbmi) + my.diab  ##model 2
-					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-					+ scale(lh_crp)  ##model 4
-			,subset = which(S4$prev_mi == 0&S4$ltmstati !=1),
+          #+ scale(ltbmi) + my.diab  ##model 2
+					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+					#+ scale(lh_crp)  ##model 4
+			,subset = which(S4$prev_mi == 0),
 			S4)
 	rst = rbind(rst, summary(model)$coefficients[1, ])
 }
 rownames(rst) = S4_valid_measures
-write.csv(rst, "metabolites categorical_test for trend_model 4_S4.csv")
+write.csv(rst, "metabolites categorical_test for trend_model 1_S4.csv")
 
 ###metabolites associated with MI
 metabo.asso = scan(what = character())

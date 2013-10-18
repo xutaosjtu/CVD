@@ -34,7 +34,6 @@ preprocess=function(data,Metabolites){
 	return(data)
 }
 
-
 characteristics = function(data , factor, d, ...)
 {
 	chars = apply(
@@ -297,4 +296,13 @@ crossval.cox = function (x, y, theta.fit, theta.predict, ..., ngroup = n)
 		groups <- NULL
 	return(list(cv.fit = cv.fit, ngroup = ngroup, leave.out = leave.out, 
 					groups = groups, call = call))
+}
+
+
+####  qqplot of the pvalues
+qqplot.pvalue = function(pvalue, ...){
+  x = c(0:(length(pvalue)-1))/length(pvalue)
+  y = -log(pvalue)
+  qqplot(x, y,...)
+  abline(0,1, col = "red")
 }
