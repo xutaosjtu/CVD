@@ -58,7 +58,7 @@ print(xtable(rst), type="html")
 #write.csv(rst, file = "Hypertension survival analysis_metabolon_glm_full model plus sysBP.csv")
 ```
 
-Association with current blood pressure
+Association with current blood pressure in S4
 
 ```{r results='asis'}
 rst = NULL;
@@ -68,11 +68,10 @@ for (m in S4.metabolon.valid){
 	model = glm(ltdiamm ~  m 
               + ltalteru + as.factor(lcsex) # crude model
 					    + scale(ltbmi)
-					    #+ as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
-					    #+ as.factor(my.diab)
-	            #+ scale(ltsysmm)# multivariate model
-					   #+ scale(ll_chola) + scale(ll_hdla)
-				     #+ scale(log(lh_crp))
+					    + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
+					    + as.factor(my.diab)
+					    + scale(ll_chola) + scale(ll_hdla)
+				      + scale(log(lh_crp))
 			        ,subset = which(S4.metabolon$lthyact == 2)
               , data = S4.metabolon
               #, family = binomial(link = "logit")
@@ -95,11 +94,10 @@ for (m in F4.metabolon.valid){
   model = glm(utsysmm ~  m 
               + utalteru + as.factor(ucsex) # crude model
 					    + scale(utbmi)
-					    #+ as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
-					    #+ as.factor(my.diab)
-	            #+ scale(ltsysmm)# multivariate model
-					   #+ scale(ll_chola) + scale(ll_hdla)
-				     #+ scale(log(lh_crp))
+					    + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.physical)
+					    + as.factor(my.diab)
+					    + scale(ul_chola) + scale(ul_hdla)
+				      + scale(log(uh_crp))
 			        ,subset = which(F4.metabolon$uthyact == 2)
               , data = F4.metabolon
               #, family = binomial(link = "logit")
