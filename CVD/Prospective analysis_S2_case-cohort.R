@@ -13,59 +13,59 @@ data.S2 = na.omit(data.S2[,c(clinical.S2, S2_valid_measures)])
 require(survival)
 rst = NULL;
 ##using Prentice or Lin Ying's weighting method
-for (m in c(S2_valid_measures)){
-  data.S2$metabolite = scale(log(data.S2[, m]))
-  model = cch(Surv(mi_time, inz_mi) ~ metabolite
-              + scale(ctalteru) #+ as.factor(ccsex)
-              + scale(ctbmi)## model 1
-              + as.factor(my.diab)  ##model 2
-              + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3+ total2HDL
-              + scale(log(cl_crp))  ##model 4
-              ,data = data.S2
-              , subcoh = ~subcoho
-              , id =~zz_nr
-              #, stratum= ~ as.factor(ccsex)
-              , method = "Prentice"
-              , cohort.size = 3244)
-  rst = rbind(rst, summary(model)$coefficients[1,])
-}
-#rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = c(S2_valid_measures)
-#rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolites_MI survival analysis_full model_plus medication_replication S2.csv")
+# for (m in c(S2_valid_measures)){
+#   data.S2$metabolite = scale(log(data.S2[, m]))
+#   model = cch(Surv(mi_time, inz_mi) ~ metabolite
+#               + scale(ctalteru) #+ as.factor(ccsex)
+#               + scale(ctbmi)## model 1
+#               + as.factor(my.diab)  ##model 2
+#               + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3+ total2HDL
+#               + scale(log(cl_crp))  ##model 4
+#               ,data = data.S2
+#               , subcoh = ~subcoho
+#               , id =~zz_nr
+#               #, stratum= ~ as.factor(ccsex)
+#               , method = "Prentice"
+#               , cohort.size = 3244)
+#   rst = rbind(rst, summary(model)$coefficients[1,])
+# }
+# #rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+# rownames(rst) = c(S2_valid_measures)
+# #rst = cbind(rst, annotation[rownames(rst),])
+# write.csv(rst, file = "metabolites_MI survival analysis_full model_plus medication_replication S2.csv")
 
 ## analysis using survey package
-require(survey)
-S2$Arg.Trp = S2$Arg/S2$Trp
-S2$eventrec = rep(0, nrow(S2))
-S2.cases = subset(S2, inz_mi==1)
-S2.cases$eventrec<-1
-S2.expd <- rbind(subset(S2, subcoho==1), S2.cases)
-S2.expd$stop <- with(S2.expd, ifelse(inz_mi&!eventrec, mi_time-1, mi_time))
-S2.expd$start <- with(S2.expd, ifelse(inz_mi&eventrec, mi_time-1, 0))
-S2.expd$event <- with(S2.expd, ifelse(inz_mi&eventrec, 1, 0))
-S2.expd$pwts[which(S2.expd$event==1)]=1
-#S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==1)]=1545/443
-#S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==2)]=1699/370
-S2.expd$pwts[which(S2.expd$event==0)]=3244/813
-S2.expd= subset(S2.expd, prev_mi==0)
-
-dBarlow <- svydesign(id=~zz_nr+eventrec, starta=~subcoho+inz_mi, 
-                     data=S2.expd, weigts= S2.expd$pwts, probs = 1/S2.expd$pwts)
-
-svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
-         + scale(ctalteru) + as.factor(ccsex)
-         + scale(ctbmi)## model 1
-         + as.factor(my.diab)  ##model 2
-         + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
-         + scale(log(cl_crp)),
-         design=dBarlow
-)
+# require(survey)
+# S2$Arg.Trp = S2$Arg/S2$Trp
+# S2$eventrec = rep(0, nrow(S2))
+# S2.cases = subset(S2, inz_mi==1)
+# S2.cases$eventrec<-1
+# S2.expd <- rbind(subset(S2, subcoho==1), S2.cases)
+# S2.expd$stop <- with(S2.expd, ifelse(inz_mi&!eventrec, mi_time-1, mi_time))
+# S2.expd$start <- with(S2.expd, ifelse(inz_mi&eventrec, mi_time-1, 0))
+# S2.expd$event <- with(S2.expd, ifelse(inz_mi&eventrec, 1, 0))
+# S2.expd$pwts[which(S2.expd$event==1)]=1
+# #S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==1)]=1545/443
+# #S2.expd$pwts[which(S2.expd$event==0&S2.expd$ccsex==2)]=1699/370
+# S2.expd$pwts[which(S2.expd$event==0)]=3244/813
+# S2.expd= subset(S2.expd, prev_mi==0)
+# 
+# dBarlow <- svydesign(id=~zz_nr+eventrec, starta=~subcoho+inz_mi, 
+#                      data=S2.expd, weigts= S2.expd$pwts, probs = 1/S2.expd$pwts)
+# 
+# svycoxph(Surv(start, stop, event) ~ scale(log(Arg))
+#          + scale(ctalteru) + as.factor(ccsex)
+#          + scale(ctbmi)## model 1
+#          + as.factor(my.diab)  ##model 2
+#          + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3
+#          + scale(log(cl_crp)),
+#          design=dBarlow
+# )
 
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla")]
+S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla", "ctcigreg")]
 #S2.sub = na.omit(S2.sub)
 S2.sub = S2.sub[which(S2.sub$prev_mi02!=1),]
 S2.sub$mi_time.start = 0
@@ -89,26 +89,6 @@ weight[which(S2.sub$subcoho==1&S2.sub$inz_mi==0&S2.sub$ccsex==2)]= 1699/289
 #weight[which(S2.sub$subcoho==0 & S2.sub$inz_mi==1)]= (384-92)/87
 #weight[which(S2.sub$subcoho==1 & S2.sub$inz_mi==1)] = 47/31
 S2.sub$weight = weight
-
-##estimates of the confounders
-model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ 
-#                  scale(log(Arg)) + 
-#                  scale(log(lysoPC_a_C17_0)) + 
-#                  scale(log(Trp)) + 
-#                  scale(log(PC_aa_C32_2))+
-#                 scale(log(PC_aa_C36_3))+
-#                 scale(log(lysoPC_a_C18_2)) + 
-#                 scale(log(SM_C24_1))+
-              scale(ctalteru) + as.factor(ccsex)
-              + scale(ctbmi) + as.factor(my.diab)  ##model 2
-              + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
-              + scale((cl_crp))  ##model 
-              #+ cluster(as.factor(zz_nr))
-              ,data = S2.sub#[which(S2.sub$ctmstati!=1)]
-              ,weights = weight
-              ,method = "breslow"
-)
-write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confounders plus original four metabolites in S2_model 4_remove statine.csv")
 
 ##
 rst = NULL

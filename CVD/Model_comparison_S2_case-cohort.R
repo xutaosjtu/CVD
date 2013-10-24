@@ -284,3 +284,71 @@ for(i in 1:4){
 }
 dev.off()
 
+
+
+
+
+
+
+
+
+##estimates of the confounders and prediction model evaluation by sample spliting
+## sample spliting
+training = sample(1:692, 461)
+test = setdiff(c(1:692), training)
+## model fitting
+model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ 
+                scale(log(Arg)) + 
+                scale(log(lysoPC_a_C17_0)) + 
+                scale(log(Trp)) + 
+                scale(log(PC_aa_C32_2))+
+                #                 scale(log(PC_aa_C36_3))+
+                #                 scale(log(lysoPC_a_C18_2)) + 
+                #                 scale(log(SM_C24_1))+
+                scale(ctalteru) + as.factor(ccsex)
+              + scale(ctbmi) + as.factor(my.diab)  ##model 2
+              + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
+              + scale((cl_crp))  ##model 
+              #+ cluster(as.factor(zz_nr))
+              ,data = S2.sub[training,]#[which(S2.sub$ctmstati!=1)]
+              ,weights = weight
+              ,method = "breslow"
+)
+#write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confounders plus original four metabolites in S2_model 4_remove statine.csv")
+model.base = update(model, .~. - scale(log(Arg))-scale(log(Trp))-scale(log(lysoPC_a_C17_0))-scale(log(PC_aa_C32_2)))
+pred = predict(model.base, S2.sub[test,], type="risk")
+S0=min(survfit(model.base)$surv)
+pred = 1- S0^pred
+fits[[1]] = roc(S2.sub[test, 'inz_mi02'], pred, ci= T)
+pred = predict(model, S2.sub[test,], type="risk")
+S0=min(survfit(model)$surv)
+pred = 1- S0^pred
+fits[[2]] = roc(S2.sub[test, 'inz_mi02'], pred, ci= T)
+
+reclassification(S2.sub[test[which(!is.na(pred))], ], cOutcome = 146, fits[[1]]$predictor, fits[[2]]$predictor, cutoff = c(0, 0.10, 0.2, 0.5,1))
+
+for(i in 1:nrow(S2.sub)){
+  S2.sub$framingham.score[i] = framingham(S2.sub[i,], method="score") 
+}
+
+model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ 
+                scale(log(Arg)) + 
+                scale(log(lysoPC_a_C17_0)) + 
+                scale(log(Trp)) + 
+                scale(log(PC_aa_C32_2))+
+                framingham.linear
+              ,data = S2.sub[training,]#[which(S2.sub$ctmstati!=1)]
+              ,weights = weight
+              ,method = "breslow"
+)
+model.base = update(model, .~. - scale(log(Arg))-scale(log(Trp))-scale(log(lysoPC_a_C17_0))-scale(log(PC_aa_C32_2)))
+pred = predict(model.base, S2.sub[test,], type="risk")
+S0=min(survfit(model.base)$surv)
+pred = 1- S0^pred
+fits[[1]] = roc(S2.sub[test, 'inz_mi02'], pred, ci = T)
+pred = predict(model, S2.sub[test,], type="risk")
+S0=min(survfit(model)$surv)
+pred = 1- S0^pred
+fits[[2]] = roc(S2.sub[test, 'inz_mi02'], pred, ci = T)
+
+reclassification(S2.sub[test[which(!is.na(pred))], ], cOutcome = 146, fits[[1]]$predictor, fits[[2]]$predictor, cutoff = c(0, 0.10, 0.2, 0.5,1))
