@@ -153,6 +153,7 @@ data=data.frame(
 		disease =  as.factor(2-c(S4[Cohort$zz_nr_s4, "lthyact"], F4[Cohort$zz_nr_f4, "uthyact"])),
 		rbind(S4[Cohort$zz_nr_s4, S4.feature], tmpF4),
     
+    my.mi = c(S4[Cohort$zz_nr_s4, "prev_mi"], S4[Cohort$zz_nr_s4, "inz_mi"]),
     my.hyper = c(S4[Cohort$zz_nr_s4, "my.hyper"], F4[Cohort$zz_nr_f4, "my.hyper"])
 )
 data$platform = rep(1:2, each = length(Cohort$zz_nr_s4))
