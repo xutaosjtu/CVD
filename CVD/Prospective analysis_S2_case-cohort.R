@@ -90,7 +90,7 @@ weight[which(S2.sub$subcoho==1&S2.sub$inz_mi==0&S2.sub$ccsex==2)]= 1699/289
 #weight[which(S2.sub$subcoho==1 & S2.sub$inz_mi==1)] = 47/31
 S2.sub$weight = weight
 
-##
+## association analysis on all metabolites
 rst = NULL
 for (m in c(S2_valid_measures,"Arg.Trp")){
   S2.sub$metabolite = scale(log(S2.sub[, m]))
