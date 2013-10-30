@@ -234,7 +234,8 @@ deltaAUC(fits.test)
 #IDI = (IS[new] - IS [old]) - (IP[new] - IP[old])
 reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.03, 0.08, 0.15, 1))
 
-###	combined men and women, using reference model 4
+#######################################################################
+###	combined men and women, using reference models
 prediction = rep(NA, dim(data)[1])
 names(prediction) = rownames(data)
 loglik = 0
@@ -243,7 +244,7 @@ data = data.frame(
 		scale(S4$ltalteru),  as.factor(S4$lcsex), scale(S4$ltbmi),##model 1
 		S4$my.diab, ##model 2
 		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
-		scale(S4$lh_crp), ##model 4,
+		scale(log(S4$lh_crp)), ##model 4,
 		'ltmstati'=as.factor(S4$ltmstati), ##adding statin as a covariate
 		scale(log(S4[, S4_valid_measures]))#, scale(S4[,metabo.ratio.asso])
 )
@@ -277,7 +278,7 @@ for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	pred = crossval.cox(x = data[subset, c(metabo.asso,ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
 	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
@@ -291,7 +292,7 @@ deltaAUC <- function(fits.test){
 for(i in 1:4){
 	#print(fits[[i]]$ci[1:3])
 	#fits[[5]]$ci[1:3]
-	fits.test =  roc.test(fits.dif_full[[i]], fits.dif_ref[[i]])
+	fits.test =  roc.test(fits.full[[i]], fits.ref[[i]])
 	print(fits.test)
 	print(deltaAUC(fits.test))
 }
@@ -300,7 +301,7 @@ for(i in 1:4){
 require(PredictABEL)
 for(i in 1:4){
 	print(paste("Evaluation of model", i))
-	reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.dif_ref[[i]]$predictor, fits.dif_full[[i]]$predictor, cutoff = c(0, 0.1, 0.2, 1))
+	reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits.ref[[i]]$predictor, fits.full[[i]]$predictor, cutoff = c(0, 0.1, 0.2, 1))
 }
 
 ## adding sigle metabolite(ratio) into the model

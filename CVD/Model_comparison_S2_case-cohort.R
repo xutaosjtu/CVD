@@ -204,7 +204,7 @@ data = data.frame(
   scale(data.S2$ctalteru),  as.factor(data.S2$ccsex), ##model 1
   scale(data.S2$ctbmi),as.factor(data.S2$my.diab), ##model 2
   scale(data.S2$ctsysmm),  as.factor(data.S2$my.cigreg), as.factor(data.S2$my.alkkon), scale(data.S2$cl_hdla), scale(data.S2$cl_chola), ##model 3
-  scale(data.S2$cl_crp), ##model 4,
+  scale(log(data.S2$cl_crp)), ##model 4,
   scale(log(as.matrix(data.S2[, S2_valid_measures]))),
   weight=data.S2$weight
 )
@@ -243,7 +243,7 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(metabo.selected,ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
   prediction[subset] = pred$cv.fit
   fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }

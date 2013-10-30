@@ -123,20 +123,21 @@ plot(
 
 ##
 ##  estimates of the confounders
-model = coxph(Surv(mi_time, inz_mi) ~ scale(log(Arg)) + 
-#                 scale(log(lysoPC_a_C17_0)) + 
-#                 scale(log(Trp)) + 
-#                 scale(log(PC_aa_C32_2))+
+model = coxph(Surv(mi_time, inz_mi) ~ 
+                scale(log(Arg)) + 
+                 scale(log(lysoPC_a_C17_0)) + 
+                 scale(log(Trp)) + 
+                 scale(log(PC_aa_C32_2))+
 #                 scale(log(PC_aa_C36_3))+
-#                 scale(log(lysoPC_a_C18_2)) + 
+                 scale(log(lysoPC_a_C18_2)) + 
 #                 scale(log(SM_C24_1))+
                 scale(ltalteru) + as.factor(lcsex)
               + scale(ltbmi) + as.factor(my.diab)  ##model 2
               + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3
-              + scale(lh_crp)  ##model 4
+              + scale(log(lh_crp))  ##model 4
               ,subset = which(S4$prev_mi==0),
               data = S4)
-write.csv(cbind(summary(model)$coef, confint(model)), file = "estimates of confounders in S4_model 4.csv")
+write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of confounders plus original four metabolites in S4_model 4c.csv")
 ##
 
 ## association analysis
@@ -150,7 +151,7 @@ for (m in S4_valid_measures){
 					+ scale(ltbmi)## model 1
 					+ as.factor(my.diab)  ##model 2
 					+ scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				#+ scale(lh_crp)  ##model 4
+	 				#+ scale(log(lh_crp))##model 4
 	        #+ as.factor(ltmstati)
           #+ as.factor(ltantihy)
 					,subset = which(S4$prev_mi==0 & S4$ltmstati !=1),#
@@ -181,65 +182,28 @@ S2$Arg.Trp = S2$Arg/S2$Trp
 tmp = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho")]
 tmp = na.omit(tmp)
 
-require(survival)
-rst = NULL;
-for (m in c(S2_valid_measures,"Arg.Trp")){
-  tmp$metabolite = scale(log(tmp[, m]))
-  model = cch(Surv(mi_time, inz_mi) ~ metabolite + #as.factor(ltnuecht) +
-                  scale(ctalteru) #+ as.factor(ccsex)
-                + scale(ctbmi)## model 1
-                + as.factor(my.diab)  ##model 2
-                + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla) ##model 3+ total2HDL
-                + scale(log(cl_crp))  ##model 4
-                #+ as.factor(ctmstati)#& S4$ltmstati !=1
-                #+ as.factor(ctantihy)
-                #+ as.factor(ctmbbl)
-                #+ as.factor(ctmdiu)
-                #+ as.factor(ctmhypot)
-                ,data = tmp
-              , subcoh = tmp$subcoho
-              , id =~zz_nr,
-              , stratum= ~ as.factor(ccsex)
-              , method = "I.Borgan"
-              , cohort.size = c(1679,1729))
-  rst = rbind(rst, summary(model)$coefficients[1,])
-  #rst1 = rbind(rst , summary(model)$coefficients[10,])
-  #rst2 = rbind(rst2, summary(model)$coefficients[11,])
-  #rst3 = rbind(rst3, summary(model)$coefficients[12,])
-  #table(model$y[,2]) #number of sample used exactly in the estimation.
-}
-table(model$y[,2])
-rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
-rownames(rst) = c(S2_valid_measures,"Arg_Trp")
-#rst = cbind(rst, annotation[rownames(rst),])
-write.csv(rst, file = "metabolites_MI survival analysis_full model_plus medication_replication S2.csv")
-
-
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
 ############	Hazardous ratios in different quantiles	################
 require(gplots)
-pdf("quintile plot of replative risk (ynorm)_crude model_S4.pdf", width = 12, height = 12)
+pdf("quartile plot of replative risk (ynorm)_model 1_S4.pdf", width = 12, height = 12)
 par(mfrow =c(2,2));
 yrange = NULL; RRquin = NULL
-rst = NULL
+rst = NULL; rst2 = NULL
 for(m in S4_valid_measures){
-	m.conc=scale(log(S4[, m]))
+	m.conc=S4[, m]
 	metabo.quintile = cut(m.conc, breaks = quantile(m.conc, probs = seq(0, 1, 0.25), na.rm = T), 
 			include.lowest = T,ordered_result = F)
 	model1 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) 
          #+ scale(ltbmi) + my.diab  ##model 2
 				 #+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-				 #+ scale(lh_crp)  ##model 4&S4$ltmstati !=1
+				 #+ scale(log(lh_crp))  ##model 4&S4$ltmstati !=1
          
 			,subset = which(S4$prev_mi == 0),
 			S4)
-#	rst = summary(model1)$coefficients[1:4, ]
-  rst = rbind(rst, summary(model1)$coefficients[1:3, ])
-}
-rownames(rst) = rep(c(S4_valid_measures), each=3)
-write.csv(rst, file = "metabolites categorical_MI survival analysis_model 1_S4.csv")
+	rst = summary(model1)$coefficients[1:3, ]
+  rst2 = rbind(rst2, summary(model1)$coefficients[1:3, ])
   
 #	interval = paste(round(exp(rst[,1] - 1.96* rst[,3]),3), 
 #			round(exp(rst[,1] + 1.96*rst[,3]), 3),
@@ -269,13 +233,16 @@ write.csv(rst, file = "metabolites categorical_MI survival analysis_model 1_S4.c
 	abline(h = 1, lty = 2)
 }
 dev.off()
+rownames(rst2) = rep(c(S4_valid_measures), each=4)
+write.csv(rst2, file = "metabolites categorical_MI survival analysis_model 1_S4.csv")
+
 
 
 
 #test the trend
 rst= NULL;
 for(m in S4_valid_measures){
-	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.25), na.rm = T), include.lowest = T,ordered_result = F)
+	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2), na.rm = T), include.lowest = T,ordered_result = F)
 	#log(S4[,m])
 	if(m == "Arg.Trp"){
 		metabo.quintile.value = tapply(scale(S4[, m]), INDEX = metabo.quintile, median, na.rm=T)
@@ -292,7 +259,7 @@ for(m in S4_valid_measures){
 					scale(ltalteru) + as.factor(lcsex) 
           #+ scale(ltbmi) + my.diab  ##model 2
 					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-					#+ scale(lh_crp)  ##model 4
+					#+ scale(log(lh_crp))  ##model 4
 			,subset = which(S4$prev_mi == 0),
 			S4)
 	rst = rbind(rst, summary(model)$coefficients[1, ])
