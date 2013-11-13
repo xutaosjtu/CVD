@@ -61,6 +61,10 @@ for(i in 1:nrow(data.S2)){
   data.S2$framingham.linear[i] = framingham(data.S2[i,], method="linear") 
 }
 
+for(i in 1:nrow(data.S2)){
+  data.S2$framingham.score[i] = framingham(data.S2[i,], method="score") 
+}
+
 ###	men and women separated, using the framingham score
 data = data.frame(
   start = data.S2$mi_time.start, end = data.S2$mi_time.end,

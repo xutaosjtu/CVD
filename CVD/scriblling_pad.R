@@ -141,6 +141,8 @@ tmp = sapply(tmp.biom,
 col3 <- colorRampPalette(c("blue", "white", "red"))
 corrplot(tmp, col = col3(200), tl.col = "black")
 
+##########################################
+### bayesian network
 require(deal)
 tmp = S4[, c(metabo.selected, "lh_crp", "inz_mi")]
 tmp$inz_mi=as.factor(tmp$inz_mi)
@@ -154,7 +156,7 @@ tmp.nw.learn = getnetwork(tmp.learn)
 
 drawnetwork(tmp.nw, tmp, tmp.j)$nw
 tmp.h<-heuristic(tmp.nw.learn, tmp, tmp.j,
-                 trace = FALSE)
+                 trace = TRUE)
 
 require(bnlearn)
 tmp = S4[, c(metabo.selected, "lh_crp", "inz_mi")]
@@ -166,3 +168,10 @@ plot(res2)
 
 res = gs(tmp, debug=TRUE)
 sink(file = "Casual inference/Bayesian network/learning.txt")
+
+####################################
+### use WinBUGS
+require(BRugs)
+require(R2WinBUGS)
+
+

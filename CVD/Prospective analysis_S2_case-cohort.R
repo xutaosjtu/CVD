@@ -92,12 +92,12 @@ S2.sub$weight = weight
 
 ##
 model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ 
-#                  scale(log(Arg)) + 
-#                  scale(log(lysoPC_a_C17_0)) + 
-#                  scale(log(Trp)) + 
-#                  scale(log(PC_aa_C32_2))+
+                  scale(log(Arg)) + 
+                  scale(log(Trp)) + 
+                scale(log(lysoPC_a_C17_0)) + 
+                  scale(log(PC_aa_C32_2))+
 #                 scale(log(PC_aa_C36_3))+
-#                 scale(log(lysoPC_a_C18_2)) + 
+                 scale(log(lysoPC_a_C18_2)) + 
 #                 scale(log(SM_C24_1))+                
               + scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi)## model 1
@@ -111,7 +111,7 @@ model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~
               ,weights = weight
               ,method = "breslow"
 )
-write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of confounders in S2_model 4.csv.csv")
+write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of confounders in S2_model 4.csv")
 
 
 ## association analysis on all metabolites
@@ -268,13 +268,18 @@ write.csv(rst, "metabolites categorical_test for trend_model 4_S2 case cohort.cs
 # write.csv(rst, "association with CRP_unadjsted_S2_case cohort.csv")
 # 
 # 
-# model = lm(scale(log(cl_crp)) ~ scale(log(Arg)) + scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) + scale(log(SM_C24_1)) + 
-#            scale(ctalteru) + as.factor(ccsex)
-#            + scale(ctbmi)## model 1
-#            + as.factor(my.diab)  ##model 2
-#            + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
-#            , data = S2[which((S2$prev_mi==0&S2$subcoho==1)|S2$inz_mi==1),]
-# )
+model = lm(scale(log(cl_crp)) ~ 
+             scale(log(Arg)) + 
+             scale(log(Trp)) + 
+             scale(log(lysoPC_a_C17_0)) + 
+             scale(log(PC_aa_C32_2)) + 
+             scale(log(lysoPC_a_C18_2)) + 
+           scale(ctalteru) + as.factor(ccsex)
+           + scale(ctbmi)## model 1
+           + as.factor(my.diab)  ##model 2
+           + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+           , data = S2[which((S2$prev_mi02==0&S2$subcoho==1)|S2$inz_mi02==1),]
+)
 
 ### association of metabolites with age
 plot(log(Trp)~ctalteru, S2)

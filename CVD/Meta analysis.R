@@ -44,7 +44,7 @@ for(i in 1:nrow(S2)){
 }
 rownames(rst) = rownames(S2)
 colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
-write.csv(rst, "meta analysis_random_confounders plus original four metabolites model4.csv")  
+write.csv(rst, "meta analysis_random_confounders plus 5 metabolites model4.csv")  
 
 rma.baseline = rma.test 
 tmp = rbind(S4[nrow(S4),], S2[nrow(S4),1:5])

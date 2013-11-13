@@ -137,7 +137,7 @@ model = coxph(Surv(mi_time, inz_mi) ~
               + scale(log(lh_crp))  ##model 4
               ,subset = which(S4$prev_mi==0),
               data = S4)
-write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of confounders plus original four metabolites in S4_model 4c.csv")
+write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of confounders plus original four metabolites in S4_model 4_5 metabolites.csv")
 ##
 
 ## association analysis
@@ -151,7 +151,7 @@ for (m in S4_valid_measures){
 					+ scale(ltbmi)## model 1
 					+ as.factor(my.diab)  ##model 2
 					+ scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				#+ scale(log(lh_crp))##model 4
+	 				+ scale(log(lh_crp))##model 4
 	        #+ as.factor(ltmstati)
           #+ as.factor(ltantihy)
 					,subset = which(S4$prev_mi==0 & S4$ltmstati !=1),#

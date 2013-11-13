@@ -15,33 +15,37 @@ data = S4
 data[, metabo.selected3] =  log(S4[, metabo.selected3])
 
 #################	Framingham score	##########################
-framingham<-function(x){
-	#print(x["lcsex"])
-	if(x["lcsex"] == 1){ beta = c(3.06117, 1.12370, -0.93263, 1.99881, 1.93303, 0.65451, 0.57367, 23.9802); S0 = 0.88936}
-	else {beta = c(2.32888, 1.20904, -0.70833, 2.76157, 2.82263, 0.52873, 0.69154, 26.1931); S0 = 0.95012}
-	X = rep(0, 6)
-	X[1] = beta[1] * log(x$ltalteru)#age
-	X[2] = beta[2] * log(x$ll_chola)#total cholesterol
-	X[3] = beta[3] * log(x$ll_hdla)#HDL
-	if(is.na(x$ltmbbl) & is.na(x$ltmace) & is.na(x$ltmata)) { X[4]=NA }
-	else if(!(x$ltmbbl ==1 | x$ltmace ==1 | x$ltmata ==1)) X[4]= beta[4]*log(x$ltsysmm) #systolic blood pressure if un-treated
-	else  X[4] = beta[5]*log(x$ltsysmm) #systolic blood pressure if treated
-	X[5] = beta[6]* as.numeric(x$ltcigreg==1|x$ltcigreg==2)#smoking
-	X[6] = beta[7] * (as.numeric(x$my.diab)-1)
-	risk = 1-S0^exp(sum(X) - beta[8]);
-	#risk = sum(X) - beta[8]
-	return(risk)
+framingham<-function(x, method="linear"){
+  #print(x["lcsex"])
+  if(x["lcsex"] == 1){ beta = c(3.06117, 1.12370, -0.93263, 1.99881, 1.93303, 0.65451, 0.57367, 23.9802); S0 = 0.88936}
+  else {beta = c(2.32888, 1.20904, -0.70833, 2.76157, 2.82263, 0.52873, 0.69154, 26.1931); S0 = 0.95012}
+  X = rep(0, 6)
+  X[1] = beta[1] * log(x$ltalteru)#age
+  X[2] = beta[2] * log(x$ll_chola)#total cholesterol
+  X[3] = beta[3] * log(x$ll_hdla)#HDL
+  if(is.na(x$ltantihy)) { X[4]=NA }
+  else if(!(x$ltantihy ==1)) X[4]= beta[4]*log(x$ltsysmm) #systolic blood pressure if un-treated
+  else  X[4] = beta[5]*log(x$ltsysmm) #systolic blood pressure if treated
+  X[5] = beta[6]* as.numeric(x$ltcigreg==1|x$ltcigreg==2)#smoking
+  X[6] = beta[7] * (as.numeric(x$my.diab))
+  if(method=="score") return(1-S0^exp(sum(X) - beta[8]))
+  else if(method == "linear") return(sum(X) - beta[8])
 }
 
 for(i in 1:nrow(S4)){
-	S4$framingham[i] = framingham(S4[i,]) 
+	S4$framingham[i] = framingham(S4[i,], method = "score") 
+}
+
+
+for(i in 1:nrow(S4)){
+  S4$framingham.linear[i] = framingham(S4[i,], method = "linear") 
 }
 
 ###	men and women separated, using the framingham score
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		framingham.linear = S4$framingham.linear,
-		scale(log(as.matrix(S4[, metabo.asso]))) #, scale(S4[, metabo.ratio.asso])
+		scale(log(as.matrix(S4[, S4_valid_measures]))) #, scale(S4[, metabo.ratio.asso])
 )
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 prediction = rep(NA, dim(data)[1])
@@ -198,8 +202,8 @@ data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		S4$ltalteru, as.factor(S4$lcsex), S4$ltbmi, ##model 1
 		S4$my.diab, ##model 2
-		S4$ltsysmm, S4$ll_hdla, S4$ll_chola, S4$my.cigreg, S4$my.alkkon,##model 3
-		S4$lh_crp, ##model 4
+		S4$ltsysmm, S4$ll_hdla, S4$ll_chola, as.factor(S4$my.cigreg), S4$my.alkkon,##model 3
+		log(S4$lh_crp), ##model 4
 		log(as.matrix(S4[, metabo.asso]))
 )
 clinical = c("age",  "sex", "ltbmi","diabetes", "ltsysmm", "ll_hdla", "ll_chola", "smoking", "alkkon", "lh_crp")
@@ -243,7 +247,7 @@ data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		scale(S4$ltalteru),  as.factor(S4$lcsex), scale(S4$ltbmi),##model 1
 		S4$my.diab, ##model 2
-		scale(S4$ltsysmm),  S4$my.cigreg, S4$my.alkkon, scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
+		scale(S4$ltsysmm),  as.factor(S4$my.cigreg), as.factor(S4$my.alkkon), scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
 		scale(log(S4$lh_crp)), ##model 4,
 		'ltmstati'=as.factor(S4$ltmstati), ##adding statin as a covariate
 		scale(log(S4[, S4_valid_measures]))#, scale(S4[,metabo.ratio.asso])
@@ -278,16 +282,20 @@ for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(metabo.asso,ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	pred = crossval.cox(x = data[subset, c(metabo.selected3[c(1,3,4,6)], ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
 	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
 metabo.selected3,
+
+
 deltaAUC <- function(fits.test){
 	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
 	se = delta / fits.test$statistic
 	return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
 }
+
+
 #calculate delta AUC
 for(i in 1:4){
 	#print(fits[[i]]$ci[1:3])

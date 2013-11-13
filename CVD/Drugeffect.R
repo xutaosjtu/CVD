@@ -52,7 +52,7 @@ for(i in 1:length(candidates)){
 rownames(rst) = candidates
 
 
-model = lm(scale(log(lh_crp)) ~ scale(log(Arg)) + scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) +
+model = lm(scale(log(lh_crp)) ~ #scale(log(Arg)) + scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) + scale(log(lysoPC_a_C18_2)) + 
             scale(ltalteru) + as.factor(lcsex)
            + scale(ltbmi) + as.factor(my.diab)  ##model 2
            + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3
