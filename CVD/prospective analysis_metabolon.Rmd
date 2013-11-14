@@ -1,0 +1,46 @@
+Title Association of metabolites with myocaridial infarction in the metabolon data 
+========================================================
+<link href="custom.css" rel="stylesheet">
+
+
+```{r comment="Loading required package: xtable"}
+require(xtable)
+```
+Import the metabolon data
+```{r}
+setwd("D:/Users/tao.xu/Dropbox/Cardiovascular disease")
+load("data_hypertension_new 2.RData")
+load("data/S4 metabolon valid.RData")
+load("data/S4 metabolon.RData")
+S4.metabolon = S4.metabolon[, 1:500]
+
+metabolon.annotate = read.csv("data/Metabolon_annotation.csv")
+rownames(metabolon.annotate) = metabolon.annotate[, 1]
+```
+
+merge the biocrates data with the metabolon data
+```{r}
+S4.metabolon = merge(S4, S4.metabolon)
+print(dim(S4.metabolon))
+```
+
+```{r results='asis'}
+require(survival)
+rst = NULL;
+for (m in S4.metabolon.valid){
+  S4.metabolon$m = scale(S4.metabolon[, m])
+  model = coxph(Surv(mi_time, inz_mi) ~  m 
+              + ltalteru + as.factor(lcsex)
+              + scale(ltbmi) + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.diab) + scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla)
+              + scale(log(lh_crp))
+              , data = S4.metabolon
+              , subset = which(S4.metabolon$prev_mi == 0)
+  )
+  rst = rbind(rst, summary(model)$coefficients[1,])
+}
+rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rownames(rst) = S4.metabolon.valid
+rst = cbind(rst, metabolon.annotate[S4.metabolon.valid,])
+print(xtable(rst), type="html")
+```
+

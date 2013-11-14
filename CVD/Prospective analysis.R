@@ -156,7 +156,7 @@ for (m in S4_valid_measures){
 	 				+ scale(log(lh_crp))##model 4
 	        #+ as.factor(ltmstati)
           #+ as.factor(ltantihy)
-					,subset = which(S4$prev_mi==0 & S4$ltmstati !=1),#
+					,subset = which(S4$prev_mi==0),#
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[2,])
