@@ -32,15 +32,34 @@ for (m in S4.metabolon.valid){
   model = coxph(Surv(mi_time, inz_mi) ~  m 
               + ltalteru + as.factor(lcsex)
               + scale(ltbmi) + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.diab) + scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla)
-              + scale(log(lh_crp))
+              #+ scale(log(lh_crp))
               , data = S4.metabolon
-              , subset = which(S4.metabolon$prev_mi == 0)
+              , subset = (prev_mi == 0)
   )
   rst = rbind(rst, summary(model)$coefficients[1,])
 }
-rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
+rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rownames(rst) = S4.metabolon.valid
 rst = cbind(rst, metabolon.annotate[S4.metabolon.valid,])
 print(xtable(rst), type="html")
 ```
 
+Comparison for the goodness of fit between different cox models, with arginine and tryptophan as additional biomarkers.
+```{r results = 'asis'}
+model = coxph(Surv(mi_time, inz_mi) ~ 
+                scale(M01638) + scale(M00054) 
+              + ltalteru + as.factor(lcsex)
+              + scale(ltbmi) + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.diab) + scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla)
+              + scale(log(lh_crp))
+              , data = S4.metabolon
+              , subset = prev_mi==0 & !is.na(lh_crp) & !is.na(M01638) & !is.na(M00054)
+              )
+print(model)
+
+model2 = update(model, .~.-scale(M01638))
+anova(model, model2)
+model3 = update(model, .~.-scale(M00054))
+anova(model, model3)
+model4 = update(model, .~.-scale(log(lh_crp)))
+anova(model, model4)
+```
