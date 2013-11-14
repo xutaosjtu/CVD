@@ -65,7 +65,7 @@ rst = NULL;
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla", "ctcigreg")]
+S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Kynurenine_Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla", "ctcigreg")]
 #S2.sub = na.omit(S2.sub)
 S2.sub = S2.sub[which(S2.sub$prev_mi02!=1),]
 S2.sub$mi_time.start = 0
@@ -96,14 +96,15 @@ model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~
                   scale(log(Trp)) + 
                 scale(log(lysoPC_a_C17_0)) + 
                   scale(log(PC_aa_C32_2))+
-#                 scale(log(PC_aa_C36_3))+
+#                  scale(log(PC_aa_C36_3))+
                  scale(log(lysoPC_a_C18_2)) + 
-#                 scale(log(SM_C24_1))+                
+#                  scale(log(SM_C24_1))+
+                #scale(log(Kynurenine_Trp+1))
               + scale(ctalteru) + as.factor(ccsex)
               + scale(ctbmi)## model 1
               + as.factor(my.diab)  ##model 2
               + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
-              + scale(log(cl_crp))  ##model 4
+              + scale((cl_crp))  ##model 4
               #+ as.factor(ctmstati)
               + cluster(as.factor(zz_nr))
               ,data = S2.sub

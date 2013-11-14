@@ -124,18 +124,20 @@ plot(
 ##
 ##  estimates of the confounders
 model = coxph(Surv(mi_time, inz_mi) ~ 
-                scale(log(Arg)) + 
-                 scale(log(lysoPC_a_C17_0)) + 
-                 scale(log(Trp)) + 
-                 scale(log(PC_aa_C32_2))+
-#                 scale(log(PC_aa_C36_3))+
-                 scale(log(lysoPC_a_C18_2)) + 
-#                 scale(log(SM_C24_1))+
+                  scale(log(Arg)) + 
+                  scale(log(lysoPC_a_C17_0)) + 
+                  scale(log(Trp)) + 
+                  scale(log(PC_aa_C32_2))+
+#                  scale(log(PC_aa_C36_3))+
+                  scale(log(lysoPC_a_C18_2)) + 
+#                  scale(log(SM_C24_1))+
+               #scale(log(Kynurenine_Trp)) +
                 scale(ltalteru) + as.factor(lcsex)
               + scale(ltbmi) + as.factor(my.diab)  ##model 2
               + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3
               + scale(log(lh_crp))  ##model 4
-              ,subset = which(S4$prev_mi==0),
+#               + as.factor(S4$ltantihy)
+              ,subset = which(S4$prev_mi==0&!is.na(S4$lh_crp)),
               data = S4)
 write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of confounders plus original four metabolites in S4_model 4_5 metabolites.csv")
 ##
@@ -196,9 +198,9 @@ for(m in S4_valid_measures){
 			include.lowest = T,ordered_result = F)
 	model1 = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) 
-         #+ scale(ltbmi) + my.diab  ##model 2
-				 #+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-				 #+ scale(log(lh_crp))  ##model 4&S4$ltmstati !=1
+         + scale(ltbmi) + my.diab  ##model 2
+				 + scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+				 + scale(log(lh_crp))  ##model 4&S4$ltmstati !=1
          
 			,subset = which(S4$prev_mi == 0),
 			S4)
@@ -242,7 +244,7 @@ write.csv(rst2, file = "metabolites categorical_MI survival analysis_model 1_S4.
 #test the trend
 rst= NULL;
 for(m in S4_valid_measures){
-	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.2), na.rm = T), include.lowest = T,ordered_result = F)
+	metabo.quintile = cut(S4[, m], breaks = quantile(S4[, m], probs = seq(0, 1, 0.25), na.rm = T), include.lowest = T,ordered_result = F)
 	#log(S4[,m])
 	if(m == "Arg.Trp"){
 		metabo.quintile.value = tapply(scale(S4[, m]), INDEX = metabo.quintile, median, na.rm=T)
@@ -257,8 +259,8 @@ for(m in S4_valid_measures){
 	metabo.quintile = tmp
 	model = coxph(Surv(mi_time, inz_mi) ~ metabo.quintile +
 					scale(ltalteru) + as.factor(lcsex) 
-          #+ scale(ltbmi) + my.diab  ##model 2
-					#+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+          + scale(ltbmi) + my.diab  ##model 2
+					+ scale(ltsysmm) + my.cigreg + my.alkkon  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
 					#+ scale(log(lh_crp))  ##model 4
 			,subset = which(S4$prev_mi == 0),
 			S4)

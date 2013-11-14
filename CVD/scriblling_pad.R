@@ -159,7 +159,7 @@ tmp.h<-heuristic(tmp.nw.learn, tmp, tmp.j,
                  trace = TRUE)
 
 require(bnlearn)
-tmp = S4[, c(metabo.selected, "lh_crp", "inz_mi")]
+tmp = S4[, c(metabo.selected, "lh_crp")]
 tmp = na.omit(tmp)
 res = gs(tmp)
 plot(res)
