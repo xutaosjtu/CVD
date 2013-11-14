@@ -63,3 +63,14 @@ anova(model, model3)
 model4 = update(model, .~.-scale(log(lh_crp)))
 anova(model, model4)
 ```
+
+A multivariate approach with penalty functions used for variables selection
+```{r}
+model = coxph(as.formula(paste("Surv(mi_time, inz_mi) ~", "ridge(", 
+  paste(S4.metabolon.valid[1:30], collapse=","), 
+  ", theta = 5) + ltalteru + as.factor(lcsex) + scale(ltbmi) + as.factor(my.cigreg) + as.factor(my.alkkon) + as.factor(my.diab) + scale(ltsysmm)+ scale(ll_chola) + scale(ll_hdla) + scale(log(lh_crp))"))
+              , data = S4.metabolon)
+```
+
+
+
