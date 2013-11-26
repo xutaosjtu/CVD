@@ -102,7 +102,7 @@ write.csv(rst, file = "Hypertension survival analysis_mixed effect_full model.cs
 ########################################################################################
 # fixed effect model: logistic regression
 rst = NULL # association in S4 
-for (m in valid_measures){
+for (m in S4_valid_measures){
 	S4$m = scale(log(S4[, m]))
 	model = glm(as.factor(2-lthyact) ~  m 
 					+ ltalteru + as.factor(lcsex) # basic model
@@ -119,8 +119,8 @@ for (m in valid_measures){
 	rst = rbind(rst, summary(model)$coefficients[2,])
 }
 rst = data.frame(rst, FDR = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonferroni"))
-rownames(rst) = valid_measures
-write.csv(rst, file = "Hypertension cross-sectional_S4_adjust medi_full model_normed.csv")
+rownames(rst) = S4_valid_measures
+write.csv(rst, file = "Hypertension cross-sectional_S4_adjust medi_full model_normed_140.csv")
 
 rst = NULL # association in F4
 for (m in valid_measures){
