@@ -44,12 +44,37 @@ rownames(rst) = candidates
 write.csv(rst, file = "Statine effect on metabolites and ratios.csv")
 
 #############	association with c-reactive protein	#############
-rst = NULL; candidates = c(metabo.asso)
-for(i in 1:length(candidates)){
-	model = lm(lh_crp ~ ., data = data[, c(candidates[i], "lh_crp")])
+rst = NULL; 
+for(i in metabo.asso){
+  S4$m = scale((S4[, i]))
+	model = lm(log(lh_crp) ~ m + 
+               scale(ltalteru) + as.factor(lcsex)
+	           + scale(ltbmi) + as.factor(my.diab)  ##model 2
+	           + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3
+	           , subset = which(S4$prev_mi==0) 
+             , data = S4)
 	rst = rbind(rst, summary(model)$coef[2,])
 }
-rownames(rst) = candidates
+rownames(rst) = metabo.asso
+rst = data.frame(rst, lower = rst[,1]-1.96*rst[,2], upper = rst[,1]+1.96*rst[,2])
+write.csv(rst, file = "Associations of candidates with CRP_S4.csv")
+
+
+rst = NULL; 
+for(i in metabo.asso){
+  S2$m = scale(log(S2[, i]))
+  model = lm(log(cl_crp) ~ m + 
+               scale(ctalteru) + as.factor(ccsex)
+             + scale(ctbmi)## model 1
+             + as.factor(my.diab)  ##model 2
+             + scale(ctsysmm) + as.factor(my.cigreg) + my.alkkon  + scale(cl_chola) + scale(cl_hdla)
+             , subset = prev_mi02==0&subcoho==1| inz_mi02==1
+             , data = S2)
+  rst = rbind(rst, summary(model)$coef[2,])
+}
+rownames(rst) = metabo.asso
+rst = data.frame(rst, lower = rst[,1]-1.96*rst[,2], upper = rst[,1]+1.96*rst[,2])
+write.csv(rst, file = "Associations of candidates with CRP_S2.csv")
 
 
 model = lm(scale(log(lh_crp)) ~ #scale(log(Arg)) + scale(log(Trp)) + scale(log(lysoPC_a_C17_0)) + scale(log(PC_aa_C32_2)) + scale(log(lysoPC_a_C18_2)) + 
