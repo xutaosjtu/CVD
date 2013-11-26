@@ -37,7 +37,7 @@ rst = NULL
 for(i in 1:nrow(S2.estimate)){
   tmp = rbind(S4.estimate[i,], S2.estimate[i,])
   tmp = as.data.frame(tmp)
-  rma.test = rma(yi = tmp$coef, sei = tmp$'se(coef)', 
+  rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., 
                  #method = "FE",
                  measure = "RR")
   summary = c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp)
