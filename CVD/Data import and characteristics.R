@@ -21,6 +21,7 @@ S4 = tmp
 
 S4$inz_mi[which(S4$inz_mi==".")]=NA
 S4$inz_mi = as.numeric(S4$inz_mi)
+S4$mi_time = as.numeric(S4$mi_time)
 #S4_valid_measure = 
 #F4_valid_measure = 
 load("data/F4_valid_measures.RData")

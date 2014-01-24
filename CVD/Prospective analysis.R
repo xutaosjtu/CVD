@@ -175,14 +175,41 @@ rst2 = data.frame(rst2, FDR = p.adjust(rst2[,5], method = "BH"), bonferroni = p.
 rownames(rst2) = S4_valid_measures
 write.csv(rst2, file = "metabolites fasting interaction_MI survival analysis_S4_full model_with nonfasting.csv")
 
-index=sapply(S2[,S2_valid_measures], function(x) which(abs(x)>mean(x,na.rm=T)+5*sd(x,na.rm=T)|abs(x)<mean(x,na.rm=T)-5*sd(x,na.rm=T))) 
-for(i in S2_valid_measures){
-  S2[index[[i]],i]=NA
+## include all non fasting samples
+## association analysis
+require(survival)
+rst = NULL; rst1 = NULL
+rst2 = NULL; rst3 = NULL
+for (m in S4_valid_measures){
+  S4$metabolite = scale(log(S4[, m]))
+  model = coxph(Surv(mi_time, inz_mi) ~ metabolite 
+                + scale(ltalteru) + as.factor(lcsex)## model 1
+                 + scale(ltbmi)+ as.factor(my.diab)  ##model 2
+                 + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+                + scale(log(lh_crp))##model 4
+                #+ as.factor(ltmstati)
+                + as.factor(ltnuecht)
+                ,subset = which(S4$prev_mi==0),#
+                data = S4)
+  rst = rbind(rst, summary(model)$coefficients[1,])
 }
+table(model$y[,2])
+rst = data.frame(rst,FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
+rst$lower = exp(rst$coef - 1.96*rst$se.coef.)
+rst$upper = exp(rst$coef+1.96*rst$se.coef.)
+rownames(rst) = S4_valid_measures
+#rst = cbind(rst, annotation[rownames(rst),])
+write.csv(rst, file = "metabolites_MI survival analysis_S4_model 1_with nonfasting samples.csv")
 
-S2$Arg.Trp = S2$Arg/S2$Trp
-tmp = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho")]
-tmp = na.omit(tmp)
+
+# index=sapply(S2[,S2_valid_measures], function(x) which(abs(x)>mean(x,na.rm=T)+5*sd(x,na.rm=T)|abs(x)<mean(x,na.rm=T)-5*sd(x,na.rm=T))) 
+# for(i in S2_valid_measures){
+#   S2[index[[i]],i]=NA
+# }
+# 
+# S2$Arg.Trp = S2$Arg/S2$Trp
+# tmp = S2[which((S2$subcoho==1 & !is.na(S2$inz_mi))|S2$inz_mi==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Arg.Trp","zz_nr","mi_time", "inz_mi","subcoho")]
+# tmp = na.omit(tmp)
 
 plot(survfit(Surv(mi_time, S4$inz_mi)~(log(S4$PC_aa_C32_2) > 1.2), S4, subset= which(S4$prev_mi == 0)), log = "y", col = c("red","green"))
 
