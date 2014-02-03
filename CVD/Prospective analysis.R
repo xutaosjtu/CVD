@@ -189,7 +189,7 @@ for (m in S4_valid_measures){
                  + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
                 + scale(log(lh_crp))##model 4
                 #+ as.factor(ltmstati)
-                + as.factor(ltnuecht)
+                #+ as.factor(ltnuecht)
                 ,subset = which(S4$prev_mi==0),#
                 data = S4)
   rst = rbind(rst, summary(model)$coefficients[1,])
