@@ -65,7 +65,7 @@ rst = NULL;
 
 ##Barlow's weighting
 S2$Arg.Trp = S2$Arg/S2$Trp
-S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Kynurenine_Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla", "ctcigreg")]
+S2.sub = S2[which(S2$subcoho==1|S2$inz_mi02==1),c("ctalteru", "ccsex","ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola","cl_hdla","cl_crp",S2_valid_measures,"Kynurenine_Trp","zz_nr","mi_time02", "inz_mi02","subcoho","prev_mi02","ctantihy", "ctmstati", "cl_ldla", "ctcigreg", "my.physical")]
 #S2.sub = na.omit(S2.sub)
 S2.sub = S2.sub[which(S2.sub$prev_mi02!=1),]
 S2.sub$mi_time.start = 0
@@ -117,7 +117,7 @@ write.csv(cbind(summary(model)$coef, exp(confint(model))), file = "estimates of 
 
 ## association analysis on all metabolites
 rst = NULL
-for (m in c(S2_valid_measures,"Arg.Trp")){
+for (m in c(S2_valid_measures)){
   S2.sub$metabolite = scale(log(S2.sub[, m]))
   model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
               + scale(ctalteru) + as.factor(ccsex)## model 1
@@ -126,6 +126,7 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
               + scale(log(cl_crp))  ##model 4
               #+ as.factor(ctmstati)
               #+ cluster(as.factor(zz_nr))
+              + as.factor(my.physical)
                 ,data = S2.sub
                 #,subset = S2.sub$ctmstati!=1
               ,weights = weight
@@ -136,7 +137,7 @@ for (m in c(S2_valid_measures,"Arg.Trp")){
 rst = data.frame(rst, FDR = p.adjust(rst[,5], method = "BH"), bonferroni = p.adjust(rst[,5], method = "bonferroni"))
 rst$lower = exp(rst$coef - 1.96*rst$se.coef.)
 rst$upper = exp(rst$coef+1.96*rst$se.coef.)
-rownames(rst) = c(S2_valid_measures,"Arg_Trp")
+rownames(rst) = c(S2_valid_measures)
 write.csv(rst, file = "metabolites_MI survival analysis_model 3_2002 S2 case cohort2_adj statines.csv")
 
 require(gplots)

@@ -6,7 +6,7 @@
 
 ###data read-in
 S4 = read.csv("data/K9512_Wang_Sattler_S4_tra300712.csv", sep = ";")
-F4 = read.csv("data/K9512_Wang_Sattler_F4_tra300712.csv", sep = ";")
+F4 = read.csv("data/K9512_Wang_Sattler_F4_tra300712.csv")#, sep = ";"
 S4_F4_map = read.csv("data/K9512_Wang_S_S4_F4trans300712.csv", sep = ";")
 S2 = read.csv("data/pv_80_13_daten/S2.csv")
 

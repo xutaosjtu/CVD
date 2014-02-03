@@ -156,6 +156,7 @@ for (m in S4_valid_measures){
 	 				+ scale(log(lh_crp))##model 4
 	        #+ as.factor(ltmstati)
           #+ as.factor(ltantihy)
+          + as.factor(my.physical)
 					,subset = which(S4$prev_mi==0),#
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
