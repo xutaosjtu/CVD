@@ -92,12 +92,14 @@ S2$my.physical[which(S2$ctphact>2)]=0
 
 ##
 S4$my.hyper = S4$lthyact
+S4$my.hyper[which(S4$my.hyper=="")] = NA
 S4$my.hyper[which(S4$lthyact==2)] = 0
 S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==1)]=1
 S4$my.hyper[which(S4$lthyact==1&S4$ltantihy==2)]=2
 S4$my.hyper = as.factor(S4$my.hyper)
 
 F4$my.hyper = F4$uthyact
+F4$my.hyper[which(F4$my.hyper=="")] = NA
 F4$my.hyper[which(F4$uthyact==2)] = 0
 F4$my.hyper[which(F4$uthyact==1&F4$utantihy==1)]=1
 F4$my.hyper[which(F4$uthyact==1&F4$utantihy==2)]=2
