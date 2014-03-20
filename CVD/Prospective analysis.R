@@ -124,17 +124,17 @@ plot(
 ##
 ##  estimates of the confounders
 model = coxph(Surv(mi_time, inz_mi) ~ 
-                  scale(log(Arg)) + 
-                  scale(log(lysoPC_a_C17_0)) + 
-                  scale(log(Trp)) + 
-                  scale(log(PC_aa_C32_2))+
-#                  scale(log(PC_aa_C36_3))+
-                  scale(log(lysoPC_a_C18_2)) + 
-#                  scale(log(SM_C24_1))+
-               #scale(log(Kynurenine_Trp)) +
+              scale(log(Arg)) + 
+              scale(log(lysoPC_a_C17_0)) + 
+              scale(log(Trp)) + 
+              scale(log(PC_aa_C32_2))+
+#             scale(log(PC_aa_C36_3))+
+              scale(log(lysoPC_a_C18_2)) + 
+#             scale(log(SM_C24_1))+
+              #scale(log(Kynurenine_Trp)) +
                 scale(ltalteru) + as.factor(lcsex)
               + scale(ltbmi) + as.factor(my.diab)  ##model 2
-              + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3
+              + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon) + scale(ll_chola) + scale(ll_hdla) ##model 3
               + scale(log(lh_crp))  ##model 4
 #               + as.factor(S4$ltantihy)
               ,subset = which(S4$prev_mi==0&!is.na(S4$lh_crp)),
