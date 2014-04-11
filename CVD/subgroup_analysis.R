@@ -7,10 +7,10 @@ association_analysis = function(subset = which(S4$prev_mi==0)){
   for (m in candidates){
     S4$metabolite = scale(log(S4[, m]))
     model = coxph(Surv(mi_time, inz_mi) ~ metabolite 
-                   + scale(ltalteru) #+ as.factor(lcsex)
+                   + scale(ltalteru) + as.factor(lcsex)
                    + scale(ltbmi)## model 1
                    + as.factor(my.diab)  ##model 2
-                   + as.factor(my.alkkon) + as.factor(my.cigreg)
+                   + as.factor(my.alkkon) #+ as.factor(my.cigreg)
                    + scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
                    + scale(log(lh_crp))##model 4
 #                   + as.factor(ltmstati)
@@ -76,8 +76,9 @@ write.csv(cbind(asso.diab, asso.hyperten, asso.none), file = "metabolites_MI sur
 asso.CS = association_analysis(subset = S4$my.cigreg==2 & S4$prev_mi==0) ## current smokers
 asso.FS = association_analysis(subset = S4$my.cigreg==1 & S4$prev_mi==0) ## former smokers
 asso.NS = association_analysis(subset = S4$my.cigreg==0 & S4$prev_mi==0) ## never smokers
-
-write.csv(cbind(asso.CS, asso.FS, asso.NS), file = "metabolites_MI survival analysis_S4_smoker subgroup.csv")
+hetero.CSvsFS = heterogeneity(x = asso.CS, y = asso.FS)      ## heterogenity between smokers and former smokers
+hetero.CSvsNS = heterogeneity(x = asso.CS, y = asso.NS)      ## heterogenity between smokers and never smokers
+write.csv(cbind(asso.CS, asso.FS, hetero.CSvsFS, asso.NS, hetero.CSvsNS), file = "metabolites_MI survival analysis_S4_smoker subgroup.csv")
 
 
 ## S2
@@ -111,7 +112,7 @@ association_analysis = function(subset = 1:nrow(S2.sub)){
   for (m in candidates){
     S2.sub$metabolite = scale(log(S2.sub[, m]))
     model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
-                  + scale(ctalteru) #+ as.factor(ccsex)## model 1
+                  + scale(ctalteru) + as.factor(ccsex)## model 1
                   + scale(ctbmi) + as.factor(my.diab)  ##model 2
                   + scale(ctsysmm) #+ as.factor(my.cigreg)
                   + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
@@ -155,4 +156,6 @@ write.csv(cbind(asso.diab, asso.hyperten, asso.none), file = "metabolites_MI sur
 asso.CS = association_analysis(subset = S2.sub$my.cigreg==2) ## current smokers
 asso.FS = association_analysis(subset = S2.sub$my.cigreg==1) ## former smokers
 asso.NS = association_analysis(subset = S2.sub$my.cigreg==0) ## never smokers
-write.csv(cbind(asso.CS, asso.FS, asso.NS), file = "metabolites_MI survival analysis_S2_smoker subgroup.csv")
+hetero.CSvsFS = heterogeneity(x = asso.CS, y = asso.FS)      ## heterogenity between smokers and former smokers
+hetero.CSvsNS = heterogeneity(x = asso.CS, y = asso.NS)      ## heterogenity between smokers and never smokers
+write.csv(cbind(asso.CS, asso.FS, hetero.CSvsFS, asso.NS, hetero.CSvsNS), file = "metabolites_MI survival analysis_S2_smoker subgroup.csv")

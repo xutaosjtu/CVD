@@ -219,40 +219,41 @@ for(m in c(S2_valid_measures)){
 rownames(rst) = c(S2_valid_measures)
 write.csv(rst, "metabolites categorical_test for trend_model 4_S2 case cohort.csv")
 
-## By a matched case control study
-# data = S2[which(S2$prev_mi==0),c("ctalteru", "ccsex", "ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola", "cl_hdla", "cl_ldla", "cl_crp", "inz_mi", "mi_time", S2_valid_measures)]
-# data = na.omit(data)
-# data$my.cigreg = as.numeric(data$my.cigreg)
-# data$my.diab = as.numeric(data$my.diab)
-# data$Arg_Trp = data$Arg/data$Trp
-# 
-# require(Matching)
-# tr = data$inz_mi
-# x = data[,c("ctalteru", "ccsex", "ctbmi", "cl_hdla","cl_chola")]# +ctbmi+cl_hdla+cl_chola
-# glm1 <- glm(inz_mi~ctalteru+ccsex, family=binomial, data)
-# rst.match = Match(Tr = tr, X =glm1$fitted.values, M =1, ties = T, replace=F, distance.tolerance = 0.5)
-# 
-# data = data[c(rst.match$index.control, unique(rst.match$index.treated)), ]
-# data$ID = c(rst.match$index.treated,unique(rst.match$index.treated))
-# 
-# t.test(log(data$Arg[which(data$inz_mi==1)]), log(data$Arg[which(data$inz_mi==0)]), paired=T)
-# 
-# require(survival)
-# rst = NULL
-# for(m in S2_valid_measures){
-#   data$m = scale(log(data[,m]))
-#   model = clogit(inz_mi ~ m #+ ctalteru
-#                  #+ scale(ctbmi)## model 1
-#                  #+ scale(ctsysmm) #+ scale(cl_chola) + scale(cl_hdla) ##model 3
-#                  #+ as.factor(my.diab)+ as.factor(my.cigreg)+as.factor(my.alkkon)
-#                  #+ scale(cl_crp)  ##model 4
-#                  + strata(ID)
-#                  #, weights = data$weight
-#                  ,data)
-#   rst = rbind(rst, summary(model)$coef[1,])
-# }
-# rownames(rst) = S2_valid_measures
-# 
+# By a matched case control study
+data = S2[which(S2$prev_mi==0),c("ctalteru", "ccsex", "ctbmi","my.diab","ctsysmm","my.cigreg","my.alkkon","cl_chola", "cl_hdla", "cl_ldla", "cl_crp", "inz_mi", "mi_time", S2_valid_measures)]
+data = na.omit(data)
+data$my.cigreg = as.numeric(data$my.cigreg)
+data$my.diab = as.numeric(data$my.diab)
+data$Arg_Trp = data$Arg/data$Trp
+
+require(Matching)
+tr = data$inz_mi
+x = data[,c("ctalteru", "ccsex")]# +ctbmi+cl_hdla+cl_chola
+#glm1 <- glm(inz_mi~ctalteru+ccsex, family=binomial, data)
+set.seed(27)
+rst.match = Match(Tr = tr, X =x, M =2, ties = F, replace=F)
+
+data = data[c(rst.match$index.control, unique(rst.match$index.treated)), ]
+data$ID = c(rst.match$index.treated,unique(rst.match$index.treated))
+
+t.test(log(data$Arg[which(data$inz_mi==1)]), log(data$Arg[which(data$inz_mi==0)]))
+
+require(survival)
+rst = NULL
+for(m in c(S2_valid_measures, "Arg_Trp")){
+  data$m = scale(log(data[,m]))
+  model = clogit(inz_mi ~ m #+ ctalteru
+                 #+ scale(ctbmi)## model 1
+                 #+ scale(ctsysmm) + scale(cl_chola) + scale(cl_hdla) ##model 3
+                 #+ as.factor(my.diab)+ as.factor(my.cigreg)+as.factor(my.alkkon)
+                 #+ scale(cl_crp)  ##model 4
+                 + strata(ID)
+                 #, weights = data$weight
+                 ,data)
+  rst = rbind(rst, summary(model)$coef[1,])
+}
+rownames(rst) = c(S2_valid_measures,"Arg_Trp")
+
 # ### association with CRP
 # rst = NULL
 # for(i in S2_valid_measures){
