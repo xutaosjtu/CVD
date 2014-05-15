@@ -254,7 +254,7 @@ data = data.frame(
 )
 clinical = c("age", "sex", "ltbmi", "diabetes", "ltsysmm", "smoking", "alkkon", "ll_hdla", "ll_chola", "lh_crp")
 colnames(data)[3:12] = clinical#, "total2HDL"
-na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
+#na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 
 ref = list()
 ref[[1]] = clinical[1:2]
@@ -277,16 +277,17 @@ logliks[[2]] = loglik
 pchisq(-2*(logliks[[1]] - logliks[[2]]), df=4)
 
 
-
+fits=list()
 for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
-	subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi)), na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(metabo.selected3[c(1,3,4,6)], ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-	prediction[subset] = 1-0.8482743 ^ pred$cv.fit
+	subset = which(S4$prev_mi == 0 & !is.na(S4$inz_mi))#, na.index)#& S4$ltmstati!=1, "ltmstati"
+	pred = crossval.cox(x = data[subset, c(metabo.selected3 , ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	prediction[subset] = 1-0.856785 ^ pred$cv.fit
 	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
-metabo.selected3,
+
+
 
 
 deltaAUC <- function(fits.test){
@@ -304,6 +305,13 @@ for(i in 1:4){
 	print(fits.test)
 	print(deltaAUC(fits.test))
 }
+
+
+## plot ROC in the referenc and full model
+pdf("added predictive value 3 markers.pdf")
+plot(fits.full[[4]])
+plot(fits.ref[[3]], lty = 2, add = T)
+dev.off()
 
 #calculate NRI and IDI
 require(PredictABEL)

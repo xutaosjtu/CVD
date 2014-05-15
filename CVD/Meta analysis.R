@@ -52,3 +52,61 @@ tmp = rbind(S4.estimate [nrow(S4.estimate ),], S2.estimate [nrow(S2.estimate ),1
 rma.plusmetab = rma(yi = tmp$coef, sei = tmp$se.coef., 
                #method = "FE",
                measure = "RR")
+
+
+tmp = argtrp[,1:5]
+tmp$ni = c(1342,661)
+rma.test = rma(yi = tmp$coef, sei= tmp$se.coef., 
+               method = "FE", 
+               measure="RR")
+pdf("Arg Trp ratio model 3.pdf")
+forest(rma.test)
+dev.off()
+
+refine = read.csv("meta analysis/REFINE_model4.csv", row.names = 1)
+refine$se.coef. = (log(refine$upper)-log(refine$OR))/1.96
+refine$coef = log(refine$OR)
+require(metafor)
+## meta analysis of KORA S4 and refine
+rst = NULL
+for(m in candidates){
+  tmp = rbind(S4[m,c("coef", "se.coef.")], refine[m,c("coef", "se.coef.")])
+  tmp = as.data.frame(tmp)
+  rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., n1i = 1342, n2i = 108*3,
+                 #method = "FE",
+                 measure = "RR")
+  rst = rbind(rst , c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp))
+}
+rownames(rst) = candidates
+colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
+write.csv(rst, file = "meta-analysis_model 3_refine_S4.csv")
+
+## meta analysis of KORA S2 and refine
+rst = NULL
+for(m in candidates){
+  tmp = rbind(S2[m,c("coef", "se.coef.")], refine[m,c("coef", "se.coef.")])
+  tmp = as.data.frame(tmp)
+  rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., n1i = 1342, n2i = 108*3,
+                 #method = "FE",
+                 measure = "RR")
+  rst = rbind(rst , c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp))
+}
+rownames(rst) = candidates
+colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
+write.csv(rst, file = "meta-analysis_model 3_refine_S2.csv")
+
+## meta analysis of KORA S4, S2 and refine
+rst = NULL
+for(m in candidates){
+  tmp = rbind(S4[m,c("coef", "se.coef.")], S2[m,c("coef", "se.coef.")],refine[m,c("coef", "se.coef.")])
+  tmp = as.data.frame(tmp)
+  rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., n1i = 1342, n2i = 108*3,
+                 #method = "FE",
+                 measure = "RR")
+  rst = rbind(rst , c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp))
+}
+rownames(rst) = candidates
+colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
+write.csv(rst, file = "meta-analysis_model 3_refine_S4_S2.csv")
+
+

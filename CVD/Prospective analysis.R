@@ -124,18 +124,18 @@ plot(
 ##
 ##  estimates of the confounders
 model = coxph(Surv(mi_time, inz_mi) ~ 
-              scale(log(Arg)) + 
-              scale(log(lysoPC_a_C17_0)) + 
-              scale(log(Trp)) + 
-              scale(log(PC_aa_C32_2))+
-#             scale(log(PC_aa_C36_3))+
-              scale(log(lysoPC_a_C18_2)) + 
+              scale(log(Arg_Trp)) + 
+#               scale(log(lysoPC_a_C17_0)) + 
+#               scale(log(Trp)) + 
+#               scale(log(PC_aa_C32_2))+
+# #             scale(log(PC_aa_C36_3))+
+#               scale(log(lysoPC_a_C18_2)) + 
 #             scale(log(SM_C24_1))+
               #scale(log(Kynurenine_Trp)) +
                 scale(ltalteru) + as.factor(lcsex)
-              + scale(ltbmi) + as.factor(my.diab)  ##model 2
-              + scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon) + scale(ll_chola) + scale(ll_hdla) ##model 3
-              + scale(log(lh_crp))  ##model 4
+              #+ scale(ltbmi) + as.factor(my.diab)  ##model 2
+              #+ scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon) + scale(ll_chola) + scale(ll_hdla) ##model 3
+              #+ scale(log(lh_crp))  ##model 4
 #               + as.factor(S4$ltantihy)
               ,subset = which(S4$prev_mi==0&!is.na(S4$lh_crp)),
               data = S4)
@@ -149,15 +149,15 @@ rst2 = NULL; rst3 = NULL
 for (m in S4_valid_measures){
 	S4$metabolite = scale(log(S4[, m]))
 	model = coxph(Surv(mi_time, inz_mi) ~ metabolite 
-					+ scale(ltalteru) + as.factor(lcsex)
+					+ scale(ltalteru) #+ as.factor(lcsex)
 					+ scale(ltbmi)## model 1
 					+ as.factor(my.diab)  ##model 2
 					+ scale(ltsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-	 				+ scale(log(lh_crp))##model 4
+	 				#+ scale(log(lh_crp))##model 4
 	        #+ as.factor(ltmstati)
           #+ as.factor(ltantihy)
-          + as.factor(my.physical)
-					,subset = which(S4$prev_mi==0),#
+          #+ as.factor(my.physical)
+					,subset = which(S4$prev_mi==0 & S4$lcsex==1),#
 					data = S4)
 	rst = rbind(rst, summary(model)$coefficients[1,])
 	#rst1 = rbind(rst , summary(model)$coefficients[2,])

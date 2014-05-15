@@ -7,12 +7,12 @@ association_analysis = function(subset = which(S4$prev_mi==0)){
   for (m in candidates){
     S4$metabolite = scale(log(S4[, m]))
     model = coxph(Surv(mi_time, inz_mi) ~ metabolite 
-                   + scale(ltalteru) + as.factor(lcsex)
-                   + scale(ltbmi)## model 1
-                   + as.factor(my.diab)  ##model 2
-                   + as.factor(my.alkkon) #+ as.factor(my.cigreg)
-                   + scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
-                   + scale(log(lh_crp))##model 4
+                   + scale(ltalteru) #+ as.factor(lcsex)
+#                    + scale(ltbmi)## model 1
+#                    + as.factor(my.diab)  ##model 2
+#                    + as.factor(my.alkkon) #+ as.factor(my.cigreg)
+#                    + scale(ltsysmm) + scale(ll_chola) + scale(ll_hdla) ##model 3+ total2HDL
+#                   + scale(log(lh_crp))##model 4
 #                   + as.factor(ltmstati)
 #                   + as.factor(ltantihy)
 #                   + as.factor(my.physical)
@@ -40,7 +40,7 @@ heterogeneity = function(x,y){
     summary = c(testrst$QE, testrst$QEp)
     hetero = rbind(summary, hetero)
   }
-  colnames(hetero) = c("Heterogenity", "Hetero Pvalue")
+  colnames(hetero) = c("Heterogeneity", "Hetero Pvalue")
   return(hetero)
 }
 
@@ -64,7 +64,7 @@ write.csv(cbind(asso.over60, asso.below60, hetero), file = "metabolites_MI survi
 asso.men = association_analysis(subset = S4$lcsex==1 & S4$prev_mi==0)
 asso.women = association_analysis(subset = S4$lcsex==2 & S4$prev_mi==0)
 hetero = heterogeneity(x=asso.men, y = asso.women)
-write.csv(cbind(asso.men, asso.women, hetero), file = "metabolites_MI survival analysis_S4_sex subgroup.csv")
+write.csv(cbind(asso.men, asso.women, hetero), file = "metabolites_MI survival analysis_S4_sex subgroup_model1.csv")
 
 ## subgroup of diseases
 asso.diab = association_analysis(subset = S4$my.diab==1&S4$prev_mi==0) ## diabetes
@@ -112,11 +112,11 @@ association_analysis = function(subset = 1:nrow(S2.sub)){
   for (m in candidates){
     S2.sub$metabolite = scale(log(S2.sub[, m]))
     model = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~ metabolite  
-                  + scale(ctalteru) + as.factor(ccsex)## model 1
+                  + scale(ctalteru) #+ as.factor(ccsex)## model 1
                   + scale(ctbmi) + as.factor(my.diab)  ##model 2
                   + scale(ctsysmm) #+ as.factor(my.cigreg)
                   + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
-                  + scale(log(cl_crp))  ##model 4
+#                  + scale(log(cl_crp))  ##model 4
                   #+ as.factor(ctmstati)
                   #+ cluster(as.factor(zz_nr))
                   #+ as.factor(my.physical)
@@ -144,7 +144,7 @@ write.csv(cbind(asso.over60, asso.below60, hetero), file = "metabolites_MI survi
 asso.men = association_analysis(subset = S2.sub$ccsex==1)
 asso.women = association_analysis(subset = S2.sub$ccsex==2)
 hetero = heterogeneity(x = asso.men, y = asso.women)
-write.csv(cbind(asso.men, asso.women, hetero), file = "metabolites_MI survival analysis_S2_sex subgroup.csv")
+write.csv(cbind(asso.men, asso.women, hetero), file = "metabolites_MI survival analysis_S2_sex subgroup_model2.csv")
 
 ## subgroup of diseases
 asso.diab = association_analysis(subset = S2.sub$my.diab==1) ## diabetes

@@ -247,7 +247,7 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(metabo.selected,ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
   prediction[subset] = pred$cv.fit
   fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 }
