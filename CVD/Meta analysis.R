@@ -27,9 +27,9 @@ rst[,"fdr"] = p.adjust(rst[,"pvalue"], method = "BH")
 write.csv(rst,"meta analysis/meta_fix_model4.csv")
 
 ## Meta-analysis of CRP effect size in S4 and S2
-S2.estimate = read.csv("estimates of confounders plus original four metabolites in S2_model 4.csv.csv", row.names = 1)
-S4.estimate = read.csv("estimates of confounders plus original four metabolites in S4_model 4.csv", row.names = 1)
-
+S2.estimate = read.csv("CRP association analysis/Change in CRP effect size/estimates of confounders plus 5 metabolites in S2_model 4.csv", row.names = 1)
+S4.estimate = read.csv("CRP association analysis/Change in CRP effect size/estimates of confounders plus 5 metabolites in S4_model 4.csv", row.names = 1)
+refine.estimate = read.csv("CRP association analysis/Change in CRP effect size/estimates of confounders plus 5 metabolites in REFINE_model 4.csv", row.names = 1)
 #S2.estimate = read.csv("Change in CRP effect/estimates of confounders plus original four metabolites in S2_model 4.csv", row.names = 1)
 #S4.estimate = read.csv("Change in CRP effect/estimates of confounders plus original four metabolites in S4_model 4.csv", row.names = 1)
 
