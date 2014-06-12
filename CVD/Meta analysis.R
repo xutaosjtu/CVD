@@ -120,3 +120,26 @@ rma.test = rma(yi = tmp$coef, sei= tmp$se.coef.,
 pdf("Arg Trp ratio model 3.pdf")
 forest(rma.test)
 dev.off()
+
+
+
+## linear associations between the metabolites with CRP
+S2 = read.csv("CRP association analysis/Associations of candidates with CRP_S2.csv", row.names = 1)
+S4 = read.csv("CRP association analysis/Associations of candidates with CRP_S4.csv", row.names = 1)
+refine = read.csv("CRP association analysis/Associations of candidates with CRP_Refine.csv", row.names = 1)
+
+rst = NULL
+for(i in 1:nrow(S2)){
+  tmp = rbind(S4[i,c("Estimate", "Std..Error")]
+              ,S2[i,c("Estimate", "Std..Error")]
+              ,refine[i,c("Estimate", "Std..Error")]
+  )
+  tmp = as.data.frame(tmp)
+  colnames(tmp) = c("yi", "sei")
+  rma.test = rma(yi= tmp$yi, sei=tmp$sei, method = "FE")
+  summary = c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp)
+  rst = rbind(rst, summary)
+}
+rownames(rst) = rownames(S2)
+colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
+write.csv(rst, "CRP association analysis/Associaitons of candidates with CRP_meta analysis_random_S4 S2 refine.csv")  
