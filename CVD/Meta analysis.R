@@ -2,8 +2,8 @@ require(metafor)
 
 dir("meta analysis")
 
-S2 = read.csv("meta analysis/S2_model1.csv",row.names=1)
-S4 = read.csv("meta analysis/S4_model1.csv",row.names=1)
+S2 = read.csv("meta analysis/S2_model4.csv",row.names=1)
+S4 = read.csv("meta analysis/S4_model4.csv",row.names=1)
 
 metabolites = intersect(rownames(S2), rownames(S4))
 #pdf("meta analysis/meta_fixed_model4.pdf")
@@ -26,7 +26,7 @@ colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "
 rst[,"fdr"] = p.adjust(rst[,"pvalue"], method = "BH")
 write.csv(rst,"meta analysis/meta_fix_model4.csv")
 
-refine = read.csv("meta analysis/REFINE_model1.csv", row.names = 1)
+refine = read.csv("meta analysis/REFINE_model4.csv", row.names = 1)
 refine$se.coef. = (log(refine$upper)-log(refine$OR))/1.96
 refine$coef = log(refine$OR)
 
@@ -39,11 +39,14 @@ for(m in candidates){
   rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., n1i = 1342, n2i = 108*3,
                  #method = "FE",
                  measure = "RR")
+  pdf(paste(m,"_model 3_meta.pdf"))
+  forest(rma.test, main = m)
+  dev.off()
   rst = rbind(rst , c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp))
 }
 rownames(rst) = candidates
 colnames(rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
-write.csv(rst, file = "meta-analysis_model 3_refine_S4.csv")
+#write.csv(rst, file = "meta-analysis_model 1_refine_S4.csv")
 
 ## meta analysis of KORA S2 and refine
 rst = NULL
@@ -62,7 +65,7 @@ write.csv(rst, file = "meta-analysis_model 3_refine_S2.csv")
 ## meta analysis of KORA S4, S2 and refine
 rst = NULL
 for(m in candidates){
-  tmp = rbind(S4[m,c("coef", "se.coef.")], S2[m,c("coef", "se.coef.")],refine[m,c("coef", "se.coef.")])
+  tmp = rbind(S4[m,c("coef", "se.coef.")], S2[m,c("coef", "se.coef.")], refine[m,c("coef", "se.coef.")])
   tmp = as.data.frame(tmp)
   rma.test = rma(yi = tmp$coef, sei = tmp$se.coef., n1i = 1342, n2i = 108*3,
                  #method = "FE",
@@ -78,7 +81,7 @@ write.csv(rst, file = "meta-analysis_model 3_refine_S4_S2.csv")
 
 
 
-## Meta-analysis of CRP effect size in S4 and S2
+## Meta-analysis of CRP effect size in S4 and S2 and refine
 S2 = read.csv("CRP association analysis/Change in CRP effect size/estimates of confounders plus 5 metabolites in S2_model 4.csv", row.names = 1)
 S4 = read.csv("CRP association analysis/Change in CRP effect size/estimates of confounders plus 5 metabolites in S4_model 4.csv", row.names = 1)
 refine = read.csv("CRP association analysis/Change in CRP effect size/estimates of confounders plus 5 metabolites in REFINE_model 4_cl.csv", row.names = 1)
