@@ -44,12 +44,13 @@ model.1 = coxph(Surv(mi_time.start, mi_time.end, inz_mi02) ~
 
 model.2.coef = NULL
 for(m in c("Arg", "lysoPC_a_C17_0", "lysoPC_a_C18_2")){
-  S2$m = scale(log(S2[,m]))
+  S2.sub$m = scale(log(S2.sub[,m]))
   model.2 = lm(m ~ scale((cl_crp))  
                 + scale(ctalteru) + as.factor(ccsex)## model 1
                 + scale(ctbmi) + as.factor(my.diab)  ##model 2
                 + scale(ctsysmm) + as.factor(my.cigreg) + as.factor(my.alkkon)  + scale(cl_chola) + scale(cl_hdla) ##model 3
-                ,data = S2
+                ,data = S2.sub
+                ,weights = weight
   )
   model.2.coef = rbind(model.2.coef, summary(model.2)$coef[2,])
 }

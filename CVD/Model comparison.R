@@ -282,9 +282,13 @@ for(i in 1:4){
 	prediction = rep(NA, dim(data)[1])
 	names(prediction) = rownames(data)
 	subset = which(S4$prev_mi == 0 & !is.na(S4$inz_mi))#, na.index)#& S4$ltmstati!=1, "ltmstati"
-	pred = crossval.cox(x = data[subset, c(metabo.selected3 , ref[[i]])], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+	pred = crossval.cox(x = data[subset, c(ref[[i]])], 
+                      y= Surv(data$time[subset], data$event[subset]), 
+                      theta.fit, theta.predict, ngroup = length(subset)
+                      )
 	prediction[subset] = 1-0.856785 ^ pred$cv.fit
-	fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+	fits[[i]] = roc (data$event[which(!is.na(prediction))], 
+                   prediction[which(!is.na(prediction))], ci = T)
 }
 
 
@@ -311,6 +315,13 @@ for(i in 1:4){
 pdf("added predictive value 3 markers.pdf")
 plot(fits.full[[4]])
 plot(fits.ref[[3]], lty = 2, add = T)
+dev.off()
+
+pdf("ROC curves_S4.pdf")
+plot(fits.ref[[3]]) ## without metabolite and CRP
+plot(fits.ref[[4]], add = T, lty = 2, col = "blue") ## with CRP, without metabolites
+plot(fits.full[[4]], lty = 3, add = T, col = "red") ## with CRP and metabolites
+plot(fits.full[[3]], lty = 4, add = T, col = "green") ## with metabolites without CRP
 dev.off()
 
 #calculate NRI and IDI

@@ -208,7 +208,7 @@ data = data.frame(
   scale(data.S2$ctalteru),  as.factor(data.S2$ccsex), ##model 1
   scale(data.S2$ctbmi),as.factor(data.S2$my.diab), ##model 2
   scale(data.S2$ctsysmm),  as.factor(data.S2$my.cigreg), as.factor(data.S2$my.alkkon), scale(data.S2$cl_hdla), scale(data.S2$cl_chola), ##model 3
-  scale(log(data.S2$cl_crp)), ##model 4,
+  scale((data.S2$cl_crp)), ##model 4,
   scale(log(as.matrix(data.S2[, S2_valid_measures]))),
   weight=data.S2$weight
 )
@@ -247,9 +247,14 @@ for(i in 1:4){
   prediction = rep(NA, dim(data)[1])
   names(prediction) = rownames(data)
   subset = setdiff(which(data.S2$prev_mi == 0), na.index)#& S4$ltmstati!=1, "ltmstati"
-  pred = crossval.cox(x = data[subset, c(ref[[i]])], y= Surv(data$start[subset], data$end[subset], data$event[subset]), theta.fit, theta.predict, weight=data$weight[subset], ngroup = length(subset))
+  pred = crossval.cox(x = data[subset, c(metabo.selected,ref[[i]])], 
+                      y= Surv(data$start[subset], data$end[subset], data$event[subset]), 
+                      theta.fit, theta.predict, weight=data$weight[subset],
+                      ngroup = length(subset)
+                      )
   prediction[subset] = pred$cv.fit
-  fits[[i]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+  fits[[i]] = roc (data$event[which(!is.na(prediction))], 
+                   prediction[which(!is.na(prediction))], ci = T)
 }
 
 deltaAUC <- function(fits.test){
@@ -265,6 +270,17 @@ for(i in 1:4){
   print(fits.test)
   print(deltaAUC(fits.test))
 }
+
+pdf("ROC curves_S2.pdf")
+plot(fits.ref[[3]], main = "S2") ## without metabolite and CRP
+plot(fits.ref[[4]], add = T, lty = 2, col = "blue") ## with CRP, without metabolites
+plot(fits.full[[4]], lty = 3, add = T, col = "red") ## with CRP and metabolites
+plot(fits.full[[3]], lty = 4, add = T, col = "green") ## with metabolites without CRP
+legend("bottomright", 
+       legend = c("w/o metabolites and CRP", "w CRP, w/o metabolites","w/o CRP, w metabolites", "w CRP and metabolites"),
+       col = c("black", "blue", "green", "red"),
+       lty = c(1,2,4,3))
+dev.off()
 
 #calculate NRI and IDI
 require(PredictABEL)
