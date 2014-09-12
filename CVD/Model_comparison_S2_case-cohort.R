@@ -69,6 +69,8 @@ for(i in 1:nrow(data.S2)){
 data = data.frame(
   start = data.S2$mi_time.start, end = data.S2$mi_time.end,
   event = data.S2$inz_mi,  # time and events
+  cl_crp = data.S2$cl_crp,
+  framingham.score = data.S2$framingham.score,
   framingham.linear = data.S2$framingham.linear,
   scale(log(as.matrix(data.S2[, S2_valid_measures]))),
   weight = data.S2$weight
@@ -81,7 +83,28 @@ model = coxph(Surv(start, end, event) ~ .,
                 #subset = which(data.S2$ccsex ==i),
                 data[ ,c( "start", "end", "event", metabo.selected,"framingham.linear")])
 prediction = predict(model, type="risk")
-fits[[2]] = roc(model$y[,3],prediction)
+fits[[1]] = roc(model$y[,3], prediction)
+
+fits[[2]] = roc(model$y[,3], prediction)
+
+model = coxph(Surv(start, end, event) ~ .,
+              weights = data$weight,
+              #subset = which(data.S2$ccsex ==i),
+              data[ ,c( "start", "end", "event",metabo.selected,"cl_crp","framingham.linear")])
+prediction = predict(model, type="risk")
+fits[[3]] = roc(model$y[,3], prediction)
+
+fits[[4]] = roc(model$y[,3], prediction)
+
+
+## ROC
+pdf("ROC_Framingham_S2.pdf")
+plot(fits.framingham[[1]], main = "S2") 
+plot(fits.framingham[[2]], col = "green", add = T)
+plot(fits.framingham_crp[[1]], col = "blue", add = T)
+plot(fits.framingham_crp[[2]], col = "red", add = T)
+dev.off()
+
 #  print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
 #  prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 #  loglik = model$loglik[2] + loglik

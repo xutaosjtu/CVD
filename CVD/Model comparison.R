@@ -2,7 +2,7 @@
 # 
 # Author: tao.xu
 ###############################################################################
-require(surivival)
+require(survival)
 require(PredictABEL)
 require(pROC)
 require(boot)
@@ -11,7 +11,7 @@ S4$my.sysmm.untreat = log(S4$ltsysmm)
 S4$my.sysmm.untreat[which((S4$ltmbbl ==1 | S4$ltmace ==1 | S4$ltmata ==1))] = 0
 S4$my.sysmm.treat = log(S4$ltsysmm)
 S4$my.sysmm.treat[which(!(S4$ltmbbl ==1 | S4$ltmace ==1 | S4$ltmata ==1))] = 0
-data = S4
+data = subset(S4, prev_mi==0& !is.na(inz_mi))
 data[, metabo.selected3] =  log(S4[, metabo.selected3])
 
 #################	Framingham score	##########################
@@ -36,7 +36,6 @@ for(i in 1:nrow(S4)){
 	S4$framingham[i] = framingham(S4[i,], method = "score") 
 }
 
-
 for(i in 1:nrow(S4)){
   S4$framingham.linear[i] = framingham(S4[i,], method = "linear") 
 }
@@ -45,7 +44,8 @@ for(i in 1:nrow(S4)){
 data = data.frame(
 		time = S4$mi_time, event = S4$inz_mi,  # time and events
 		framingham.linear = S4$framingham.linear,
-		scale(log(as.matrix(S4[, S4_valid_measures]))) #, scale(S4[, metabo.ratio.asso])
+		scale(log(as.matrix(S4[, S4_valid_measures]))) , 
+		lh_crp = scale(S4$lh_crp)
 )
 na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 prediction = rep(NA, dim(data)[1])
@@ -69,11 +69,11 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 
 ##men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected3, "lh_crp", "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] = 1-0.6742013^ pred.cv$cv.fit 
 ##women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected3, "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c(metabo.selected3,"lh_crp", "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] =1- 0.9846102 ^ pred.cv$cv.fit 
 
 fits = list()
@@ -81,6 +81,13 @@ fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(
 #fits[[2]] = roc (data$inz_mi[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
 fits[[2]] = roc (data$event[which(!is.na(prediction))], S4$framingham[which(!is.na(prediction))], ci = T)
 
+## ROC
+pdf("ROC_Framingham.pdf")
+plot(fits.framingham[[1]]) 
+plot(fits.framingham[[2]], col = "green", add = T)
+plot(fits.framingham_crp[[1]], col = "blue", add = T)
+plot(fits.framingham_crp[[3]], col = "red", add = T)
+dev.off()
 
 #calculate delta AUC
 fits.test =  roc.test(fits[[1]], fits[[2]])
