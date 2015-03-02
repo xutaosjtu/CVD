@@ -147,7 +147,7 @@ prediction[subset] = 1 -  0.6187485 ^ pred.cv$cv.fit #metabolite+reference:0.618
 #women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2 ), na.index)#& S4$ltmstati==2
 pred.cv = crossval.cox(x = data[subset, c(clinical[-2], metabo.selected3)], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
-prediction[subset] =1-   0.9888222 ^ pred.cv$cv.fit #metabolite+reference:0.9888222; reference: 0.9735755
+prediction[subset] =1-0.9888222 ^ pred.cv$cv.fit #metabolite+reference:0.9888222; reference: 0.9735755
 #exclude statin ref: 0.9729412, ref + metabo: 0.9869769
 , metabo.selected3
 
