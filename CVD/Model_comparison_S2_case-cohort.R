@@ -81,11 +81,29 @@ na.index = unique(unlist(apply(data, 2, function(x) which(is.na(x)))))
 model = coxph(Surv(start, end, event) ~ .,
               weights = data$weight,
                 #subset = which(data.S2$ccsex ==i),
-                data[ ,c( "start", "end", "event", metabo.selected,"framingham.linear")])
-prediction = predict(model, type="risk")
-fits[[1]] = roc(model$y[,3], prediction)
+                data[ ,c( "start", "end", "event", "cl_crp","framingham.linear")])
+prediction = 1 - 0.8^predict(model, type="risk")
+fits[[1]] = roc(model$y[,3], prediction, ci = T)
+c(fits[[1]]$ci)
 
+model = update(model, . ~ framingham.linear)
+prediction = 1 - 0.8^predict(model, type="risk", ci = T)
 fits[[2]] = roc(model$y[,3], prediction)
+
+# fits[[2]] = roc(model$y[,3], data[dimnames(model$y)[[1]], "framingham.score"])
+
+#calculate delta AUC
+(fits.test =  roc.test(fits[[1]], fits[[2]]))
+# deltaAUC <- function(fits.test){
+#   delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+#   se = delta / fits.test$statistic
+#   return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+# }
+# deltaAUC(fits.test)
+
+#calculate NRI and IDI
+reclassification(data[which(!is.na(prediction)), ], cOutcome = 3, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.10, 0.2, 1))
+
 
 model = coxph(Surv(start, end, event) ~ .,
               weights = data$weight,
@@ -202,7 +220,7 @@ fits[[2]] = roc (data$event[which(!is.na(prediction))], data.S2$framingham.score
 
 
 #calculate delta AUC
-fits.test =  roc.test(fits[[1]], fits[[2]])
+(fits.test =  roc.test(fits[[1]], fits[[2]]))
 deltaAUC <- function(fits.test){
   delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
   se = delta / fits.test$statistic

@@ -55,11 +55,31 @@ loglik = 0
 for (i in 1:2){
 	model = coxph(Surv(time, event) ~ .,
 			subset = which(S4$prev_mi == 0&S4$lcsex ==i),#$ltmstati==2
-			data[ ,c( "time", "event", metabo.selected3, "framingham.linear")])
+			data[ ,c( "time", "event", "lh_crp", "framingham.linear")])
 	print(data.frame("lcsex"= i, "basline" = sort(survfit(model)$surv)[1]))
 	prediction[dimnames(model$y)[[1]]] =  1 - sort(survfit(model)$surv)[1] ^predict(model, type = "risk")
 	loglik = model$loglik[2] + loglik
 }
+## Calculate the roc for framingham score and framingham score + metabolite
+fits = list()
+fits[[1]] = roc (data$event[which(!is.na(prediction))], prediction[which(!is.na(prediction))], ci = T)
+fits[[2]] = roc (data$event[which(!is.na(prediction))], S4$framingham[which(!is.na(prediction))], ci = T)
+
+c(fits[[1]]$ci)
+
+#calculate delta AUC
+(fits.test =  roc.test(fits[[1]], fits[[2]]))
+deltaAUC <- function(fits.test){
+  delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
+  se = delta / fits.test$statistic
+  return(data.frame("deltaAUC" = delta, "lower" = delta - 1.96*se, "upper" = delta + 1.96*se))
+}
+deltaAUC(fits.test)
+
+#calculate NRI and IDI
+fits.recl = reclassification(data[which(!is.na(prediction)), ], cOutcome = 2, fits[[2]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
+
+
 
 ##likelihood ratio test
 logliks = list()
@@ -69,11 +89,11 @@ pchisq(-2*(logliks[[1]] - logliks[[2]]), df=1)
 
 ##men
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==1), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected3, "lh_crp", "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c("lh_crp", "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] = 1-0.6742013^ pred.cv$cv.fit 
 ##women
 subset = setdiff(which(S4$prev_mi == 0 & !is.na(S4$inz_mi) & S4$lcsex ==2), na.index)# & S4$ltmstati==2
-pred.cv = crossval.cox(x = data[subset, c(metabo.selected3,"lh_crp", "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
+pred.cv = crossval.cox(x = data[subset, c("lh_crp", "framingham.linear")], y= Surv(data$time[subset], data$event[subset]), theta.fit, theta.predict, ngroup = length(subset))
 prediction[subset] =1- 0.9846102 ^ pred.cv$cv.fit 
 
 fits = list()
@@ -90,7 +110,7 @@ plot(fits.framingham_crp[[3]], col = "red", add = T)
 dev.off()
 
 #calculate delta AUC
-fits.test =  roc.test(fits[[1]], fits[[2]])
+(fits.test =  roc.test(fits[[1]], fits[[2]]))
 deltaAUC <- function(fits.test){
 	delta = abs(fits.test$estimate[1] - fits.test$estimate[2]) 
 	se = delta / fits.test$statistic
