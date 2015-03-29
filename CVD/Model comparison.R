@@ -2,7 +2,7 @@
 # 
 # Author: tao.xu
 ###############################################################################
-require(surivival)
+require(survival)
 require(PredictABEL)
 require(pROC)
 require(boot)
@@ -248,7 +248,7 @@ data = data.frame(
 		scale(S4$ltalteru),  as.factor(S4$lcsex), scale(S4$ltbmi),##model 1
 		S4$my.diab, ##model 2
 		scale(S4$ltsysmm),  as.factor(S4$my.cigreg), as.factor(S4$my.alkkon), scale(S4$ll_hdla), scale(S4$ll_chola), ##model 3
-		scale(log(S4$lh_crp)), ##model 4,
+		scale((S4$lh_crp)), ##model 4,
 		'ltmstati'=as.factor(S4$ltmstati), ##adding statin as a covariate
 		scale(log(S4[, S4_valid_measures]))#, scale(S4[,metabo.ratio.asso])
 )
@@ -569,3 +569,26 @@ scale(log(Arg))+ as.factor(ltnuecht):scale(log(Arg))
 + scale(log(lysoPC_a_C18_1)) + as.factor(ltnuecht):scale(log(lysoPC_a_C18_1))
 + scale(log(PC_ae_C38_0)) + as.factor(ltnuecht):scale(log(PC_ae_C38_0)) + 
   
+  
+  
+####################################
+## Predictions ULSAM and TwinGene
+####################################
+predict_ulsam = read.csv("Replications/Sweden/Predictions/predictions_ulsam.csv")
+predict_twge = read.csv("Replications/Sweden/Predictions/predictions_twge.csv")
+predictions = rbind(predict_twge, predict_ulsam)
+
+fits = list()
+fits[[1]] = roc (predictions$event, predictions$score_a, ci = T)
+fits[[2]] = roc (predictions$event, predictions$score_b, ci = T)
+fits[[3]] = roc (predictions$event, predictions$score_c, ci = T)
+fits[[4]] =  roc (predictions$event, predictions$framingham, ci = T)
+
+plot(fits[[1]])
+plot(fits[[2]], col = "blue", add = T)
+plot(fits[[3]], col = "red", add = T)
+plot(fits[[4]], col = "grey", lty = 2, add = T)
+
+legend("bottomright", legend = c("Framingham", "Framingham+hsCRP", "Framingham+LPC 18:2", "Framingham+hsCRP+LPC 18:2"), lty = c(2, 1,1,1), col = c("grey", "black", "blue", "red"))
+
+reclassification(predictions, cOutcome = 1, fits[[1]]$predictor, fits[[3]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
