@@ -601,21 +601,31 @@ scale(log(Arg))+ as.factor(ltnuecht):scale(log(Arg))
 ####################################
 ## Predictions ULSAM and TwinGene
 ####################################
-predict_ulsam = read.csv("Replications/Sweden/Predictions/predictions_ulsam.csv")
-predict_twge = read.csv("Replications/Sweden/Predictions/predictions_twge.csv")
+predict_ulsam = read.csv("Replications/Sweden/Predictions/predictions_ulsam_2.csv")
+predict_twge = read.csv("Replications/Sweden/Predictions/predictions_twge_2.csv")
 predictions = rbind(predict_twge, predict_ulsam)
+
 
 fits = list()
 fits[[1]] = roc (predictions$event, predictions$score_a, ci = T)
 fits[[2]] = roc (predictions$event, predictions$score_b, ci = T)
 fits[[3]] = roc (predictions$event, predictions$score_c, ci = T)
-fits[[4]] =  roc (predictions$event, predictions$framingham, ci = T)
+fits[[4]] =  roc (predictions$event, predictions$score_ref, ci = T)
 
+pdf("Prediction_ULSAM+TWGE.pdf")
 plot(fits[[1]])
 plot(fits[[2]], col = "blue", add = T)
 plot(fits[[3]], col = "red", add = T)
 plot(fits[[4]], col = "grey", lty = 2, add = T)
-
 legend("bottomright", legend = c("Framingham", "Framingham+hsCRP", "Framingham+LPC 18:2", "Framingham+hsCRP+LPC 18:2"), lty = c(2, 1,1,1), col = c("grey", "black", "blue", "red"))
+dev.off()
 
-reclassification(predictions, cOutcome = 1, fits[[1]]$predictor, fits[[3]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
+roc.test(fits[[1]], fits[[4]])
+roc.test(fits[[2]], fits[[4]])
+roc.test(fits[[3]], fits[[4]])
+
+reclassification(predictions, cOutcome = 1, fits[[4]]$predictor, fits[[1]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
+reclassification(predictions, cOutcome = 1, fits[[4]]$predictor, fits[[2]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
+reclassification(predictions, cOutcome = 1, fits[[4]]$predictor, fits[[3]]$predictor, cutoff = c(0, 0.1, 0.2,  1))
+
+
